@@ -41,6 +41,7 @@ jobs:
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       NDK_HOME: /usr/local/lib/android/sdk/ndk/27.0.12077973
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
     steps:
       - uses: actions/checkout@v4
 
@@ -80,17 +81,7 @@ jobs:
       - name: Setup Gradle permissions
         run: chmod +x src-tauri/gen/android/gradlew
 
-      - name: Generate debug keystore
-        run: |
-          which keytool || sudo apt-get update && sudo apt-get install -y openjdk-17-jdk-headless
-          mkdir -p "$HOME/.android"
-          keytool -genkey -v -keystore "$HOME/.android/debug.keystore" \
-            -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass android -keypass android \
-            -dname "CN=Android Debug,O=Android,C=US"
-          ls -la "$HOME/.android/"
-          echo "JAVA_HOME=$JAVA_HOME"
-          echo "HOME=$HOME"
+      - name: Build Android APK
 
       - name: Build Android APK
         run: npx tauri android build --target aarch64
