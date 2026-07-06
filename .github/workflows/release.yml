@@ -110,8 +110,10 @@ jobs:
           name: android-apk
           path: artifacts/android
 
-      - name: List artifacts
-        run: find artifacts/ -type f -ls
+      - name: Rename APK
+        run: |
+          find artifacts/android/ -name "*.apk" -exec mv {} artifacts/android/spire.apk \;
+          ls -la artifacts/android/
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -121,7 +123,7 @@ jobs:
 
             ### Downloads
             - **Windows**: [EXE (NSIS installer)](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/SPIRE_1.0.0_x64-setup.exe), [MSI](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/SPIRE_1.0.0_x64_en-US.msi)
-            - **Android**: [APK (aarch64)](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/app-universal-release.apk)
+            - **Android**: [APK (aarch64)](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/spire.apk)
 
             ### Features
             - Rich-text editor (Tiptap), tasks, notes, trash
