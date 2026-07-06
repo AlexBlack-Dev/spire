@@ -82,8 +82,6 @@ jobs:
         run: chmod +x src-tauri/gen/android/gradlew
 
       - name: Build Android APK
-
-      - name: Build Android APK
         run: npx tauri android build --target aarch64
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
