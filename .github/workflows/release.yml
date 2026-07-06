@@ -81,7 +81,9 @@ jobs:
         run: chmod +x src-tauri/gen/android/gradlew
 
       - name: Generate debug keystore
-        run: keytool -genkey -v -keystore ~/.android/debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
+        run: |
+          mkdir -p $HOME/.android
+          $JAVA_HOME/bin/keytool -genkey -v -keystore $HOME/.android/debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
 
       - name: Build Android APK
         run: npx tauri android build --target aarch64
