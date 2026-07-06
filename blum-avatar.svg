@@ -1,0 +1,158 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background -->
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#13111f"/>
+      <stop offset="100%" stop-color="#0a0914"/>
+    </linearGradient>
+
+    <!-- Crystal faces -->
+    <linearGradient id="faceL" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#9b8af4"/>
+      <stop offset="60%" stop-color="#6c5ce7"/>
+      <stop offset="100%" stop-color="#4834c4"/>
+    </linearGradient>
+
+    <linearGradient id="faceR" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#c4b8ff"/>
+      <stop offset="50%" stop-color="#8b7cf8"/>
+      <stop offset="100%" stop-color="#5b4fcf"/>
+    </linearGradient>
+
+    <linearGradient id="faceBL" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3d35a8"/>
+      <stop offset="100%" stop-color="#2a2480"/>
+    </linearGradient>
+
+    <linearGradient id="faceBR" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5b4fcf"/>
+      <stop offset="100%" stop-color="#3d35a8"/>
+    </linearGradient>
+
+    <linearGradient id="faceTop" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#e0d8ff"/>
+      <stop offset="100%" stop-color="#a89cf7"/>
+    </linearGradient>
+
+    <!-- Glow -->
+    <radialGradient id="glow" cx="50%" cy="55%" r="45%">
+      <stop offset="0%" stop-color="#7c6af7" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#7c6af7" stop-opacity="0"/>
+    </radialGradient>
+
+    <filter id="blur-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <filter id="soft" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <clipPath id="clip">
+      <rect width="512" height="512" rx="108" ry="108"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#clip)">
+    <!-- Background -->
+    <rect width="512" height="512" fill="url(#bg)"/>
+
+    <!-- Subtle noise texture via pattern -->
+    <rect width="512" height="512" fill="url(#bg)" opacity="0.6"/>
+
+    <!-- Ambient glow behind crystal -->
+    <ellipse cx="256" cy="290" rx="160" ry="130" fill="url(#glow)"/>
+
+    <!-- Crystal shadow -->
+    <polygon
+      points="256,88 370,240 330,390 182,390 142,240"
+      fill="#7c6af7" opacity="0.12" filter="url(#blur-glow)"
+    />
+
+    <!--
+      Obsidian-style crystal: sharp volcanic rock shape
+      Top point: 256, 88
+      Upper-left shoulder: 168, 210
+      Upper-right shoulder: 344, 210
+      Lower-left: 182, 390
+      Lower-right: 330, 390
+      Bottom tip: 256, 420
+    -->
+
+    <!-- Face: bottom-left (darkest) -->
+    <polygon points="256,88 168,210 182,390 256,310" fill="url(#faceBL)"/>
+
+    <!-- Face: bottom-right -->
+    <polygon points="256,88 344,210 330,390 256,310" fill="url(#faceBR)"/>
+
+    <!-- Face: left main -->
+    <polygon points="256,88 168,210 256,310" fill="url(#faceL)"/>
+
+    <!-- Face: right main (lighter) -->
+    <polygon points="256,88 344,210 256,310" fill="url(#faceR)"/>
+
+    <!-- Face: bottom center -->
+    <polygon points="182,390 256,310 330,390 256,420" fill="url(#faceBL)" opacity="0.9"/>
+
+    <!-- Top facet highlight -->
+    <polygon points="256,88 300,160 256,185 212,160" fill="url(#faceTop)" opacity="0.55"/>
+
+    <!-- Inner edge lines — obsidian facets -->
+    <line x1="256" y1="88" x2="256" y2="420" stroke="white" stroke-width="0.8" opacity="0.1"/>
+    <line x1="168" y1="210" x2="344" y2="210" stroke="white" stroke-width="0.8" opacity="0.07"/>
+    <line x1="256" y1="310" x2="182" y2="390" stroke="white" stroke-width="0.6" opacity="0.06"/>
+    <line x1="256" y1="310" x2="330" y2="390" stroke="white" stroke-width="0.6" opacity="0.06"/>
+
+    <!-- Outer crystal outline -->
+    <polygon
+      points="256,88 344,210 330,390 256,420 182,390 168,210"
+      fill="none"
+      stroke="rgba(200,190,255,0.18)"
+      stroke-width="1.2"
+    />
+
+    <!-- Top apex sparkle -->
+    <circle cx="256" cy="88" r="3.5" fill="white" opacity="0.9" filter="url(#soft)"/>
+    <circle cx="256" cy="88" r="8" fill="#c4b8ff" opacity="0.25"/>
+
+    <!-- Reflection streak on right face -->
+    <polygon
+      points="290,110 330,180 310,200 275,130"
+      fill="white" opacity="0.06"
+    />
+
+    <!-- Small secondary crystal — bottom right -->
+    <g opacity="0.35" transform="translate(340, 340) scale(0.28) rotate(15)">
+      <polygon points="256,88 344,210 330,390 256,420 182,390 168,210" fill="url(#faceR)"/>
+      <polygon points="256,88 344,210 330,390 256,420 182,390 168,210" fill="none" stroke="rgba(200,190,255,0.3)" stroke-width="2"/>
+    </g>
+
+    <!-- Small secondary crystal — top left -->
+    <g opacity="0.25" transform="translate(82, 130) scale(0.18) rotate(-20)">
+      <polygon points="256,88 344,210 330,390 256,420 182,390 168,210" fill="url(#faceL)"/>
+    </g>
+
+    <!-- Floating particles -->
+    <circle cx="130" cy="160" r="2"   fill="#a89cf7" opacity="0.6"/>
+    <circle cx="390" cy="140" r="1.5" fill="#c4b8ff" opacity="0.5"/>
+    <circle cx="410" cy="320" r="2"   fill="#7c6af7" opacity="0.45"/>
+    <circle cx="100" cy="370" r="1.5" fill="#a89cf7" opacity="0.4"/>
+    <circle cx="370" cy="400" r="2"   fill="#8b7cf8" opacity="0.5"/>
+    <circle cx="155" cy="430" r="1.5" fill="#c4b8ff" opacity="0.35"/>
+    <circle cx="440" cy="220" r="1.5" fill="#a89cf7" opacity="0.4"/>
+    <circle cx="75"  cy="260" r="1"   fill="#c4b8ff" opacity="0.5"/>
+
+    <!-- Vignette -->
+    <radialGradient id="vig" cx="50%" cy="50%" r="70%">
+      <stop offset="55%" stop-color="transparent"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0.55"/>
+    </radialGradient>
+    <rect width="512" height="512" fill="url(#vig)"/>
+
+    <!-- Border -->
+    <rect x="1" y="1" width="510" height="510" rx="107" ry="107"
+      fill="none" stroke="rgba(160,148,255,0.15)" stroke-width="1.5"/>
+  </g>
+</svg>

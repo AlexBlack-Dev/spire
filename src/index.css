@@ -1,0 +1,248 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+* {
+  overflow-wrap: break-word;
+}
+
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --surface-0:  #0e0e14;
+  --surface-1:  #13131a;
+  --surface-2:  #1a1a24;
+  --surface-3:  #21212e;
+  --surface-4:  #2a2a3a;
+
+  --border-subtle:  #1e1e2a;
+  --border-default: #252535;
+  --border-strong:  #32324a;
+  --border-focus:   #7c6af7;
+
+  --text-primary:   #f0f0f8;
+  --text-secondary: #9090b0;
+  --text-tertiary:  #5a5a78;
+  --text-disabled:  #3a3a52;
+
+  --accent:       #7c6af7;
+  --accent-hover: #8f7fff;
+  --accent-dim:   #1e1a3a;
+
+  --c-violet: #7c6af7;
+  --c-blue:   #4f8ef7;
+  --c-teal:   #2dd4bf;
+  --c-green:  #4ade80;
+  --c-amber:  #fbbf24;
+  --c-rose:   #f472b6;
+
+  --nav-h:   clamp(44px, 6.5vh, 56px);
+  --bar-h:   clamp(40px, 5.5vh, 48px);
+  --sp-1:    clamp(2px, 0.3vw, 6px);
+  --sp-2:    clamp(4px, 0.6vw, 8px);
+  --sp-3:    clamp(6px, 1vw, 12px);
+  --sp-4:    clamp(8px, 1.3vw, 14px);
+  --sp-5:    clamp(10px, 1.6vw, 16px);
+  --sp-6:    clamp(12px, 2vw, 20px);
+  --sp-7:    clamp(14px, 2.4vw, 24px);
+  --sp-8:    clamp(16px, 2.8vw, 28px);
+  --sp-9:    clamp(20px, 3.2vw, 32px);
+  --text-2xs: clamp(8px, 1vw, 10px);
+  --text-xs:  clamp(9px, 1.2vw, 11px);
+  --text-sm:  clamp(11px, 1.5vw, 13px);
+  --text-base:clamp(13px, 1.8vw, 15px);
+  --text-md:  clamp(14px, 2vw, 16px);
+  --text-lg:  clamp(16px, 2.4vw, 20px);
+  --text-xl:  clamp(20px, 3vw, 26px);
+  --text-2xl: clamp(24px, 3.6vw, 32px);
+  --text-3xl: clamp(26px, 4vw, 36px);
+  --radius:   clamp(10px, 1.5vw, 14px);
+  --radius-sm:clamp(8px, 1.2vw, 12px);
+  --radius-lg:clamp(14px, 2.2vw, 20px);
+  --dot:      clamp(14px, 2vw, 20px);
+  --fab-sz:   clamp(44px, 6vw, 54px);
+  --fab-bt:   clamp(56px, 7.5vh, 72px);
+}
+
+[data-theme="light"] {
+  --surface-0:  #f0f0f0;
+  --surface-1:  #e8e8e8;
+  --surface-2:  #e0e0e0;
+  --surface-3:  #d8d8d8;
+  --surface-4:  #d0d0d0;
+
+  --border-subtle:  #d0d0d0;
+  --border-default: #c0c0c0;
+  --border-strong:  #a0a0a0;
+  --border-focus:   #7c6af7;
+
+  --text-primary:   #07070d;
+  --text-secondary: #333;
+  --text-tertiary:  #666;
+  --text-disabled:  #999;
+
+  --accent-dim:   #e8e4ff;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+*:focus { outline: none; }
+
+html, body, #root {
+  width: 100%; height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--surface-0);
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #252535; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #32324a; }
+
+::selection { background: #3a2f7a; color: #fff; }
+
+/* ─── TipTap ─────────────────────────────────────────────────── */
+.tiptap-editor {
+  user-select: text;
+  outline: none;
+  min-height: 300px;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.85;
+  color: var(--text-primary);
+  caret-color: var(--accent);
+}
+
+.tiptap-editor > * + * { margin-top: 0.7em; }
+.tiptap-editor p { color: var(--text-primary); }
+
+.tiptap-editor h1 {
+  font-size: 2em; font-weight: 800;
+  letter-spacing: -0.03em; color: var(--text-primary);
+  margin-top: 1.4em; margin-bottom: 0.4em;
+}
+.tiptap-editor h2 {
+  font-size: 1.45em; font-weight: 700;
+  letter-spacing: -0.02em; color: var(--text-primary);
+  margin-top: 1.2em; margin-bottom: 0.3em;
+}
+.tiptap-editor h3 {
+  font-size: 1.2em; font-weight: 700; color: var(--text-primary);
+  margin-top: 1em; margin-bottom: 0.25em;
+}
+
+.tiptap-editor strong { font-weight: 700; color: var(--text-primary); }
+.tiptap-editor em { font-style: italic; color: var(--text-secondary); }
+.tiptap-editor s { color: var(--text-tertiary); }
+
+.tiptap-editor code {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.85em;
+  background: var(--surface-2); border: 1px solid var(--border-default);
+  padding: 2px 6px; border-radius: 4px; color: var(--text-secondary);
+}
+
+.tiptap-editor pre {
+  background: var(--surface-1); border: 1px solid var(--border-default);
+  border-radius: 10px; padding: 16px 18px; overflow-x: auto;
+}
+.tiptap-editor pre code { background: none; border: none; padding: 0; color: var(--text-secondary); }
+
+.tiptap-editor blockquote {
+  border-left: 2px solid var(--accent);
+  padding-left: 16px; color: var(--text-secondary); font-style: italic;
+}
+
+.tiptap-editor ul, .tiptap-editor ol { padding-left: 1.5em; }
+.tiptap-editor li { margin-bottom: 0.25em; }
+
+.tiptap-editor mark {
+  background: #3a2e10; color: #fbbf24;
+  border-radius: 3px; padding: 0 3px;
+}
+
+.tiptap-editor hr {
+  border: none; border-top: 1px solid var(--border-default); margin: 1.5em 0;
+}
+
+/* Task list */
+.tiptap-editor ul[data-type="taskList"] { list-style: none; padding-left: 0; }
+.tiptap-editor ul[data-type="taskList"] li {
+  display: flex; align-items: flex-start; gap: 10px; margin-bottom: 6px;
+}
+.tiptap-editor ul[data-type="taskList"] li > label { flex-shrink: 0; margin-top: 4px; }
+.tiptap-editor ul[data-type="taskList"] li > label input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none;
+  width: 17px; height: 17px;
+  border: 1.5px solid #32324a; border-radius: 5px;
+  cursor: pointer; transition: all 0.15s; position: relative; display: block;
+}
+.tiptap-editor ul[data-type="taskList"] li > label input[type="checkbox"]:checked {
+  background: #7c6af7; border-color: #7c6af7;
+}
+.tiptap-editor ul[data-type="taskList"] li > label input[type="checkbox"]:checked::after {
+  content: ''; position: absolute;
+  left: 4px; top: 1px; width: 5px; height: 9px;
+  border: 2px solid white; border-top: none; border-left: none;
+  transform: rotate(45deg);
+}
+.tiptap-editor ul[data-type="taskList"] li[data-checked="true"] > div {
+  text-decoration: line-through; color: #3a3a52;
+}
+
+.tiptap-editor .is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left; color: #3a3a52;
+  pointer-events: none; height: 0;
+}
+
+[data-theme="light"] .tiptap-editor mark {
+  background: #fef3c7; color: #92400e;
+}
+[data-theme="light"] .tiptap-editor ul[data-type="taskList"] li > label input[type="checkbox"] {
+  border-color: #a0a0a0;
+}
+[data-theme="light"] .tiptap-editor ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: #999;
+}
+[data-theme="light"] .tiptap-editor .is-editor-empty:first-child::before {
+  color: #999;
+}
+
+[data-tauri-drag-region] { -webkit-app-region: drag; app-region: drag; }
+
+/* ─── Mobile ─────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  html, body, #root {
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  input, textarea, [contenteditable] {
+    font-size: 16px !important;
+  }
+
+  ::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+
+  .tiptap-editor {
+    min-height: 120px;
+  }
+}
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .mobile-safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
