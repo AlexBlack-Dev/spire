@@ -110,6 +110,9 @@ jobs:
           name: android-apk
           path: artifacts/android
 
+      - name: List artifacts
+        run: find artifacts/ -type f -ls
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -117,13 +120,17 @@ jobs:
             ## Spire ${{ github.ref_name }}
 
             ### Downloads
-            - **Windows**: EXE (NSIS installer) and MSI
-            - **Android**: APK (aarch64)
+            - **Windows**: [EXE (NSIS installer)](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/SPIRE_1.0.0_x64-setup.exe), [MSI](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/SPIRE_1.0.0_x64_en-US.msi)
+            - **Android**: [APK (aarch64)](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/spire.apk)
 
-            ### Changes
-            See [commits](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) for details.
+            ### Features
+            - Rich-text editor (Tiptap), tasks, notes, trash
+            - Dark/light themes with custom accent colors
+            - Note locking with password
+            - File browser with in-app file saving
+            - Russian and English languages
+            - Splash screen, back navigation, anti-paste protection
           files: |
             artifacts/windows/**/*.exe
             artifacts/windows/**/*.msi
             artifacts/android/**/*.apk
-          generate_release_notes: true
