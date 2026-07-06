@@ -82,8 +82,12 @@ jobs:
 
       - name: Generate debug keystore
         run: |
-          mkdir -p $HOME/.android
-          $JAVA_HOME/bin/keytool -genkey -v -keystore $HOME/.android/debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
+          mkdir -p "$HOME/.android"
+          keytool -genkey -v -keystore "$HOME/.android/debug.keystore" \
+            -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass android -keypass android \
+            -dname "CN=Android Debug,O=Android,C=US"
+          ls -la "$HOME/.android/"
 
       - name: Build Android APK
         run: npx tauri android build --target aarch64
