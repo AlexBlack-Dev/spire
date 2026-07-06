@@ -86,6 +86,8 @@ const en: Dict = {
   'settings_version': 'Version',
   'settings_language': 'Language',
   'settings_developer': 'Developer',
+  'settings_anti_paste': 'Security',
+  'anti_paste_desc': 'Block copy/paste in editor',
   'settings_close': 'Close',
 
   // Tools
@@ -209,6 +211,8 @@ const ru: Dict = {
   'settings_version': 'Версия',
   'settings_language': 'Язык',
   'settings_developer': 'Разработчик',
+  'settings_anti_paste': 'Безопасность',
+  'anti_paste_desc': 'Блокировать копирование/вставку',
   'settings_close': 'Закрыть',
 
   // Tools

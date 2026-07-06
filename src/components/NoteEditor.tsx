@@ -193,7 +193,7 @@ function isJSON(text: string) {
 }
 
 export default function NoteEditor() {
-  const { notes, activeNoteId, updateNote, deleteNote, togglePin, toggleFavorite, language } = useStore();
+  const { notes, activeNoteId, updateNote, deleteNote, togglePin, toggleFavorite, language, antiPaste } = useStore();
   const t = (key: string) => translations[language][key] || key;
   const note = notes.find((n) => n.id === activeNoteId);
   const [wordCount, setWordCount] = useState(0);
@@ -221,7 +221,14 @@ export default function NoteEditor() {
       TextStyle,
     ],
     content: '',
-    editorProps: { attributes: { class: 'tiptap-editor' } },
+    editorProps: {
+      attributes: { class: 'tiptap-editor' },
+      handlePaste: () => antiPaste,
+      handleDOMEvents: {
+        copy: () => antiPaste ? true : undefined,
+        cut: () => antiPaste ? true : undefined,
+      },
+    },
     onUpdate: ({ editor }) => {
       if (note && loadedNoteId.current === note.id) {
         isUserEditing.current = true;

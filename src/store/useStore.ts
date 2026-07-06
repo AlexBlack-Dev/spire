@@ -50,6 +50,7 @@ interface SpireStore {
   fileBrowserOpen: boolean;
   fileBrowserNoteId: string | null;
   needsPermissionRedirect: boolean;
+  antiPaste: boolean;
 
   // Converter
   converterInputFile: string | null;
@@ -112,6 +113,7 @@ interface SpireStore {
   setTheme: (theme: ThemeMode) => void;
   setAccentColor: (color: NoteColor) => void;
   setSettingsOpen: (open: boolean) => void;
+  toggleAntiPaste: () => void;
   setSplashDone: () => void;
   setToolsSubPage: (page: string | null) => void;
   dismissPermBanner: () => void;
@@ -203,6 +205,7 @@ export const useStore = create<SpireStore>()(
       fileBrowserOpen: false,
       fileBrowserNoteId: null,
       needsPermissionRedirect: false,
+      antiPaste: false,
       lockedNoteExpiries: {},
       lockPromptState: null,
       converterInputFile: null,
@@ -587,6 +590,7 @@ export const useStore = create<SpireStore>()(
       setTheme: (theme) => set({ theme }),
       setAccentColor: (accentColor) => set({ accentColor }),
       setSettingsOpen: (open) => set({ settingsOpen: open }),
+      toggleAntiPaste: () => set((s) => ({ antiPaste: !s.antiPaste })),
       setSplashDone: () => set({ splashDone: true }),
       setToolsSubPage: (page) => set({ toolsSubPage: page }),
       dismissPermBanner: () => set({ permBannerDismissed: true }),
@@ -791,7 +795,7 @@ export const useStore = create<SpireStore>()(
         activeNoteId: s.activeNoteId,
         viewMode: s.viewMode, sortMode: s.sortMode,
         searchQuery: s.searchQuery, sidebarOpen: s.sidebarOpen,
-        language: s.language, permBannerDismissed: s.permBannerDismissed,
+        permBannerDismissed: s.permBannerDismissed,
       }),
     }
   )

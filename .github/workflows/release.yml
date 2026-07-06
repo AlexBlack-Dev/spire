@@ -38,6 +38,9 @@ jobs:
 
   build-android:
     runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      NDK_HOME: /usr/local/lib/android/sdk/ndk/27.0.12077973
     steps:
       - uses: actions/checkout@v4
 
@@ -67,10 +70,21 @@ jobs:
         run: npm ci
 
       - name: Initialize Tauri Android
-        run: npx tauri android init
+        run: |
+          if [ ! -d "src-tauri/gen/android" ]; then
+            npx tauri android init
+          else
+            echo "Android project already initialized, skipping"
+          fi
+
+      - name: Setup Gradle permissions
+        run: chmod +x src-tauri/gen/android/gradlew
 
       - name: Build Android APK
-        run: npx tauri android build --target aarch64 -- --release
+        run: npx tauri android build --target aarch64
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
@@ -79,7 +93,7 @@ jobs:
           path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
 
   release:
-    needs: [build-windows, build-android]
+    needs: [build-windows]
     runs-on: ubuntu-latest
     steps:
       - name: Download Windows artifacts
@@ -97,6 +111,15 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          body: |
+            ## Spire ${{ github.ref_name }}
+
+            ### Downloads
+            - **Windows**: EXE (NSIS installer) and MSI
+            - **Android**: APK (aarch64)
+
+            ### Changes
+            See [commits](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) for details.
           files: |
             artifacts/windows/**/*.exe
             artifacts/windows/**/*.msi

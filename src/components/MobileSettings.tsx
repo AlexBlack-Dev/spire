@@ -8,7 +8,7 @@ import { dim } from '../isMobile';
 const APP_VERSION = '1.0.0';
 
 export default function MobileSettings({ onBack }: { onBack?: () => void }) {
-  const { language, setLanguage, exportData, importData } = useStore();
+  const { language, setLanguage, exportData, importData, antiPaste, toggleAntiPaste } = useStore();
   const t = (key: string) => translations[language][key] || key;
 
   return (
@@ -112,6 +112,34 @@ export default function MobileSettings({ onBack }: { onBack?: () => void }) {
                 label="Import"
                 onClick={() => { importData(); }}
               />
+            </div>
+          </Section>
+
+          <Section label={t('settings_anti_paste')}>
+            <div
+              onClick={toggleAntiPaste}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                background: 'var(--surface-2)', borderRadius: dim.radius,
+                padding: `${dim.sp5}px ${dim.sp6}px`,
+                border: '1px solid var(--border-default)',
+                cursor: 'pointer',
+              }}
+            >
+              <span style={{ fontSize: dim.textMd, fontWeight: 800, color: 'var(--text-secondary)' }}>
+                {t('anti_paste_desc')}
+              </span>
+              <div style={{
+                width: 44, height: 24, borderRadius: 12,
+                background: antiPaste ? 'var(--accent)' : 'var(--surface-4)',
+                position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+              }}>
+                <div style={{
+                  width: 20, height: 20, borderRadius: 10,
+                  background: '#fff', position: 'absolute', top: 2, left: antiPaste ? 22 : 2,
+                  transition: 'left 0.2s',
+                }} />
+              </div>
             </div>
           </Section>
         </div>
