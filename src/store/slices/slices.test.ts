@@ -4,10 +4,15 @@ import { notesSlice } from './notesSlice';
 import { tasksSlice } from './tasksSlice';
 import { folderSlice } from './folderSlice';
 import { uiSlice } from './uiSlice';
+import { converterSlice } from './converterSlice';
 import type { SpireStore } from '../types';
 
 vi.mock('@tauri-apps/plugin-dialog', () => ({ open: vi.fn() }));
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
+vi.mock('@tauri-apps/plugin-fs', () => ({
+  readTextFile: vi.fn(),
+  writeTextFile: vi.fn(),
+}));
 
 import { invoke } from '@tauri-apps/api/core';
 
@@ -19,6 +24,7 @@ function buildStore() {
         ...notesSlice(set, get),
         ...tasksSlice(set, get),
         ...folderSlice(set, get),
+        ...converterSlice(set, get),
       }) as SpireStore
   );
 }
@@ -119,5 +125,34 @@ describe('folderSlice', () => {
     expect(store.getState().noteFolders[0].noteIds).toContain(noteId);
     store.getState().removeNoteFromFolder(noteId, folderId);
     expect(store.getState().noteFolders[0].noteIds).not.toContain(noteId);
+  });
+});
+
+describe('converterSlice drop', () => {
+  it('loads a file note into the converter', () => {
+    const store = buildStore();
+    store.getState().createNote();
+    const id = store.getState().notes[0].id;
+    store.getState().updateNote(id, { filePath: 'C:\\docs\\report.txt' });
+    expect(store.getState().converterDropNote(id)).toBe(true);
+    expect(store.getState().converterInputFile).toBe('C:\\docs\\report.txt');
+    expect(store.getState().viewMode).toBe('converter');
+  });
+
+  it('rejects a note without filePath', () => {
+    const store = buildStore();
+    store.getState().createNote();
+    const id = store.getState().notes[0].id;
+    expect(store.getState().converterDropNote(id)).toBe(false);
+    expect(store.getState().converterInputFile).toBeNull();
+  });
+});
+
+describe('uiSlice settings', () => {
+  it('toggles file extension visibility', () => {
+    const store = buildStore();
+    expect(store.getState().showFileExtensions).toBe(false);
+    store.getState().setShowFileExtensions(true);
+    expect(store.getState().showFileExtensions).toBe(true);
   });
 });

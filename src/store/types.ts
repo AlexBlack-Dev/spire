@@ -40,6 +40,7 @@ export interface SpireStore {
   fileBrowserNoteId: string | null;
   needsPermissionRedirect: boolean;
   antiPaste: boolean;
+  showFileExtensions: boolean;
   toasts: ToastItem[];
 
   // Converter
@@ -113,6 +114,7 @@ export interface SpireStore {
   setAccentColor: (color: NoteColor) => void;
   setSettingsOpen: (open: boolean) => void;
   toggleAntiPaste: () => void;
+  setShowFileExtensions: (show: boolean) => void;
   setSplashDone: () => void;
   setToolsSubPage: (page: string | null) => void;
   dismissPermBanner: () => void;
@@ -133,6 +135,7 @@ export interface SpireStore {
   setConverterOutputFormat: (fmt: string) => void;
   runConversion: () => Promise<void>;
   resetConverter: () => void;
+  converterDropNote: (noteId: string) => boolean;
 }
 
 export type SpireSet = (

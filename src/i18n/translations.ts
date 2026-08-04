@@ -89,6 +89,8 @@ const en: Dict = {
   'settings_anti_paste': 'Security',
   'anti_paste_desc': 'Block copy/paste in editor',
   'settings_close': 'Close',
+  'settings_show_extensions': 'Show file extensions',
+  'show_extensions_desc': 'Append .ext to file note titles',
 
   // Tools
   'tools': 'Tools',
@@ -199,6 +201,8 @@ const en: Dict = {
   'conv_preview': 'Preview',
   'conv_convert': 'Convert & Download',
   'conv_converting': 'Converting...',
+  'conv_drop_target': 'Drop to convert',
+  'conv_drop_file_only': 'Only file notes can be converted. Open a file first.',
 
   // Spreadsheet
   'ss_value': 'Value',
@@ -305,6 +309,8 @@ const ru: Dict = {
   'settings_anti_paste': 'Безопасность',
   'anti_paste_desc': 'Блокировать копирование/вставку',
   'settings_close': 'Закрыть',
+  'settings_show_extensions': 'Показывать расширения файлов',
+  'show_extensions_desc': 'Добавлять .ext к названию файловых заметок',
 
   // Tools
   'tools': 'Утилиты',
@@ -415,6 +421,8 @@ const ru: Dict = {
   'conv_preview': 'Предпросмотр',
   'conv_convert': 'Конвертировать и скачать',
   'conv_converting': 'Конвертация...',
+  'conv_drop_target': 'Отпустите для конвертации',
+  'conv_drop_file_only': 'Конвертировать можно только файловые заметки. Сначала откройте файл.',
 
   // Spreadsheet
   'ss_value': 'Значение',

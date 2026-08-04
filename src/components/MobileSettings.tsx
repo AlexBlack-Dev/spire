@@ -8,7 +8,7 @@ import { COLOR_HEX, hexToRgba } from '../utils/format';
 import { APP_VERSION } from '../version';
 
 export default function MobileSettings({ onBack }: { onBack?: () => void }) {
-  const { language, setLanguage, exportData, importData, antiPaste, toggleAntiPaste, accentColor } = useStore();
+  const { language, setLanguage, exportData, importData, antiPaste, toggleAntiPaste, accentColor, showFileExtensions, setShowFileExtensions } = useStore();
   const t = (key: string) => translations[language][key] || key;
   const accent = COLOR_HEX[accentColor];
   const accentRgba = (a: number) => hexToRgba(accent, a);
@@ -119,6 +119,34 @@ export default function MobileSettings({ onBack }: { onBack?: () => void }) {
                 label={t('settings_import')}
                 onClick={() => { importData(); }}
               />
+            </div>
+          </Section>
+
+          <Section label={t('settings_show_extensions')}>
+            <div
+              onClick={() => setShowFileExtensions(!showFileExtensions)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                background: 'var(--surface-2)', borderRadius: dim.radius,
+                padding: `${dim.sp5}px ${dim.sp6}px`,
+                border: '1px solid var(--border-default)',
+                cursor: 'pointer',
+              }}
+            >
+              <span style={{ fontSize: dim.textMd, fontWeight: 800, color: 'var(--text-secondary)' }}>
+                {t('show_extensions_desc')}
+              </span>
+              <div style={{
+                width: 44, height: 24, borderRadius: 12,
+                background: showFileExtensions ? 'var(--accent)' : 'var(--surface-4)',
+                position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+              }}>
+                <div style={{
+                  width: 20, height: 20, borderRadius: 10,
+                  background: '#fff', position: 'absolute', top: 2, left: showFileExtensions ? 22 : 2,
+                  transition: 'left 0.2s',
+                }} />
+              </div>
             </div>
           </Section>
 

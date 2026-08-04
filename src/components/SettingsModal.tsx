@@ -7,7 +7,7 @@ import { COLOR_HEX, COLOR_NAMES } from '../utils/format';
 import { APP_VERSION } from '../version';
 
 export default function SettingsModal() {
-  const { settingsOpen, setSettingsOpen, language, setLanguage, exportData, importData, theme, setTheme, accentColor, setAccentColor } = useStore();
+  const { settingsOpen, setSettingsOpen, language, setLanguage, exportData, importData, theme, setTheme, accentColor, setAccentColor, showFileExtensions, setShowFileExtensions } = useStore();
   const t = (key: string) => translations[language][key] || key;
 
   const openGitHub = () => openUrl('https://github.com/AlexBlack-Dev');
@@ -161,6 +161,36 @@ export default function SettingsModal() {
                       {accentColor === c && <Check size={16} color="white" strokeWidth={3} />}
                     </button>
                   ))}
+                </div>
+              </div>
+
+              <div style={{ height: 1, background: 'var(--border-subtle)' }} />
+
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-tertiary)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {t('settings_show_extensions')}
+                </div>
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: 'var(--surface-2)', borderRadius: 10, padding: '10px 14px',
+                  border: '1px solid var(--border-default)', cursor: 'pointer',
+                }}
+                  onClick={() => setShowFileExtensions(!showFileExtensions)}
+                >
+                  <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+                    {t('show_extensions_desc')}
+                  </span>
+                  <div style={{
+                    width: 40, height: 22, borderRadius: 11, flexShrink: 0,
+                    background: showFileExtensions ? 'var(--accent)' : 'var(--surface-4)',
+                    position: 'relative', transition: 'background 0.2s',
+                  }}>
+                    <div style={{
+                      width: 18, height: 18, borderRadius: 9, background: '#fff',
+                      position: 'absolute', top: 2, left: showFileExtensions ? 20 : 2,
+                      transition: 'left 0.2s',
+                    }} />
+                  </div>
                 </div>
               </div>
 

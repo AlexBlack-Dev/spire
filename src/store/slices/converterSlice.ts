@@ -64,4 +64,13 @@ export const converterSlice: SpireSlice = (set, get) => ({
   },
 
   resetConverter: () => set({ converterInputFile: null, converterOutputFormat: 'txt', converterPreview: null }),
+
+  converterDropNote: (noteId) => {
+    const note = get().notes.find((n) => n.id === noteId);
+    if (!note?.filePath) return false;
+    const ext = fileExt(note.filePath);
+    const fmt = conversionFormats[ext] ? ext : 'txt';
+    set({ converterInputFile: note.filePath, converterOutputFormat: fmt, converterPreview: null, viewMode: 'converter' });
+    return true;
+  },
 });

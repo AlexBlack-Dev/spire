@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, ArrowRight, Download, RefreshCw, FileCode, Image, AlertCircle } from 'lucide-react';
 import { useStore } from '../store/useStore';
@@ -9,13 +10,15 @@ export default function ConverterView() {
     converterInputFile, converterOutputFormat,
     converterPreview, converterLoading,
     converterSelectFile, setConverterOutputFormat,
-    runConversion, resetConverter,
+    runConversion, resetConverter, converterDropNote,
     language,
   } = useStore();
   const t = (key: string, vars?: Record<string, string>) => {
     const s = translations[language][key] || key;
     return vars ? s.replace(/\{(\w+)\}/g, (_, k: string) => vars[k] ?? `{${k}}`) : s;
   };
+  const [dragOver, setDragOver] = useState(false);
+  const [dropFailed, setDropFailed] = useState(false);
 
   const isImage = (ext: string) => conversionFormats[ext]?.category === 'image';
 
@@ -32,6 +35,31 @@ export default function ConverterView() {
   const isInputImage = isImage(inputExt || '');
   const formats = getCompatibleFormats();
 
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    setDropFailed(false);
+    const noteId = e.dataTransfer.getData('application/x-spire-note');
+    if (noteId) {
+      if (!converterDropNote(noteId)) {
+        setDropFailed(true);
+        setTimeout(() => setDropFailed(false), 2500);
+      }
+      return;
+    }
+    const path = (e.dataTransfer.files?.[0] as unknown as { path?: string } | undefined)?.path;
+    if (path) {
+      const ext = path.split('.').pop()?.toLowerCase() || '';
+      const fmt = conversionFormats[ext] ? ext : 'txt';
+      useStore.setState({ converterInputFile: path, converterOutputFormat: fmt, converterPreview: null });
+    }
+  };
+
+  const dropStyle = dragOver ? {
+    border: '2px dashed var(--accent)',
+    background: 'var(--surface-1)',
+  } : {};
+
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, background: 'var(--surface-0)' }}>
       {/* Header */}
@@ -43,7 +71,12 @@ export default function ConverterView() {
       </div>
 
       {/* Body — fills remaining space */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, padding: '14px 24px' }}>
+      <div
+        style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, padding: '14px 24px' }}
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={handleDrop}
+      >
         {!converterInputFile ? (
           /* ===== NO FILE ===== */
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -58,16 +91,26 @@ export default function ConverterView() {
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', transition: 'all 0.2s',
-                minHeight: 200,
+                minHeight: 200, ...dropStyle,
               }}
             >
               <Upload size={32} color="var(--text-disabled)" style={{ marginBottom: 12 }} />
               <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>
-                {t('conv_select_file')}
+                {dragOver ? t('conv_drop_target') : t('conv_select_file')}
               </div>
               <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-tertiary)' }}>
                 {t('conv_supports')}
               </div>
+              {dropFailed && (
+                <div style={{
+                  marginTop: 12, fontSize: 12, fontWeight: 600, color: '#f87171',
+                  background: 'color-mix(in srgb, #f87171 12%, transparent)',
+                  border: '1px solid color-mix(in srgb, #f87171 30%, transparent)',
+                  borderRadius: 8, padding: '6px 12px',
+                }}>
+                  {t('conv_drop_file_only')}
+                </div>
+              )}
             </motion.div>
           </div>
         ) : !isSupported ? (
@@ -188,6 +231,27 @@ export default function ConverterView() {
                     </pre>
                   )}
                 </motion.div>
+              )}
+              {dragOver && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  padding: '10px 14px', borderRadius: 10, border: '2px dashed var(--accent)',
+                  background: 'var(--surface-1)', color: 'var(--accent)',
+                  fontSize: 13, fontWeight: 700, flexShrink: 0,
+                }}>
+                  <Upload size={16} />
+                  {t('conv_drop_target')}
+                </div>
+              )}
+              {dropFailed && (
+                <div style={{
+                  fontSize: 12, fontWeight: 600, color: '#f87171',
+                  background: 'color-mix(in srgb, #f87171 12%, transparent)',
+                  border: '1px solid color-mix(in srgb, #f87171 30%, transparent)',
+                  borderRadius: 8, padding: '6px 12px', flexShrink: 0,
+                }}>
+                  {t('conv_drop_file_only')}
+                </div>
               )}
             </div>
 

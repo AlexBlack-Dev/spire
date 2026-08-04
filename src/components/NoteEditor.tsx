@@ -406,16 +406,6 @@ export default function NoteEditor() {
             <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
               <ModeBtn active={!rawPreview} onClick={() => setRawPreview(false)} label={t('source_mode')} />
               <ModeBtn active={rawPreview} onClick={() => setRawPreview(true)} label={t('badge_preview')} />
-              {rawPreview && (
-                <div style={{
-                  display: 'inline-block', fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)',
-                  textTransform: 'uppercase', letterSpacing: '0.06em',
-                  background: 'var(--surface-2)', borderRadius: 6, padding: '5px 10px',
-                  border: '1px solid var(--border-default)',
-                }}>
-                  {ext === 'csv' ? t('badge_table_view') : ext === 'json' ? t('badge_formatted_json') : t('badge_preview')}
-                </div>
-              )}
             </div>
           )}
           {rawPreview && renderedContent ? (

@@ -310,12 +310,20 @@ function NoteRow({ note, active, hovered, index, onClick, onDelete, onHover, onM
 }) {
   const language = useStore((s) => s.language);
   const showLockPrompt = useStore((s) => s.showLockPrompt);
+  const showFileExtensions = useStore((s) => s.showFileExtensions);
   const t = (key: string) => translations[language][key] || key;
   const color = COLOR_HEX[note.color] || '#7c6af7';
   const preview = notePreview(note.content, !!note.filePath);
+  const ext = note.filePath ? (note.filePath.split('.').pop()?.toLowerCase() || '') : '';
 
   return (
     <motion.div
+      draggable
+      onDragStart={(e) => {
+        const de = e as unknown as React.DragEvent;
+        de.dataTransfer.setData('application/x-spire-note', note.id);
+        de.dataTransfer.effectAllowed = 'copy';
+      }}
       initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.025, duration: 0.2 }}
@@ -350,6 +358,9 @@ function NoteRow({ note, active, hovered, index, onClick, onDelete, onHover, onM
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {note.title || t('untitled')}
             </span>
+            {ext && showFileExtensions && (
+              <span style={{ color: 'var(--accent)', fontWeight: 700, flexShrink: 0 }}>.{ext}</span>
+            )}
           </div>
           {preview && (
             <div style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-disabled)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>

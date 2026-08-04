@@ -15,6 +15,7 @@ export const uiSlice: SpireSlice = (set) => ({
   permBannerDismissed: false,
   errorLogs: [],
   antiPaste: false,
+  showFileExtensions: false,
   toasts: [],
 
   setViewMode: (mode) => set({ viewMode: mode }),
@@ -39,6 +40,7 @@ export const uiSlice: SpireSlice = (set) => ({
   setAccentColor: (accentColor) => set({ accentColor }),
   setSettingsOpen: (open) => set({ settingsOpen: open }),
   toggleAntiPaste: () => set((s) => ({ antiPaste: !s.antiPaste })),
+  setShowFileExtensions: (show) => set({ showFileExtensions: show }),
   setSplashDone: () => set({ splashDone: true }),
   setToolsSubPage: (page) => set({ toolsSubPage: page }),
   dismissPermBanner: () => set({ permBannerDismissed: true }),
