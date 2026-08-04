@@ -1,5 +1,9 @@
 # Spire
 
+[![Release](https://img.shields.io/badge/release-v1.0.2-blue)](https://github.com/AlexBlack-Dev/spire/releases/latest)
+[![CI](https://github.com/AlexBlack-Dev/spire/actions/workflows/release.yml/badge.svg)](https://github.com/AlexBlack-Dev/spire/actions)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 Multifunctional note-taking app built with **Tauri v2 + React + TypeScript**.
 
 ## Download
@@ -106,8 +110,8 @@ src-tauri/
 Releases are automatically built via GitHub Actions when a tag is pushed:
 
 ```bash
-git tag v1.0.1
-git push origin v1.0.1
+git tag v1.0.2
+git push origin v1.0.2
 ```
 
 This will build the Windows EXE and Android APK, which will be uploaded to GitHub Releases.

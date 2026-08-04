@@ -7,17 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-08-05
+
+### Added
+
+- File extension setting (show/hide file extensions in note list)
+- Drag-and-drop a note into the Converter feed
+- Automated tests with Vitest for store slices, migration and shared helpers
+- ESLint configuration (typescript-eslint + react-hooks + react-refresh)
+
 ### Changed
 
 - Refactored the Zustand store into focused slices (`notes`, `tasks`, `folders`, `locks`, `ui`, `converter`, `settings`) with shared helpers
 - Extracted shared color/format helpers into `src/utils/format.ts`; removed duplicated color maps and hex-mixing code from components
 - Added strict typing across components (removed `any` usage)
 - Updated README: correct React version, new project structure and commands
+- `sync-version` now also writes `package-lock.json` and accepts a `v` prefix
 
-### Added
+### Fixed
 
-- Automated tests with Vitest for store slices, migration and shared helpers
-- ESLint configuration (typescript-eslint + react-hooks + react-refresh)
+- Release CI: version sync now works under PowerShell (Windows job)
+- Release CI: Android SDK licenses are accepted before installing the NDK
+- Duplicate preview toggle in the note editor
 
 ## [1.0.1]
 
