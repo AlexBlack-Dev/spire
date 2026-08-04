@@ -36,7 +36,8 @@ jobs:
             ${{ runner.os }}-npm-
 
       - name: Sync version from tag
-        run: node scripts/sync-version.mjs "${GITHUB_REF_NAME#v}"
+        shell: pwsh
+        run: node scripts/sync-version.mjs ("$env:GITHUB_REF_NAME" -replace '^v','')
 
       - name: Install dependencies (npm)
         run: npm ci
@@ -93,8 +94,11 @@ jobs:
       - name: Install Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses > /dev/null 2>&1 || true
+
       - name: Install Android NDK
-        run: sdkmanager "ndk;27.0.12077973"
+        run: sdkmanager "ndk;27.0.12077973" || true
 
       - name: Install dependencies (npm)
         run: npm ci

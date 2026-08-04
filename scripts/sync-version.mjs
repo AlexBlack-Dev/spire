@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const version = process.argv[2];
+const version = String(process.argv[2] ?? '').replace(/^v/, '');
 
 if (!version || !/^\d+\.\d+\.\d+$/.test(version)) {
   console.error('Usage: node scripts/sync-version.mjs <x.y.z>');
@@ -19,5 +19,13 @@ const tauriPath = join(root, 'src-tauri', 'tauri.conf.json');
 const tauri = JSON.parse(readFileSync(tauriPath, 'utf8'));
 tauri.version = version;
 writeFileSync(tauriPath, JSON.stringify(tauri, null, 2) + '\n');
+
+const lockPath = join(root, 'package-lock.json');
+const lock = JSON.parse(readFileSync(lockPath, 'utf8'));
+lock.version = version;
+if (lock.packages && lock.packages['']) {
+  lock.packages[''].version = version;
+}
+writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n');
 
 console.log(`Version synced to ${version}`);
