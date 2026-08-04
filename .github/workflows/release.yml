@@ -22,6 +22,22 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Sync version from tag
+        run: node scripts/sync-version.mjs "${GITHUB_REF_NAME#v}"
+
       - name: Install dependencies (npm)
         run: npm ci
 
@@ -61,6 +77,19 @@ jobs:
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
 
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
       - name: Install Android SDK
         uses: android-actions/setup-android@v3
 
@@ -69,6 +98,9 @@ jobs:
 
       - name: Install dependencies (npm)
         run: npm ci
+
+      - name: Sync version from tag
+        run: node scripts/sync-version.mjs "${GITHUB_REF_NAME#v}"
 
       - name: Initialize Tauri Android
         run: |
@@ -81,11 +113,24 @@ jobs:
       - name: Setup Gradle permissions
         run: chmod +x src-tauri/gen/android/gradlew
 
+      - name: Generate Android signing keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore src-tauri/gen/android/app/debug.keystore \
+            -alias "${{ secrets.SPIRE_KEY_ALIAS || 'androiddebugkey' }}" \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "${{ secrets.SPIRE_KEYSTORE_PASSWORD || 'android' }}" \
+            -keypass "${{ secrets.SPIRE_KEY_PASSWORD || 'android' }}" \
+            -dname "CN=Spire, OU=Spire, O=Spire, L=City, ST=State, C=US"
+
       - name: Build Android APK
         run: npx tauri android build --target aarch64
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+          SPIRE_KEYSTORE_PASSWORD: ${{ secrets.SPIRE_KEYSTORE_PASSWORD }}
+          SPIRE_KEY_ALIAS: ${{ secrets.SPIRE_KEY_ALIAS }}
+          SPIRE_KEY_PASSWORD: ${{ secrets.SPIRE_KEY_PASSWORD }}
 
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v4

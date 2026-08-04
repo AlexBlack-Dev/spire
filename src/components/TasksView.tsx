@@ -2,29 +2,20 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, CheckCircle2, Circle, Flag, Pencil, ChevronUp, ChevronDown } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { format, isToday, isYesterday } from 'date-fns';
-import { ru, enUS } from 'date-fns/locale';
 import { translations } from '../i18n/translations';
 import { dim } from '../isMobile';
-
-function formatDateFn(iso: string, language: 'en' | 'ru') {
-  const d = new Date(iso);
-  const t = (key: string) => translations[language][key] || key;
-  const locale = language === 'ru' ? ru : enUS;
-  if (isToday(d)) return t('today');
-  if (isYesterday(d)) return t('yesterday');
-  return format(d, 'd MMM', { locale });
-}
+import { formatDateFn } from '../utils/format';
 
 export default function TasksView() {
   const { tasks, createTask, toggleTask, updateTask, deleteTask, moveTaskUp, moveTaskDown, language } = useStore();
   const t = (key: string) => translations[language][key] || key;
-  const formatDate = (iso: string) => formatDateFn(iso, language);
+  const formatDate = (iso: string) => formatDateFn(iso, language, true);
   const PRIORITY = {
     low:    { color: '#4ade80', label: t('priority_low') },
     medium: { color: '#fbbf24', label: t('priority_medium') },
     high:   { color: '#f87171', label: t('priority_high') },
   } as const;
+  type TaskFilter = 'all' | 'active' | 'done';
   const [input, setInput] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [filter, setFilter] = useState<'all' | 'active' | 'done'>('active');
@@ -179,14 +170,14 @@ export default function TasksView() {
 
         {/* Filter tabs */}
         <div style={{ display: 'flex', gap: 0, padding: `0 ${dim.sp6}px`, marginBottom: -1 }}>
-          {[
+          {([
             { id: 'active', label: t('filter_active') },
             { id: 'done',   label: t('filter_done') },
             { id: 'all',    label: t('filter_all') },
-          ].map((tab) => (
+          ] as { id: TaskFilter; label: string }[]).map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setFilter(tab.id as any)}
+              onClick={() => setFilter(tab.id)}
               style={{
                 padding: `${dim.sp3}px ${dim.sp5}px`,
                 background: 'none', border: 'none',

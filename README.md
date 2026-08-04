@@ -11,10 +11,13 @@ Multifunctional note-taking app built with **Tauri v2 + React + TypeScript**.
 
 ## Features
 
-- **Notes** — create, edit, search, favorites, trash
+- **Notes** — create, edit, search, favorites, trash, folders
 - **Tasks** — task list with priorities
 - **File Browser** — directory navigation, file saving
-- **Note Lock** — password protection with lock timer
+- **File Notes** — open any file as a note: raw text editing, spreadsheets (XLSX/XLS/ODS), CSV/JSON/MD preview
+- **Converter** — convert between text and image formats
+- **Note Lock** — password protection with lock timer and open-count limits
+- **Backup** — export/import all data as JSON
 - **Themes** — dark and light themes with custom accent color
 - **Languages** — Russian and English
 - **Splash Screen** — animated loading screen with accent color
@@ -24,6 +27,7 @@ Multifunctional note-taking app built with **Tauri v2 + React + TypeScript**.
 - Native back gesture for in-app navigation
 - Permission manager for storage access
 - SAF (Storage Access Framework) for saving files anywhere
+- In-app file browser as save destination
 - Adaptive icon with custom background
 
 ### Windows
@@ -35,11 +39,12 @@ Multifunctional note-taking app built with **Tauri v2 + React + TypeScript**.
 ## Tech Stack
 
 - [Tauri v2](https://v2.tauri.app/) — cross-platform framework
-- [React 19](https://react.dev/) — UI library
+- [React 18](https://react.dev/) — UI library
 - [TypeScript](https://www.typescriptlang.org/) — type safety
-- [Zustand](https://github.com/pmndrs/zustand) — state management
+- [Zustand](https://github.com/pmndrs/zustand) — state management (slice-pattern store)
 - [Tiptap](https://tiptap.dev/) — rich-text editor
 - [Framer Motion](https://www.framer.com/motion/) — animations
+- [Vitest](https://vitest.dev/) — unit tests
 
 ## Run
 
@@ -50,8 +55,11 @@ npm install
 # Development (desktop)
 npm run dev
 
-# Build (Windows)
-npm run tauri build
+# Typecheck + production build
+npm run build
+
+# Run tests
+npm run test
 
 # Development (Android)
 npm run tauri android dev
@@ -76,7 +84,12 @@ src/
 │   ├── SplashScreen.tsx      # Splash screen
 │   └── MobileSettings.tsx    # Settings
 ├── store/
-│   └── useStore.ts           # Zustand state
+│   ├── useStore.ts           # Zustand store (composed from slices)
+│   ├── types.ts              # Store types and slice helpers
+│   ├── helpers.ts            # Shared store helpers (hashing, converters)
+│   └── slices/               # Store slices (notes, tasks, folders, locks, ui, converter)
+├── utils/
+│   └── format.ts             # Shared formatting utilities
 ├── i18n/
 │   └── translations.ts       # Localization (RU/EN)
 └── types/
@@ -93,8 +106,8 @@ src-tauri/
 Releases are automatically built via GitHub Actions when a tag is pushed:
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.0.1
+git push origin v1.0.1
 ```
 
 This will build the Windows EXE and Android APK, which will be uploaded to GitHub Releases.

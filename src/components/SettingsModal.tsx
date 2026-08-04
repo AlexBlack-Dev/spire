@@ -3,14 +3,8 @@ import { X, Download, Upload, Github, Moon, Sun, Check } from 'lucide-react';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useStore } from '../store/useStore';
 import { translations, type Language } from '../i18n/translations';
-
-const APP_VERSION = '1.0.0';
-
-const COLOR_HEX: Record<string, string> = {
-  violet: '#7c6af7', blue: '#4f8ef7', teal: '#2dd4bf',
-  green: '#4ade80', amber: '#fbbf24', rose: '#f472b6',
-};
-const COLOR_NAMES = ['violet', 'blue', 'teal', 'green', 'amber', 'rose'] as const;
+import { COLOR_HEX, COLOR_NAMES } from '../utils/format';
+import { APP_VERSION } from '../version';
 
 export default function SettingsModal() {
   const { settingsOpen, setSettingsOpen, language, setLanguage, exportData, importData, theme, setTheme, accentColor, setAccentColor } = useStore();

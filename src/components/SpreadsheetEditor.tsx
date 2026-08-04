@@ -16,6 +16,8 @@ const DEFAULT_COL_WIDTH = 90;
 const MIN_COL_WIDTH = 40;
 const ZEBRA_BG = 'color-mix(in srgb, var(--surface-3) 30%, transparent)';
 
+type CellValue = string | number | boolean | null;
+
 export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Props) {
   const { updateNote, language } = useStore();
   const t = (key: string, vars?: Record<string, string | number>) => {
@@ -25,7 +27,7 @@ export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Pro
   const [sheetNames, setSheetNames] = useState<string[]>([]);
   const [activeSheet, setActiveSheet] = useState(0);
   const [headers, setHeaders] = useState<string[]>([]);
-  const [rows, setRows] = useState<any[][]>([]);
+  const [rows, setRows] = useState<CellValue[][]>([]);
   const [dirty, setDirty] = useState(false);
   const [selectedCell, setSelectedCell] = useState<[number, number] | null>(null);
   const [editingCell, setEditingCell] = useState<[number, number] | null>(null);
@@ -51,14 +53,14 @@ export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Pro
 
   function loadSheet(wb: XLSX.WorkBook, idx: number) {
     const ws = wb.Sheets[wb.SheetNames[idx]];
-    const data: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+    const data = XLSX.utils.sheet_to_json<CellValue[]>(ws, { header: 1 });
     if (data.length === 0) {
       setHeaders([]);
       setRows([]);
       setColWidths([]);
       return;
     }
-    const h = data[0].map((c: any) => String(c ?? ''));
+    const h = data[0].map((c) => String(c ?? ''));
     setHeaders(h);
     setRows(data.slice(1));
     setColWidths(h.map(() => DEFAULT_COL_WIDTH));
@@ -146,7 +148,7 @@ export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Pro
     const wsData = [headers, ...rows];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     workbookRef.current.Sheets[wsName] = ws;
-    const outBinary = XLSX.write(workbookRef.current, { type: 'binary', bookType: ext as any });
+    const outBinary = XLSX.write(workbookRef.current, { type: 'binary', bookType: ext as XLSX.BookType });
     const b64 = btoa(outBinary);
     updateNote(noteId, { content: b64 });
     if (filePath) {

@@ -23,12 +23,7 @@ import { ru, enUS } from 'date-fns/locale';
 import { translations } from '../i18n/translations';
 import type { MobileTab } from './BottomNav';
 import { isMobile, dim } from '../isMobile';
-
-const COLOR_HEX: Record<string, string> = {
-  violet: '#7c6af7', blue: '#4f8ef7', teal: '#2dd4bf',
-  green: '#4ade80', amber: '#fbbf24', rose: '#f472b6',
-};
-const COLORS = ['violet', 'blue', 'teal', 'green', 'amber', 'rose'] as const;
+import { COLOR_HEX, COLOR_NAMES, getFileInfo, hexToRgba } from '../utils/format';
 
 export default function MobileLayout() {
   const viewMode = useStore((s) => s.viewMode);
@@ -353,9 +348,7 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
   } = useStore();
   const t = (key: string) => translations[language][key] || key;
   const note = notes.find((n) => n.id === activeNoteId);
-  const ext = note?.filePath ? note.filePath.split('.').pop()?.toLowerCase() : undefined;
-  const isSpreadsheet = ext === 'xlsx' || ext === 'xls' || ext === 'ods';
-  const isPlainFile = !!note?.filePath && !isSpreadsheet;
+  const { ext, isSpreadsheet, isPlainFile } = getFileInfo(note?.filePath);
 
   const [rawDraft, setRawDraft] = useState('');
   const rawLoadedId = useRef<string | null>(null);
@@ -365,13 +358,8 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
       setRawDraft(note.content);
     }
   }, [note?.id, isPlainFile]);
-  const accent = COLOR_HEX[accentColor] || '#7c6af7';
-  const accentRgba = (a: number) => {
-    const r = parseInt(accent.slice(1, 3), 16);
-    const g = parseInt(accent.slice(3, 5), 16);
-    const b = parseInt(accent.slice(5, 7), 16);
-    return `rgba(${r},${g},${b},${a})`;
-  };
+  const accent = COLOR_HEX[accentColor];
+  const accentRgba = (a: number) => hexToRgba(accent, a);
 
   const [kbOpen, setKbOpen] = useState(false);
   useEffect(() => {
@@ -483,7 +471,7 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
 
       <div style={{ padding: `0 ${dim.sp6}px`, flexShrink: 0 }}>
         <div style={{ display: 'flex', gap: dim.sp3, marginBottom: dim.sp3 }}>
-          {COLORS.map((c) => (
+          {COLOR_NAMES.map((c) => (
             <motion.button
               key={c}
               whileTap={noAnim ? {} : { scale: 0.75 }}

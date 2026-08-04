@@ -1,21 +1,12 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../store/useStore';
-
-const COLOR_HEX: Record<string, string> = {
-  violet: '#7c6af7', blue: '#4f8ef7', teal: '#2dd4bf',
-  green: '#4ade80', amber: '#fbbf24', rose: '#f472b6',
-};
+import { COLOR_HEX, hexToRgba } from '../utils/format';
 
 export default function SplashScreen() {
   const { splashDone, setSplashDone, accentColor } = useStore();
-  const accent = COLOR_HEX[accentColor] || '#7c6af7';
-  const accentRgba = useMemo(() => {
-    const r = parseInt(accent.slice(1, 3), 16);
-    const g = parseInt(accent.slice(3, 5), 16);
-    const b = parseInt(accent.slice(5, 7), 16);
-    return (a: number) => `rgba(${r},${g},${b},${a})`;
-  }, [accent]);
+  const accent = COLOR_HEX[accentColor];
+  const accentRgba = (a: number) => hexToRgba(accent, a);
 
   useEffect(() => {
     const timer = setTimeout(setSplashDone, 2800);

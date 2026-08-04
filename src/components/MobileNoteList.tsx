@@ -1,26 +1,12 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Pin, Star, Trash2, Lock, Unlock, ChevronUp, ChevronDown } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { format, isToday, isYesterday } from 'date-fns';
-import { ru, enUS } from 'date-fns/locale';
 import { translations } from '../i18n/translations';
 import { dim } from '../isMobile';
+import type { Note } from '../types';
+import { COLOR_HEX, hexToRgba, formatDateFn, notePreview } from '../utils/format';
 import WelcomeScreen from './WelcomeScreen';
-
-const COLOR_HEX: Record<string, string> = {
-  violet: '#7c6af7', blue: '#4f8ef7', teal: '#2dd4bf',
-  green: '#4ade80', amber: '#fbbf24', rose: '#f472b6',
-};
-
-function formatDateFn(iso: string, language: 'en' | 'ru') {
-  const d = new Date(iso);
-  const t = (key: string) => translations[language][key] || key;
-  const locale = language === 'ru' ? ru : enUS;
-  if (isToday(d)) return format(d, 'HH:mm');
-  if (isYesterday(d)) return t('yesterday');
-  return format(d, 'd MMM', { locale });
-}
 
 export default function MobileNoteList({ favoritesOnly }: { favoritesOnly?: boolean }) {
   const {
@@ -33,13 +19,8 @@ export default function MobileNoteList({ favoritesOnly }: { favoritesOnly?: bool
   const t = (key: string) => translations[language][key] || key;
   const [localQuery, setLocalQuery] = useState(searchQuery);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const accent = COLOR_HEX[accentColor] || '#7c6af7';
-  const accentRgba = useMemo(() => {
-    const r = parseInt(accent.slice(1, 3), 16);
-    const g = parseInt(accent.slice(3, 5), 16);
-    const b = parseInt(accent.slice(5, 7), 16);
-    return (a: number) => `rgba(${r},${g},${b},${a})`;
-  }, [accent]);
+  const accent = COLOR_HEX[accentColor];
+  const accentRgba = (a: number) => hexToRgba(accent, a);
 
   useEffect(() => {
     setLocalQuery(searchQuery);
@@ -142,7 +123,7 @@ export default function MobileNoteList({ favoritesOnly }: { favoritesOnly?: bool
 }
 
 function NoteRow({ note, active, index, onClick, language, onDelete, onLock, onTogglePin, onToggleFav, onMoveUp, onMoveDown }: {
-  note: any; active: boolean; index: number;
+  note: Note; active: boolean; index: number;
   onClick: () => void;
   language: 'en' | 'ru';
   onDelete: () => void;
@@ -154,7 +135,7 @@ function NoteRow({ note, active, index, onClick, language, onDelete, onLock, onT
 }) {
   const t = (key: string) => translations[language][key] || key;
   const color = COLOR_HEX[note.color] || '#7c6af7';
-  const preview = (note.filePath ? note.content : note.content.replace(/<[^>]*>/g, '')).trim().slice(0, 60);
+  const preview = notePreview(note.content, !!note.filePath);
 
   return (
     <motion.div

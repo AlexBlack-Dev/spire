@@ -15,6 +15,9 @@ dist-ssr
 # Rust / Tauri build artifacts
 src-tauri/target/
 
+# Android signing (generated in CI, never stored in the repo)
+src-tauri/gen/android/app/debug.keystore
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -1,5 +1,4 @@
 import { useEffect, useCallback, useState, useRef, useMemo } from 'react';
-import { AnimatePresence } from 'framer-motion';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -17,12 +16,8 @@ import { format } from 'date-fns';
 import { ru, enUS } from 'date-fns/locale';
 import { translations } from '../i18n/translations';
 import SpreadsheetEditor from './SpreadsheetEditor';
-
-const COLOR_HEX: Record<string, string> = {
-  violet: '#7c6af7', blue: '#4f8ef7', teal: '#2dd4bf',
-  green: '#4ade80', amber: '#fbbf24', rose: '#f472b6',
-};
-const COLORS = ['violet', 'blue', 'teal', 'green', 'amber', 'rose'] as const;
+import TagRow from './TagRow';
+import { COLOR_HEX, COLOR_NAMES, getFileInfo } from '../utils/format';
 
 function parseCSV(text: string): string[][] {
   const lines = text.trim().split('\n');
@@ -201,9 +196,7 @@ export default function NoteEditor() {
   const loadedNoteId = useRef<string | null>(null);
   const isUserEditing = useRef(false);
 
-  const ext = note?.filePath ? note.filePath.split('.').pop()?.toLowerCase() : undefined;
-  const isSpreadsheet = ext === 'xlsx' || ext === 'xls' || ext === 'ods';
-  const isPlainFile = !!note?.filePath && !isSpreadsheet;
+  const { ext, isSpreadsheet, isPlainFile } = getFileInfo(note?.filePath);
 
   // Raw text state for file-backed notes (byte-for-byte fidelity, no HTML mangling)
   const [rawDraft, setRawDraft] = useState('');
@@ -315,7 +308,7 @@ export default function NoteEditor() {
       <div style={{ padding: isSpreadsheet ? '8px 14px 0' : '20px 24px 0', flexShrink: 0, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {COLORS.map((c) => (
+            {COLOR_NAMES.map((c) => (
               <button
                 key={c}
                 onClick={() => updateNote(note.id, { color: c })}
@@ -515,53 +508,6 @@ function TB({ icon, active, run }: { icon: React.ReactNode; active: boolean; run
 
 function TBDiv() {
   return <div style={{ width: 1, height: 18, background: 'var(--border-subtle)', margin: '0 4px' }} />;
-}
-
-function TagRow({ note, updateNote }: { note: any; updateNote: any }) {
-  const language = useStore((s) => s.language);
-  const t = (key: string) => translations[language][key] || key;
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      const val = (e.target as HTMLInputElement).value.trim().replace(',', '');
-      if (val && !note.tags.includes(val)) {
-        updateNote(note.id, { tags: [...note.tags, val] });
-        (e.target as HTMLInputElement).value = '';
-      }
-    }
-  };
-
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 5, flex: 1 }}>
-      <AnimatePresence>
-        {note.tags.map((tag: string) => (
-          <span
-            key={tag}
-            onClick={() => updateNote(note.id, { tags: note.tags.filter((t: string) => t !== tag) })}
-            style={{
-              background: 'var(--surface-2)', border: '1px solid var(--border-default)',
-              borderRadius: 99, padding: '1px 8px',
-              fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)',
-              cursor: 'pointer', transition: 'color 0.15s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}
-          >
-            #{tag}
-          </span>
-        ))}
-      </AnimatePresence>
-      <input
-        onKeyDown={handleKeyDown}
-        placeholder={t('add_tag')}
-        style={{
-          background: 'none', border: 'none', outline: 'none',
-          fontSize: 12, fontWeight: 500, color: 'var(--text-disabled)',
-          width: 55, userSelect: 'text',
-        }}
-      />
-    </div>
-  );
 }
 
 function ModeBtn({ active, onClick, label }: {

@@ -41,8 +41,44 @@
       "icons/icon.ico"
     ],
     "fileAssociations": [
-      { "ext": ["txt", "md", "html", "json", "xml", "yaml", "yml", "csv", "css", "js", "ts", "py", "rs", "java", "c", "cpp", "h", "hpp", "ini", "cfg", "conf", "log", "sql", "svg", "toml"], "name": "Text Files" },
-      { "ext": ["xlsx", "xls", "ods"], "name": "Spreadsheet Files" }
+      {
+        "ext": [
+          "txt",
+          "md",
+          "html",
+          "json",
+          "xml",
+          "yaml",
+          "yml",
+          "csv",
+          "css",
+          "js",
+          "ts",
+          "py",
+          "rs",
+          "java",
+          "c",
+          "cpp",
+          "h",
+          "hpp",
+          "ini",
+          "cfg",
+          "conf",
+          "log",
+          "sql",
+          "svg",
+          "toml"
+        ],
+        "name": "Text Files"
+      },
+      {
+        "ext": [
+          "xlsx",
+          "xls",
+          "ods"
+        ],
+        "name": "Spreadsheet Files"
+      }
     ]
   }
 }

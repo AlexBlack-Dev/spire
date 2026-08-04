@@ -4,24 +4,14 @@ import { ChevronLeft, Download, Upload, Github } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { translations, type Language } from '../i18n/translations';
 import { dim } from '../isMobile';
-
-const APP_VERSION = '1.0.0';
-
-const COLOR_HEX: Record<string, string> = {
-  violet: '#7c6af7', blue: '#4f8ef7', teal: '#2dd4bf',
-  green: '#4ade80', amber: '#fbbf24', rose: '#f472b6',
-};
+import { COLOR_HEX, hexToRgba } from '../utils/format';
+import { APP_VERSION } from '../version';
 
 export default function MobileSettings({ onBack }: { onBack?: () => void }) {
   const { language, setLanguage, exportData, importData, antiPaste, toggleAntiPaste, accentColor } = useStore();
   const t = (key: string) => translations[language][key] || key;
-  const accent = COLOR_HEX[accentColor] || '#7c6af7';
-  const accentRgba = (a: number) => {
-    const r = parseInt(accent.slice(1, 3), 16);
-    const g = parseInt(accent.slice(3, 5), 16);
-    const b = parseInt(accent.slice(5, 7), 16);
-    return `rgba(${r},${g},${b},${a})`;
-  };
+  const accent = COLOR_HEX[accentColor];
+  const accentRgba = (a: number) => hexToRgba(accent, a);
 
   return (
     <div style={{

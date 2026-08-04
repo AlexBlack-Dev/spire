@@ -3,13 +3,9 @@ import { BookMarked, CircleCheckBig, Star, Wrench, Plus } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { translations } from '../i18n/translations';
 import { dim } from '../isMobile';
+import { COLOR_HEX, hexToRgba } from '../utils/format';
 
 export type MobileTab = 'notes' | 'tasks' | 'favorites' | 'tools';
-
-const COLOR_HEX: Record<string, string> = {
-  violet: '#7c6af7', blue: '#4f8ef7', teal: '#2dd4bf',
-  green: '#4ade80', amber: '#fbbf24', rose: '#f472b6',
-};
 
 export default function BottomNav({ activeTab, onTabChange }: {
   activeTab: MobileTab;
@@ -18,13 +14,8 @@ export default function BottomNav({ activeTab, onTabChange }: {
   const { language, createNote, accentColor } = useStore();
   const t = (key: string) => translations[language][key] || key;
   const reduced = useReducedMotion();
-  const accent = COLOR_HEX[accentColor] || '#7c6af7';
-  const accentRgba = (a: number) => {
-    const r = parseInt(accent.slice(1, 3), 16);
-    const g = parseInt(accent.slice(3, 5), 16);
-    const b = parseInt(accent.slice(5, 7), 16);
-    return `rgba(${r},${g},${b},${a})`;
-  };
+  const accent = COLOR_HEX[accentColor];
+  const accentRgba = (a: number) => hexToRgba(accent, a);
 
   const tabDefs: Array<{
     id: MobileTab; icon: React.ReactNode; iconActive: React.ReactNode; label: string;

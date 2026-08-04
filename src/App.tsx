@@ -15,12 +15,8 @@ import { Lock } from 'lucide-react';
 import { useStore } from './store/useStore';
 import { translations } from './i18n/translations';
 import { isMobile } from './isMobile';
+import { COLOR_HEX } from './utils/format';
 import './index.css';
-
-const COLOR_HEX_ACCENT: Record<string, string> = {
-  violet: '#7c6af7', blue: '#4f8ef7', teal: '#2dd4bf',
-  green: '#4ade80', amber: '#fbbf24', rose: '#f472b6',
-};
 
 function mixHex(a: string, b: string, t: number) {
   const pa = parseInt(a.slice(1), 16);
@@ -74,7 +70,7 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    const accentHex = COLOR_HEX_ACCENT[accentColor] || '#7c6af7';
+    const accentHex = COLOR_HEX[accentColor];
     document.documentElement.style.setProperty('--accent', accentHex);
     document.documentElement.style.setProperty('--accent-hover', mixHex(accentHex, '#ffffff', 0.18));
   }, [theme, accentColor]);

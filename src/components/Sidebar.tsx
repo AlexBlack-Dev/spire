@@ -2,23 +2,9 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, CheckSquare, Lock, Star, Search, Plus, Pin, Trash2, ChevronLeft, Shuffle, ArrowUp, ArrowDown } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { format, isToday, isYesterday } from 'date-fns';
-import { ru, enUS } from 'date-fns/locale';
 import { translations } from '../i18n/translations';
-
-const COLOR_HEX: Record<string, string> = {
-  violet: '#7c6af7', blue: '#4f8ef7', teal: '#2dd4bf',
-  green: '#4ade80', amber: '#fbbf24', rose: '#f472b6',
-};
-
-function formatDateFn(iso: string, language: 'en' | 'ru') {
-  const d = new Date(iso);
-  const t = (key: string) => translations[language][key] || key;
-  const locale = language === 'ru' ? ru : enUS;
-  if (isToday(d)) return format(d, 'HH:mm');
-  if (isYesterday(d)) return t('yesterday');
-  return format(d, 'd MMM', { locale });
-}
+import type { Note } from '../types';
+import { COLOR_HEX, formatDateFn, notePreview } from '../utils/format';
 
 export default function Sidebar() {
   const {
@@ -316,7 +302,7 @@ function SectionLabel({ icon, label }: { icon?: React.ReactNode; label: string }
 }
 
 function NoteRow({ note, active, hovered, index, onClick, onDelete, onHover, onMoveUp, onMoveDown, isFirst, isLast }: {
-  note: any; active: boolean; hovered: boolean; index: number;
+  note: Note; active: boolean; hovered: boolean; index: number;
   onClick: () => void; onDelete: () => void;
   onHover: (id: string | null) => void;
   onMoveUp?: () => void; onMoveDown?: () => void;
@@ -326,7 +312,7 @@ function NoteRow({ note, active, hovered, index, onClick, onDelete, onHover, onM
   const showLockPrompt = useStore((s) => s.showLockPrompt);
   const t = (key: string) => translations[language][key] || key;
   const color = COLOR_HEX[note.color] || '#7c6af7';
-  const preview = (note.filePath ? note.content : note.content.replace(/<[^>]*>/g, '')).trim().slice(0, 60);
+  const preview = notePreview(note.content, !!note.filePath);
 
   return (
     <motion.div

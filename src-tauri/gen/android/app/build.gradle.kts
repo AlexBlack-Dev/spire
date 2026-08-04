@@ -27,9 +27,9 @@ android {
     signingConfigs {
         create("release") {
             storeFile = file("debug.keystore")
-            storePassword = System.getenv("SPIRE_KEYSTORE_PASSWORD") ?: "android"
-            keyAlias = System.getenv("SPIRE_KEY_ALIAS") ?: "androiddebugkey"
-            keyPassword = System.getenv("SPIRE_KEY_PASSWORD") ?: "android"
+            storePassword = System.getenv("SPIRE_KEYSTORE_PASSWORD").isNullOrEmpty() ? "android" : System.getenv("SPIRE_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("SPIRE_KEY_ALIAS").isNullOrEmpty() ? "androiddebugkey" : System.getenv("SPIRE_KEY_ALIAS")
+            keyPassword = System.getenv("SPIRE_KEY_PASSWORD").isNullOrEmpty() ? "android" : System.getenv("SPIRE_KEY_PASSWORD")
         }
     }
     buildTypes {
