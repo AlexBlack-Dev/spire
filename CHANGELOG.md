@@ -7,12 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- New app icons for Windows, macOS, iOS and Android, plus a new file-association icon and updated in-app logo
+
 ### Fixed
 
 - Pasted content no longer replaces rich note editor with a read-only CSV/JSON/markdown preview; auto-preview applies to file notes only
 - Pasting keeps clean lines (no stray CR, non-breaking or zero-width characters)
 - Ctrl+A selects note content only instead of the whole UI; interface text is no longer selectable
 - "Open tasks" on the welcome screen now switches to the Tasks tab on mobile
+- Regenerated `package-lock.json` so `npm ci` succeeds on npm 10 / Node 20 (missing nested `esbuild@0.28.1` entry)
 
 ### Changed
 
