@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- New app icons for Windows, macOS, iOS and Android, plus a new file-association icon and updated in-app logo
+- New app icons for Windows, macOS, iOS and Android, plus a new file-association icon and updated in-app logo; desktop icons use the transparent logo (no background)
 
 ### Fixed
 
