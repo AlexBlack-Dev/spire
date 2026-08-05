@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Pasted content no longer replaces rich note editor with a read-only CSV/JSON/markdown preview; auto-preview applies to file notes only
+- Pasting keeps clean lines (no stray CR, non-breaking or zero-width characters)
+- Ctrl+A selects note content only instead of the whole UI; interface text is no longer selectable
+- "Open tasks" on the welcome screen now switches to the Tasks tab on mobile
+
+### Changed
+
+- Task list UI redesigned: square checkboxes instead of round flags, priority auto-sorting, removed manual reorder arrows
+- Removed native hover tooltips (title attributes) from all icon buttons
+
 ## [1.0.2] - 2026-08-05
 
 ### Added
