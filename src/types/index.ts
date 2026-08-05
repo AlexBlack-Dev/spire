@@ -1,5 +1,7 @@
 export type NoteColor = 'violet' | 'blue' | 'teal' | 'green' | 'amber' | 'rose';
 
+export type TaskPriority = 'low' | 'medium' | 'high';
+
 export interface Note {
   id: string;
   title: string;
@@ -18,7 +20,7 @@ export interface Task {
   id: string;
   text: string;
   completed: boolean;
-  priority: 'low' | 'medium' | 'high';
+  priority: TaskPriority;
   dueDate?: string;
   noteId?: string;
   createdAt: string;

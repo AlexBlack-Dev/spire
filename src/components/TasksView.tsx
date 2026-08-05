@@ -1,13 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, CheckCircle2, Circle, Flag, Pencil, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, Flag, Pencil, Check } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { translations } from '../i18n/translations';
 import { dim } from '../isMobile';
 import { formatDateFn } from '../utils/format';
+import type { TaskPriority } from '../types';
+
+const PRIORITY_RANK: Record<TaskPriority, number> = { high: 0, medium: 1, low: 2 };
 
 export default function TasksView() {
-  const { tasks, createTask, toggleTask, updateTask, deleteTask, moveTaskUp, moveTaskDown, language } = useStore();
+  const { tasks, createTask, toggleTask, updateTask, deleteTask, language } = useStore();
   const t = (key: string) => translations[language][key] || key;
   const formatDate = (iso: string) => formatDateFn(iso, language, true);
   const PRIORITY = {
@@ -17,8 +20,8 @@ export default function TasksView() {
   } as const;
   type TaskFilter = 'all' | 'active' | 'done';
   const [input, setInput] = useState('');
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
-  const [filter, setFilter] = useState<'all' | 'active' | 'done'>('active');
+  const [priority, setPriority] = useState<TaskPriority>('medium');
+  const [filter, setFilter] = useState<TaskFilter>('active');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const editRef = useRef<HTMLInputElement>(null);
@@ -48,13 +51,21 @@ export default function TasksView() {
     }
   }, [editingId]);
 
-  const filtered = tasks.filter((t) => {
-    if (filter === 'active') return !t.completed;
-    if (filter === 'done') return t.completed;
+  const ordered = [...tasks].sort((a, b) => {
+    if (a.completed !== b.completed) return a.completed ? 1 : -1;
+    const ra = PRIORITY_RANK[a.priority];
+    const rb = PRIORITY_RANK[b.priority];
+    if (ra !== rb) return ra - rb;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
+  const filtered = ordered.filter((task) => {
+    if (filter === 'active') return !task.completed;
+    if (filter === 'done') return task.completed;
     return true;
   });
 
-  const done = tasks.filter((t) => t.completed).length;
+  const done = tasks.filter((task) => task.completed).length;
   const progress = tasks.length > 0 ? (done / tasks.length) * 100 : 0;
 
   return (
@@ -81,7 +92,7 @@ export default function TasksView() {
               {t('tasks_title')}
             </h2>
             <div style={{ fontSize: dim.textSm, fontWeight: 600, color: 'var(--text-tertiary)' }}>
-              {tasks.filter(t => !t.completed).length} {t('tasks_active')} · {done} {t('tasks_done')}
+              {tasks.filter(task => !task.completed).length} {t('tasks_active')} · {done} {t('tasks_done')}
             </div>
           </div>
         </div>
@@ -128,15 +139,15 @@ export default function TasksView() {
               }}
             />
             <div style={{ display: 'flex', gap: dim.sp1, flexShrink: 0 }}>
-              {(['low', 'medium', 'high'] as const).map((p) => (
+              {(['low', 'medium', 'high'] as TaskPriority[]).map((p) => (
                 <motion.button
                   key={p}
                   whileTap={{ scale: 0.88 }}
                   onClick={() => setPriority(p)}
-                  title={PRIORITY[p].label}
                   style={{
-                    width: 28, height: 28,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    height: 28,
+                    display: 'flex', alignItems: 'center', gap: dim.sp1,
+                    padding: `0 ${dim.sp1}px`,
                     flexShrink: 0,
                     background: priority === p ? 'var(--surface-3)' : 'transparent',
                     border: priority === p ? `1px solid ${PRIORITY[p].color}` : '1px solid transparent',
@@ -146,6 +157,9 @@ export default function TasksView() {
                   }}
                 >
                   <Flag size={12} />
+                  <span style={{ fontSize: dim.textXs, fontWeight: 800, display: priority === p ? 'inline' : 'none' }}>
+                    {PRIORITY[p].label}
+                  </span>
                 </motion.button>
               ))}
             </div>
@@ -221,47 +235,25 @@ export default function TasksView() {
                   display: 'flex', alignItems: 'center', gap: dim.sp2,
                   padding: `${dim.sp4}px ${dim.sp3}px`, borderRadius: dim.radiusSm, marginBottom: 3,
                   opacity: task.completed ? 0.45 : 1,
+                  background: 'transparent',
+                  transition: 'background 0.12s',
                 }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-1)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
               >
-                <div style={{
-                  display: 'flex', flexDirection: 'column', gap: dim.sp1, flexShrink: 0,
-                  paddingRight: dim.sp1,
-                }}>
-                  <motion.button
-                    whileTap={{ scale: 0.85 }}
-                    onClick={() => moveTaskUp(task.id)}
-                    style={{
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      color: 'var(--text-disabled)', display: 'flex', alignItems: 'center',
-                      padding: 2, borderRadius: dim.radiusSm,
-                    }}
-                  >
-                    <ChevronUp size={dim.iconSm} />
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.85 }}
-                    onClick={() => moveTaskDown(task.id)}
-                    style={{
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      color: 'var(--text-disabled)', display: 'flex', alignItems: 'center',
-                      padding: 2, borderRadius: dim.radiusSm,
-                    }}
-                  >
-                    <ChevronDown size={dim.iconSm} />
-                  </motion.button>
-                </div>
-
                 <motion.button
                   whileTap={{ scale: 0.85 }}
                   onClick={() => toggleTask(task.id)}
                   style={{
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: task.completed ? '#4ade80' : 'var(--text-disabled)',
-                    display: 'flex', alignItems: 'center',
-                    padding: 0, flexShrink: 0,
+                    width: dim.iconMd, height: dim.iconMd, borderRadius: 7,
+                    flexShrink: 0, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: task.completed ? 'var(--accent)' : 'transparent',
+                    border: task.completed ? '2px solid var(--accent)' : '2px solid var(--border-strong)',
+                    color: 'white', padding: 0, transition: 'all 0.15s',
                   }}
                 >
-                  {task.completed ? <CheckCircle2 size={dim.iconMd} /> : <Circle size={dim.iconMd} />}
+                  {task.completed && <Check size={dim.iconSm} strokeWidth={3.2} />}
                 </motion.button>
 
                 {editingId === task.id ? (
@@ -298,6 +290,14 @@ export default function TasksView() {
                   </span>
                 )}
 
+                <PRIORITY_BADGE task={task} t={t} />
+
+                <span style={{
+                  fontSize: dim.textXs, fontWeight: 600, color: 'var(--text-disabled)', flexShrink: 0,
+                }}>
+                  {formatDate(task.createdAt)}
+                </span>
+
                 <motion.button
                   whileTap={{ scale: 0.85 }}
                   onClick={() => startEdit(task)}
@@ -305,23 +305,11 @@ export default function TasksView() {
                     background: 'none', border: 'none', cursor: 'pointer',
                     color: editingId === task.id ? 'var(--accent)' : 'var(--text-disabled)',
                     display: 'flex', alignItems: 'center',
-                    padding: dim.sp1, flexShrink: 0,
+                    padding: dim.sp1, flexShrink: 0, borderRadius: dim.radiusSm,
                   }}
                 >
                   <Pencil size={dim.iconSm} />
                 </motion.button>
-
-                <div style={{
-                  width: dim.sp1, height: dim.sp1, borderRadius: '50%',
-                  background: PRIORITY[task.priority as keyof typeof PRIORITY]?.color || 'var(--accent)',
-                  flexShrink: 0,
-                }} />
-
-                <span style={{
-                  fontSize: dim.textXs, fontWeight: 600, color: 'var(--text-disabled)', flexShrink: 0,
-                }}>
-                  {formatDate(task.createdAt)}
-                </span>
 
                 <motion.button
                   whileTap={{ scale: 0.85 }}
@@ -340,5 +328,24 @@ export default function TasksView() {
         </AnimatePresence>
       </div>
     </motion.div>
+  );
+}
+
+function PRIORITY_BADGE({ task, t }: { task: { priority: TaskPriority }; t: (key: string) => string }) {
+  const PRIORITY = {
+    low:    { color: '#4ade80', label: t('priority_low') },
+    medium: { color: '#fbbf24', label: t('priority_medium') },
+    high:   { color: '#f87171', label: t('priority_high') },
+  } as const;
+  const p = PRIORITY[task.priority];
+  return (
+    <span style={{
+      display: 'flex', alignItems: 'center', gap: dim.sp1,
+      fontSize: dim.textXs, fontWeight: 800,
+      color: p.color, flexShrink: 0, whiteSpace: 'nowrap',
+    }}>
+      <Flag size={dim.iconSm} />
+      {p.label}
+    </span>
   );
 }

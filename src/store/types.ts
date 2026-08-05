@@ -97,8 +97,6 @@ export interface SpireStore {
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
   toggleTask: (id: string) => void;
-  moveTaskUp: (id: string) => void;
-  moveTaskDown: (id: string) => void;
 
   // UI
   setViewMode: (mode: ViewMode) => void;
