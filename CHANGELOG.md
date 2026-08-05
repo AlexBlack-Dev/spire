@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ctrl+A selects note content only instead of the whole UI; interface text is no longer selectable
 - "Open tasks" on the welcome screen now switches to the Tasks tab on mobile
 - Regenerated `package-lock.json` so `npm ci` succeeds on npm 10 / Node 20 (missing nested `esbuild@0.28.1` entry)
+- Android release signing config uses valid Kotlin syntax, fixing the APK build
 
 ### Changed
 
