@@ -258,22 +258,21 @@ export default function TitleBar() {
 
       {/* RIGHT — window controls */}
       <div style={{ display: 'flex', gap: 3, padding: '0 10px', flexShrink: 0, zIndex: 2 }}>
-        <WinBtn icon={<Minus size={12}/>}  onClick={winMinimize}       hoverBg="var(--surface-2)" hoverColor="var(--text-secondary)" color="var(--text-tertiary)" title={t('minimize')}   />
-        <WinBtn icon={<Square size={11}/>} onClick={winToggleMaximize} hoverBg="var(--surface-2)" hoverColor="var(--text-secondary)" color="var(--text-tertiary)" title={t('maximize')} />
-        <WinBtn icon={<X size={12}/>}      onClick={winClose}          hoverBg="#2d1515" hoverColor="#f87171" color="#6b3a3a" title={t('close')}    />
+        <WinBtn icon={<Minus size={12}/>}  onClick={winMinimize}       hoverBg="var(--surface-2)" hoverColor="var(--text-secondary)" color="var(--text-tertiary)" />
+        <WinBtn icon={<Square size={11}/>} onClick={winToggleMaximize} hoverBg="var(--surface-2)" hoverColor="var(--text-secondary)" color="var(--text-tertiary)" />
+        <WinBtn icon={<X size={12}/>}      onClick={winClose}          hoverBg="#2d1515" hoverColor="#f87171" color="#6b3a3a" />
       </div>
     </div>
   );
 }
 
-function WinBtn({ icon, onClick, hoverBg, hoverColor, color, title }: {
+function WinBtn({ icon, onClick, hoverBg, hoverColor, color }: {
   icon: React.ReactNode; onClick: () => void;
-  hoverBg: string; hoverColor: string; color: string; title: string;
+  hoverBg: string; hoverColor: string; color: string;
 }) {
   return (
     <button
       onMouseDown={e => { e.preventDefault(); onClick(); }}
-      title={title}
       style={{
         width: 34, height: 34,
         display: 'flex', alignItems: 'center', justifyContent: 'center',

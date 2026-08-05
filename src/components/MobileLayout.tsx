@@ -22,7 +22,7 @@ import { format } from 'date-fns';
 import { ru, enUS } from 'date-fns/locale';
 import { translations } from '../i18n/translations';
 import type { MobileTab } from './BottomNav';
-import { isMobile, dim } from '../isMobile';
+import { dim } from '../isMobile';
 import { COLOR_HEX, COLOR_NAMES, getFileInfo, hexToRgba } from '../utils/format';
 
 export default function MobileLayout() {
@@ -77,7 +77,6 @@ export default function MobileLayout() {
   }, [activeNoteId]);
 
   useEffect(() => {
-    if (isMobile) return;
     if (viewMode === 'tasks') setActiveTab('tasks');
     else if (viewMode === 'favorites') setActiveTab('favorites');
     else if (viewMode === 'notes' || viewMode === 'converter') setActiveTab('notes');
@@ -344,7 +343,7 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
   const {
     notes, activeNoteId, updateNote, deleteNote, togglePin, toggleFavorite,
     saveFile,
-    language, accentColor,
+    language, accentColor, antiPaste,
   } = useStore();
   const t = (key: string) => translations[language][key] || key;
   const note = notes.find((n) => n.id === activeNoteId);
@@ -383,7 +382,26 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
       TextStyle,
     ],
     content: note?.content || '',
-    editorProps: { attributes: { class: 'tiptap-editor' } },
+    editorProps: {
+      attributes: { class: 'tiptap-editor' },
+      handlePaste: (view, event) => {
+        if (antiPaste) return true;
+        const text = event.clipboardData?.getData('text/plain');
+        if (text && text.trim().length > 0) {
+          const clean = text
+            .replace(/\u00a0/g, ' ')
+            .replace(/[\u200b-\u200d\ufeff]/g, '')
+            .replace(/\r\n?/g, '\n');
+          view.pasteText(clean);
+          return true;
+        }
+        return false;
+      },
+      handleDOMEvents: {
+        copy: () => antiPaste ? true : undefined,
+        cut: () => antiPaste ? true : undefined,
+      },
+    },
     onUpdate: ({ editor }) => {
       if (note) {
         updateNote(note.id, { content: editor.getHTML() });

@@ -144,7 +144,6 @@ export default function SettingsModal() {
                     <button
                       key={c}
                       onClick={() => setAccentColor(c)}
-                      title={c}
                       style={{
                         width: 34, height: 34, borderRadius: '50%',
                         background: COLOR_HEX[c], border: 'none',

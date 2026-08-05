@@ -76,6 +76,33 @@ export default function App() {
   }, [theme, accentColor]);
 
   useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a')) return;
+      const el = document.activeElement as HTMLElement | null;
+      const editable = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+      if (editable) return;
+      e.preventDefault();
+      const editor = document.querySelector<HTMLElement>('.tiptap-editor');
+      const textarea = document.querySelector<HTMLTextAreaElement>('textarea');
+      if (editor) {
+        editor.focus();
+        const sel = window.getSelection();
+        if (sel) {
+          const range = document.createRange();
+          range.selectNodeContents(editor);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      } else if (textarea) {
+        textarea.focus();
+        textarea.select();
+      }
+    };
+    document.addEventListener('keydown', handler, true);
+    return () => document.removeEventListener('keydown', handler, true);
+  }, []);
+
+  useEffect(() => {
     const un: Array<() => void> = [];
     (async () => {
       try {

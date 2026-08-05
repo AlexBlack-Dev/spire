@@ -215,7 +215,7 @@ export default function NoteEditor() {
     : wordCount;
 
   const renderedContent = useMemo(() => {
-    if (!note) return null;
+    if (!note || !note.filePath) return null;
     const text = note.content;
     if (ext === 'csv' || isCSV(text)) return renderCSVTable(text);
     if (ext === 'json' || isJSON(text)) return renderFormattedJSON(text);
@@ -235,7 +235,19 @@ export default function NoteEditor() {
     content: '',
     editorProps: {
       attributes: { class: 'tiptap-editor' },
-      handlePaste: () => antiPaste,
+      handlePaste: (view, event) => {
+        if (antiPaste) return true;
+        const text = event.clipboardData?.getData('text/plain');
+        if (text && text.trim().length > 0) {
+          const clean = text
+            .replace(/\u00a0/g, ' ')
+            .replace(/[\u200b-\u200d\ufeff]/g, '')
+            .replace(/\r\n?/g, '\n');
+          view.pasteText(clean);
+          return true;
+        }
+        return false;
+      },
       handleDOMEvents: {
         copy: () => antiPaste ? true : undefined,
         cut: () => antiPaste ? true : undefined,
@@ -324,10 +336,10 @@ export default function NoteEditor() {
           </div>
 
           <div style={{ display: 'flex', gap: 3 }}>
-            <ActionBtn icon={<Pin size={14}/>}   active={note.isPinned}   activeColor={accentColor} title={note.isPinned ? t('unpin') : t('pin')}  onClick={() => togglePin(note.id)} />
-            <ActionBtn icon={<Star size={14}/>}  active={note.isFavorite} activeColor="#fbbf24"     title={note.isFavorite ? t('unfavorite') : t('favorite')}  onClick={() => toggleFavorite(note.id)} />
-            <ActionBtn icon={<Lock size={14}/>}  active={!!note.password} activeColor={accentColor} title={note.password ? t('lock_remove_password') : t('lock_set_password')}  onClick={() => showLockPrompt(note.id, 'note', note.password ? 'remove' : 'set')} />
-            <ActionBtn icon={<Trash2 size={14}/>} active={false}          activeColor="#f87171"     title={t('delete')}    onClick={() => deleteNote(note.id)} danger />
+            <ActionBtn icon={<Pin size={14}/>}   active={note.isPinned}   activeColor={accentColor} onClick={() => togglePin(note.id)} />
+            <ActionBtn icon={<Star size={14}/>}  active={note.isFavorite} activeColor="#fbbf24"     onClick={() => toggleFavorite(note.id)} />
+            <ActionBtn icon={<Lock size={14}/>}  active={!!note.password} activeColor={accentColor} onClick={() => showLockPrompt(note.id, 'note', note.password ? 'remove' : 'set')} />
+            <ActionBtn icon={<Trash2 size={14}/>} active={false}          activeColor="#f87171"     onClick={() => deleteNote(note.id)} danger />
           </div>
         </div>
 
@@ -452,14 +464,13 @@ export default function NoteEditor() {
   );
 }
 
-function ActionBtn({ icon, active, activeColor, title, onClick, danger }: {
+function ActionBtn({ icon, active, activeColor, onClick, danger }: {
   icon: React.ReactNode; active: boolean; activeColor: string;
-  title: string; onClick: () => void; danger?: boolean;
+  onClick: () => void; danger?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      title={title}
       style={{
         width: 32, height: 32,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
