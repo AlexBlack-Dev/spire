@@ -153,6 +153,12 @@ const en: Dict = {
   'toast_import_failed': 'Failed to import data',
   'toast_migrated': 'Data migrated from BLUM',
 
+  // Update checker
+  'update_title': 'Update available',
+  'update_desc': 'A new version of Spire is here with fixes and improvements. Open the release page to download and install it.',
+  'update_download': 'Get update',
+  'update_later': 'Later',
+
   // Lock prompt
   'lock_set_password': 'Set Password',
   'lock_remove_password': 'Remove Password',
@@ -372,6 +378,12 @@ const ru: Dict = {
   'toast_imported': 'Данные успешно импортированы',
   'toast_import_failed': 'Не удалось импортировать данные',
   'toast_migrated': 'Данные перенесены из BLUM',
+
+  // Update checker
+  'update_title': 'Доступно обновление',
+  'update_desc': 'Вышла новая версия Spire с исправлениями и улучшениями. Откройте страницу релиза, чтобы скачать и установить её.',
+  'update_download': 'Получить',
+  'update_later': 'Позже',
 
   // Lock prompt
   'lock_set_password': 'Установить пароль',

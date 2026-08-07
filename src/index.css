@@ -238,6 +238,28 @@ body {
 .tiptap-editor ul, .tiptap-editor ol { padding-left: 1.5em; }
 .tiptap-editor li { margin-bottom: 0.25em; }
 
+/* Tables */
+.tiptap-editor table {
+  border-collapse: collapse; margin: 1em 0; width: 100%;
+  table-layout: fixed; overflow: hidden;
+  border-radius: 8px; overflow: hidden;
+}
+.tiptap-editor th, .tiptap-editor td {
+  border: 1px solid var(--border-default); padding: 8px 12px;
+  vertical-align: top; position: relative; min-width: 40px;
+}
+.tiptap-editor th { background: var(--surface-2); font-weight: 700; text-align: left; color: var(--text-secondary); }
+.tiptap-editor td { color: var(--text-primary); }
+.tiptap-editor .selectedCell::after {
+  content: ''; position: absolute; inset: 0;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  pointer-events: none;
+}
+.tiptap-editor .column-resize-handle {
+  position: absolute; top: 0; right: -2px; width: 4px; height: 100%;
+  background: var(--accent); cursor: col-resize; pointer-events: none;
+}
+
 .tiptap-editor mark {
   background: #3a2e10; color: #fbbf24;
   border-radius: 3px; padding: 0 3px;

@@ -8,7 +8,7 @@ import type { Note } from '../types';
 import { COLOR_HEX, hexToRgba, formatDateFn, notePreview } from '../utils/format';
 import WelcomeScreen from './WelcomeScreen';
 
-export default function MobileNoteList({ favoritesOnly }: { favoritesOnly?: boolean }) {
+export default function MobileNoteList({ privateOnly }: { privateOnly?: boolean }) {
   const {
     notes, searchQuery, activeNoteId,
     setSearchQuery, setActiveNote, language,
@@ -36,7 +36,8 @@ export default function MobileNoteList({ favoritesOnly }: { favoritesOnly?: bool
 
   const filtered = notes.filter((n) => {
     const q = localQuery.toLowerCase();
-    if (favoritesOnly) return n.isFavorite;
+    if (privateOnly) return !!n.password && (n.title.toLowerCase().includes(q) || n.content.replace(/<[^>]*>/g, '').toLowerCase().includes(q));
+    if (n.password) return false;
     return n.title.toLowerCase().includes(q) || n.content.replace(/<[^>]*>/g, '').toLowerCase().includes(q);
   });
 
@@ -44,7 +45,7 @@ export default function MobileNoteList({ favoritesOnly }: { favoritesOnly?: bool
     showLockPrompt(noteId, 'note', hasPassword ? 'remove' : 'set');
   };
 
-  const empty = notes.length === 0 && !favoritesOnly;
+  const empty = notes.length === 0 && !privateOnly;
 
   if (empty) return <WelcomeScreen />;
 
@@ -55,7 +56,8 @@ export default function MobileNoteList({ favoritesOnly }: { favoritesOnly?: bool
       background: 'var(--surface-0)', position: 'relative',
     }}>
       <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: 260,
+        position: 'absolute', top: 'calc(0px - var(--sat, 0px))', left: 0, right: 0,
+        height: 'calc(260px + var(--sat, 0px))',
         background: `radial-gradient(ellipse 90% 60% at 50% 0%, ${accentRgba(0.16)} 0%, transparent 70%)`,
         pointerEvents: 'none',
       }} />

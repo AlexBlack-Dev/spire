@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Flag, Pencil, Check } from 'lucide-react';
+import { Plus, Trash2, Flag, Pencil, Check, Circle } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { translations } from '../i18n/translations';
 import { dim } from '../isMobile';
@@ -144,22 +144,19 @@ export default function TasksView() {
                   key={p}
                   whileTap={{ scale: 0.88 }}
                   onClick={() => setPriority(p)}
+                  title=""
                   style={{
-                    height: 28,
-                    display: 'flex', alignItems: 'center', gap: dim.sp1,
-                    padding: `0 ${dim.sp1}px`,
+                    height: 28, width: 28,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0,
-                    background: priority === p ? 'var(--surface-3)' : 'transparent',
-                    border: priority === p ? `1px solid ${PRIORITY[p].color}` : '1px solid transparent',
+                    background: 'transparent',
+                    border: 'none',
                     borderRadius: dim.radiusSm,
                     color: priority === p ? PRIORITY[p].color : 'var(--text-disabled)',
                     cursor: 'pointer', transition: 'all 0.12s',
                   }}
                 >
-                  <Flag size={12} />
-                  <span style={{ fontSize: dim.textXs, fontWeight: 800, display: priority === p ? 'inline' : 'none' }}>
-                    {PRIORITY[p].label}
-                  </span>
+                  <Flag size={14} fill={priority === p ? PRIORITY[p].color : 'none'} />
                 </motion.button>
               ))}
             </div>
@@ -170,15 +167,15 @@ export default function TasksView() {
             whileTap={{ scale: 0.95 }}
             onClick={handleCreate}
             style={{
-              padding: `${dim.sp3}px ${dim.sp5}px`,
+              width: 34, height: 34,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: 'var(--accent)', border: 'none',
               borderRadius: dim.radius, color: 'white',
-              fontSize: dim.textMd, fontWeight: 800,
               cursor: 'pointer', transition: 'background 0.15s',
-              whiteSpace: 'nowrap', flexShrink: 0,
+              flexShrink: 0,
             }}
           >
-            {t('add')}
+            <Plus size={dim.iconMd} strokeWidth={2.5} />
           </motion.button>
         </div>
 
@@ -244,16 +241,20 @@ export default function TasksView() {
                 <motion.button
                   whileTap={{ scale: 0.85 }}
                   onClick={() => toggleTask(task.id)}
+                  title=""
                   style={{
-                    width: dim.iconMd, height: dim.iconMd, borderRadius: 7,
+                    width: dim.iconMd, height: dim.iconMd,
                     flexShrink: 0, cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: task.completed ? 'var(--accent)' : 'transparent',
-                    border: task.completed ? '2px solid var(--accent)' : '2px solid var(--border-strong)',
-                    color: 'white', padding: 0, transition: 'all 0.15s',
+                    background: 'none', border: 'none', padding: 0,
+                    transition: 'all 0.15s',
                   }}
                 >
-                  {task.completed && <Check size={dim.iconSm} strokeWidth={3.2} />}
+                  {task.completed ? (
+                    <Check size={dim.iconMd} strokeWidth={3} color="var(--accent)" />
+                  ) : (
+                    <Circle size={dim.iconMd} strokeWidth={2} color="var(--border-strong)" />
+                  )}
                 </motion.button>
 
                 {editingId === task.id ? (
@@ -340,12 +341,10 @@ function PRIORITY_BADGE({ task, t }: { task: { priority: TaskPriority }; t: (key
   const p = PRIORITY[task.priority];
   return (
     <span style={{
-      display: 'flex', alignItems: 'center', gap: dim.sp1,
-      fontSize: dim.textXs, fontWeight: 800,
+      display: 'flex', alignItems: 'center',
       color: p.color, flexShrink: 0, whiteSpace: 'nowrap',
     }}>
-      <Flag size={dim.iconSm} />
-      {p.label}
+      <Flag size={dim.iconSm} fill={p.color} />
     </span>
   );
 }

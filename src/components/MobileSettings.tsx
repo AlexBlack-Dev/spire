@@ -20,7 +20,8 @@ export default function MobileSettings({ onBack }: { onBack?: () => void }) {
       background: 'var(--surface-0)', position: 'relative',
     }}>
       <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: 240,
+        position: 'absolute', top: 'calc(0px - var(--sat, 0px))', left: 0, right: 0,
+        height: 'calc(240px + var(--sat, 0px))',
         background: `radial-gradient(ellipse 90% 60% at 50% 0%, ${accentRgba(0.16)} 0%, transparent 70%)`,
         pointerEvents: 'none',
       }} />

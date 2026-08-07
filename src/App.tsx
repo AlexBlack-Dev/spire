@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import TitleBar from './components/TitleBar';
 import Sidebar from './components/Sidebar';
 import NoteEditor from './components/NoteEditor';
@@ -11,7 +11,7 @@ import SplashScreen from './components/SplashScreen';
 import MobileLayout from './components/MobileLayout';
 import LockPrompt from './components/LockPrompt';
 import Toasts from './components/Toasts';
-import { Lock } from 'lucide-react';
+import UpdateChecker from './components/UpdateChecker';
 import { useStore } from './store/useStore';
 import { translations } from './i18n/translations';
 import { isMobile } from './isMobile';
@@ -42,9 +42,26 @@ export default function App() {
   const activeNote = notes.find((n) => n.id === activeNoteId);
   const expiry = activeNoteId ? (lockedNoteExpiries[activeNoteId] ?? 0) : 0;
   const opens = activeNoteId ? (lockedNoteOpens[activeNoteId] ?? 0) : 0;
-  const noteLocked = showEditor && !!activeNote?.password && Date.now() > expiry && opens <= 0;
+  const isNoteUnlocked = activeNoteId
+    ? expiry > Date.now() || opens > 0
+    : false;
+  const noteLocked = showEditor && !!activeNote?.password && !isNoteUnlocked;
+
+  const prevViewRef = useRef(viewMode);
+  const prevNoteRef = useRef<string | null>(null);
 
   useEffect(() => {
+    const prevView = prevViewRef.current;
+    prevViewRef.current = viewMode;
+
+    if (prevNoteRef.current && prevNoteRef.current !== activeNoteId) {
+      const s = useStore.getState();
+      if ((s.lockedNoteOpens[prevNoteRef.current] ?? 0) > 0) {
+        s.consumeNoteOpen(prevNoteRef.current);
+      }
+    }
+    prevNoteRef.current = activeNoteId;
+
     if (!activeNoteId) return;
     const note = notes.find((n) => n.id === activeNoteId);
     if (!note?.password) return;
@@ -53,13 +70,14 @@ export default function App() {
       return;
     }
     const s = useStore.getState();
-    const exp = s.lockedNoteExpiries[activeNoteId] ?? 0;
-    const op = s.lockedNoteOpens[activeNoteId] ?? 0;
-    if (Date.now() > exp) {
-      if (op > 0) s.consumeNoteOpen(activeNoteId);
-      else s.showLockPrompt(activeNoteId, 'note', 'unlock');
+    if (prevView !== 'private' && !s.isNoteUnlocked(activeNoteId)) {
+      s.setActiveNote(null);
+      return;
     }
-  }, [activeNoteId, viewMode]);
+    if (s.isNoteUnlocked(activeNoteId)) return;
+    if (lockPromptState?.id === activeNoteId && lockPromptState.mode === 'unlock') return;
+    s.showLockPrompt(activeNoteId, 'note', 'unlock');
+  }, [activeNoteId, viewMode, lockPromptState?.id]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => e.preventDefault();
@@ -131,6 +149,7 @@ export default function App() {
         <SplashScreen />
         <MobileLayout />
         <Toasts />
+        <UpdateChecker />
       </>
     );
   }
@@ -185,9 +204,7 @@ export default function App() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   style={{ flex: 1, display: 'flex', overflow: 'hidden' }}
-                >
-                  <NoteLockedScreen />
-                </motion.div>
+                />
               ) : (
                 <motion.div key={`note-${activeNoteId}`}
                   initial={{ opacity: 0 }}
@@ -204,6 +221,7 @@ export default function App() {
 
         <SettingsModal />
         <Toasts />
+        <UpdateChecker />
 
         {lockPromptState && (
           <LockPrompt
@@ -211,8 +229,15 @@ export default function App() {
             id={lockPromptState.id}
             kind={lockPromptState.kind}
             mode={lockPromptState.mode}
-            onSuccess={() => useStore.getState().hideLockPrompt()}
-            onClose={() => useStore.getState().hideLockPrompt()}
+            onSuccess={() => {
+              useStore.getState().hideLockPrompt();
+            }}
+            onClose={() => {
+              if (lockPromptState?.kind === 'note' && lockPromptState?.mode === 'unlock') {
+                useStore.getState().setActiveNote(null);
+              }
+              useStore.getState().hideLockPrompt();
+            }}
           />
         )}
 
@@ -223,27 +248,5 @@ export default function App() {
         }} />
       </div>
     </>
-  );
-}
-
-function NoteLockedScreen() {
-  const { language } = useStore();
-  const t = (key: string) => translations[language][key] || key;
-  return (
-    <div style={{
-      flex: 1, display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', gap: 14,
-      background: 'var(--surface-0)',
-    }}>
-      <div style={{
-        width: 56, height: 56, borderRadius: 28,
-        background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <Lock size={24} color="var(--accent)" />
-      </div>
-      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)' }}>
-        {t('note_locked')}
-      </div>
-    </div>
   );
 }

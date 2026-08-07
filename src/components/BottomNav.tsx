@@ -1,11 +1,11 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { BookMarked, CircleCheckBig, Star, Wrench, Plus } from 'lucide-react';
+import { BookMarked, CircleCheckBig, Lock, Wrench, Plus } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { translations } from '../i18n/translations';
 import { dim } from '../isMobile';
 import { COLOR_HEX, hexToRgba } from '../utils/format';
 
-export type MobileTab = 'notes' | 'tasks' | 'favorites' | 'tools';
+export type MobileTab = 'notes' | 'tasks' | 'private' | 'tools';
 
 export default function BottomNav({ activeTab, onTabChange }: {
   activeTab: MobileTab;
@@ -22,7 +22,7 @@ export default function BottomNav({ activeTab, onTabChange }: {
   }> = [
     { id: 'notes', icon: <BookMarked size={dim.iconMd} />, iconActive: <BookMarked size={dim.iconMd} />, label: t('notes') },
     { id: 'tasks', icon: <CircleCheckBig size={dim.iconMd} />, iconActive: <CircleCheckBig size={dim.iconMd} />, label: t('tasks') },
-    { id: 'favorites', icon: <Star size={dim.iconMd} />, iconActive: <Star size={dim.iconMd} />, label: t('favorites') },
+    { id: 'private', icon: <Lock size={dim.iconMd} />, iconActive: <Lock size={dim.iconMd} />, label: t('private') },
     { id: 'tools', icon: <Wrench size={dim.iconMd} />, iconActive: <Wrench size={dim.iconMd} />, label: t('tools') },
   ];
 

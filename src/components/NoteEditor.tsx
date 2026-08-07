@@ -6,10 +6,12 @@ import Highlight from '@tiptap/extension-highlight';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import { TextStyle } from '@tiptap/extension-text-style';
+import Table from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableHeader from '@tiptap/extension-table-header';
+import TableCell from '@tiptap/extension-table-cell';
 import {
-  Bold, Italic, Strikethrough, Code, List, ListOrdered,
-  CheckSquare, Highlighter, Pin, Star, Trash2, Lock,
-  Heading1, Heading2, Quote, Minus,
+  Pin, Star, Trash2, Lock,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { format } from 'date-fns';
@@ -17,7 +19,9 @@ import { ru, enUS } from 'date-fns/locale';
 import { translations } from '../i18n/translations';
 import SpreadsheetEditor from './SpreadsheetEditor';
 import TagRow from './TagRow';
+import FormatToolbar from './FormatToolbar';
 import { COLOR_HEX, COLOR_NAMES, getFileInfo } from '../utils/format';
+import { sliceToText } from '../utils/tiptapText';
 
 function parseCSV(text: string): string[][] {
   const lines = text.trim().split('\n');
@@ -231,10 +235,15 @@ export default function NoteEditor() {
       TaskList,
       TaskItem.configure({ nested: true }),
       TextStyle,
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content: '',
     editorProps: {
       attributes: { class: 'tiptap-editor' },
+      clipboardTextSerializer: (slice) => sliceToText(slice),
       handlePaste: (view, event) => {
         if (antiPaste) return true;
         const text = event.clipboardData?.getData('text/plain');
@@ -378,28 +387,7 @@ export default function NoteEditor() {
 
       {/* Toolbar - only show for editable rich-text formats */}
       {editor && !renderedContent && !isPlainFile && (
-        <div style={{
-          padding: '6px 16px',
-          display: 'flex', gap: 1, alignItems: 'center',
-          borderBottom: '1px solid var(--border-subtle)',
-          flexShrink: 0, flexWrap: 'wrap', minWidth: 0,
-        }}>
-          <TB label="Bold"   icon={<Bold size={14}/>}         active={editor.isActive('bold')}              run={() => editor.chain().focus().toggleBold().run()} />
-          <TB label="Italic" icon={<Italic size={14}/>}       active={editor.isActive('italic')}            run={() => editor.chain().focus().toggleItalic().run()} />
-          <TB label="Strike" icon={<Strikethrough size={14}/>} active={editor.isActive('strike')}           run={() => editor.chain().focus().toggleStrike().run()} />
-          <TB label="Code"   icon={<Code size={14}/>}         active={editor.isActive('code')}              run={() => editor.chain().focus().toggleCode().run()} />
-          <TB label="Mark"   icon={<Highlighter size={14}/>}  active={editor.isActive('highlight')}         run={() => editor.chain().focus().toggleHighlight().run()} />
-          <TBDiv />
-          <TB label="H1"     icon={<Heading1 size={14}/>}     active={editor.isActive('heading',{level:1})} run={() => editor.chain().focus().toggleHeading({level:1}).run()} />
-          <TB label="H2"     icon={<Heading2 size={14}/>}     active={editor.isActive('heading',{level:2})} run={() => editor.chain().focus().toggleHeading({level:2}).run()} />
-          <TB label="Quote"  icon={<Quote size={14}/>}        active={editor.isActive('blockquote')}        run={() => editor.chain().focus().toggleBlockquote().run()} />
-          <TBDiv />
-          <TB label="UL"     icon={<List size={14}/>}         active={editor.isActive('bulletList')}        run={() => editor.chain().focus().toggleBulletList().run()} />
-          <TB label="OL"     icon={<ListOrdered size={14}/>}  active={editor.isActive('orderedList')}       run={() => editor.chain().focus().toggleOrderedList().run()} />
-          <TB label="Task"   icon={<CheckSquare size={14}/>}  active={editor.isActive('taskList')}          run={() => editor.chain().focus().toggleTaskList().run()} />
-          <TBDiv />
-          <TB label="HR"     icon={<Minus size={14}/>}        active={false}                                run={() => editor.chain().focus().setHorizontalRule().run()} />
-        </div>
+        <FormatToolbar editor={editor} />
       )}
 
       {/* Editor / Rendered content */}
@@ -485,30 +473,6 @@ function ActionBtn({ icon, active, activeColor, onClick, danger }: {
       {icon}
     </button>
   );
-}
-
-function TB({ icon, active, run }: { icon: React.ReactNode; active: boolean; run: () => void; label: string }) {
-  return (
-    <button
-      onMouseDown={e => { e.preventDefault(); run(); }}
-      style={{
-        width: 30, height: 30,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: active ? 'var(--surface-3)' : 'transparent',
-        border: 'none', borderRadius: 5,
-        color: active ? 'var(--accent)' : 'var(--text-disabled)',
-        cursor: 'pointer', transition: 'all 0.12s',
-      }}
-      onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}}
-      onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-disabled)'; }}}
-    >
-      {icon}
-    </button>
-  );
-}
-
-function TBDiv() {
-  return <div style={{ width: 1, height: 18, background: 'var(--border-subtle)', margin: '0 4px' }} />;
 }
 
 function ModeBtn({ active, onClick, label }: {

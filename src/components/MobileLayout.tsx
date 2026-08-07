@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { ChevronLeft, Pin, Star, Trash2, Menu, Save, Lock, Unlock, Share2, ShieldAlert } from 'lucide-react';
+import { ChevronLeft, Pin, Star, Trash2, Menu, Save, Lock, Unlock, ShieldAlert } from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -8,6 +8,10 @@ import Highlight from '@tiptap/extension-highlight';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import { TextStyle } from '@tiptap/extension-text-style';
+import Table from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableHeader from '@tiptap/extension-table-header';
+import TableCell from '@tiptap/extension-table-cell';
 import BottomNav from './BottomNav';
 import MobileNoteList from './MobileNoteList';
 import MobileSettings from './MobileSettings';
@@ -17,6 +21,7 @@ import SpreadsheetEditor from './SpreadsheetEditor';
 import ToolsView from './ToolsView';
 import FileBrowser from './FileBrowser';
 import LockPrompt from './LockPrompt';
+import FormatToolbar from './FormatToolbar';
 import { useStore } from '../store/useStore';
 import { format } from 'date-fns';
 import { ru, enUS } from 'date-fns/locale';
@@ -24,6 +29,7 @@ import { translations } from '../i18n/translations';
 import type { MobileTab } from './BottomNav';
 import { dim } from '../isMobile';
 import { COLOR_HEX, COLOR_NAMES, getFileInfo, hexToRgba } from '../utils/format';
+import { sliceToText } from '../utils/tiptapText';
 
 export default function MobileLayout() {
   const viewMode = useStore((s) => s.viewMode);
@@ -63,22 +69,38 @@ export default function MobileLayout() {
     })();
   }, []);
 
+  const prevNoteRef = useRef<string | null>(null);
   useEffect(() => {
+    if (prevNoteRef.current && prevNoteRef.current !== activeNoteId) {
+      const s = useStore.getState();
+      if ((s.lockedNoteOpens[prevNoteRef.current] ?? 0) > 0) {
+        s.consumeNoteOpen(prevNoteRef.current);
+      }
+    }
+    prevNoteRef.current = activeNoteId;
+
     if (!activeNoteId) { setMobileView('tab'); return; }
     const note = useStore.getState().notes.find((n) => n.id === activeNoteId);
     if (note?.password) {
-      const expiry = useStore.getState().lockedNoteExpiries[activeNoteId];
-      if (!expiry || Date.now() > expiry) {
-        showLockPrompt(activeNoteId, 'note', 'unlock');
+      const s = useStore.getState();
+      const expiry = s.lockedNoteExpiries[activeNoteId];
+      if (expiry && Date.now() <= expiry) {
+        setMobileView('editor');
         return;
       }
+      if ((s.lockedNoteOpens[activeNoteId] ?? 0) > 0) {
+        setMobileView('editor');
+        return;
+      }
+      showLockPrompt(activeNoteId, 'note', 'unlock');
+      return;
     }
     setMobileView('editor');
   }, [activeNoteId]);
 
   useEffect(() => {
     if (viewMode === 'tasks') setActiveTab('tasks');
-    else if (viewMode === 'favorites') setActiveTab('favorites');
+    else if (viewMode === 'private') setActiveTab('private');
     else if (viewMode === 'notes' || viewMode === 'converter') setActiveTab('notes');
   }, [viewMode]);
 
@@ -210,7 +232,7 @@ export default function MobileLayout() {
             ) : activeTab === 'tasks' ? (
               <TasksView />
             ) : (
-              <MobileNoteList favoritesOnly={activeTab === 'favorites'} />
+              <MobileNoteList privateOnly={activeTab === 'private'} />
             )}
           </div>
         )}
@@ -279,10 +301,9 @@ export default function MobileLayout() {
               <MenuSep />
               <MenuItem label={t('notes')} onClick={() => { handleTabChange('notes'); setSpireMenuOpen(false); }} />
               <MenuItem label={t('tasks')} onClick={() => { handleTabChange('tasks'); setSpireMenuOpen(false); }} />
-              <MenuItem label={t('favorites')} onClick={() => { handleTabChange('favorites'); setSpireMenuOpen(false); }} />
+              <MenuItem label={t('private')} onClick={() => { handleTabChange('private'); setSpireMenuOpen(false); }} />
               <MenuSep />
               <MenuItem label={t('statistics')} onClick={() => { setToolsSubPage('statistics'); handleTabChange('tools'); setSpireMenuOpen(false); }} />
-              <MenuItem label={t('folders')} onClick={() => { setToolsSubPage('folders'); handleTabChange('tools'); setSpireMenuOpen(false); }} />
               <MenuItem label={t('trash')} onClick={() => { setToolsSubPage('trash'); handleTabChange('tools'); setSpireMenuOpen(false); }} />
               <MenuItem label={t('themes')} onClick={() => { setToolsSubPage('themes'); handleTabChange('tools'); setSpireMenuOpen(false); }} />
               <MenuSep />
@@ -380,10 +401,15 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
       TaskList,
       TaskItem.configure({ nested: true }),
       TextStyle,
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content: note?.content || '',
     editorProps: {
       attributes: { class: 'tiptap-editor' },
+      clipboardTextSerializer: (slice) => sliceToText(slice),
       handlePaste: (view, event) => {
         if (antiPaste) return true;
         const text = event.clipboardData?.getData('text/plain');
@@ -416,7 +442,8 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
         background: 'var(--surface-0)', position: 'relative',
       }}>
         <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, height: 180,
+          position: 'absolute', top: 'calc(0px - var(--sat, 0px))', left: 0, right: 0,
+          height: 'calc(180px + var(--sat, 0px))',
           background: `radial-gradient(ellipse 90% 60% at 50% 0%, ${accentRgba(0.14)} 0%, transparent 70%)`,
           pointerEvents: 'none',
         }} />
@@ -436,7 +463,8 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
       overflow: 'hidden', background: 'var(--surface-0)', position: 'relative',
     }}>
       <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: 180,
+        position: 'absolute', top: 'calc(0px - var(--sat, 0px))', left: 0, right: 0,
+        height: 'calc(180px + var(--sat, 0px))',
         background: `radial-gradient(ellipse 90% 60% at 50% 0%, ${accentRgba(0.14)} 0%, transparent 70%)`,
         pointerEvents: 'none',
       }} />
@@ -460,16 +488,6 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
         <div style={{ flex: 1 }} />
         <IconBtn onClick={() => { saveFile(note.id).catch((e) => console.warn('save failed', e)); }} active={false} activeColor="#4ade80" noAnim={noAnim}>
           <Save size={dim.iconMd} />
-        </IconBtn>
-        <IconBtn onClick={async () => {
-          await saveFile(note.id).catch(() => {});
-          const text = (isPlainFile ? note.content : note.content.replace(/<[^>]*>/g, '')).trim() || ' ';
-          const blob = new Blob([text], { type: 'text/plain' });
-          const file = new File([blob], (note.title || 'note') + '.txt', { type: 'text/plain' });
-          try { await navigator.share({ title: note.title, text, files: [file] }); }
-          catch { try { await navigator.share({ title: note.title, text }); } catch {} }
-        }} active={false} activeColor="#4f8ef7" noAnim={noAnim}>
-          <Share2 size={dim.iconMd} />
         </IconBtn>
         <IconBtn onClick={() => togglePin(note.id)} active={note.isPinned} activeColor={accent} noAnim={noAnim}>
           <Pin size={dim.iconMd} />
@@ -530,6 +548,10 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
 
         <div style={{ height: 1, background: 'var(--border-subtle)' }} />
       </div>
+
+      {editor && !isSpreadsheet && !isPlainFile && (
+        <FormatToolbar editor={editor} noAnim={noAnim} />
+      )}
 
       {isSpreadsheet ? (
         <div style={{ flex: 1, overflow: 'hidden' }}>

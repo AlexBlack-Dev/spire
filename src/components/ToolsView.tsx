@@ -1,20 +1,18 @@
-import { useState, useEffect, useMemo } from 'react';
+﻿import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   BarChart3, Folder, Trash2, Palette, Shield,
-  ChevronRight, ChevronLeft, Plus, X, RotateCcw,
-  Sun, Moon, Check, Star, CircleCheckBig, Lock, Unlock,
+  ChevronRight, ChevronLeft, X, RotateCcw,
+  Sun, Moon, Check, Star, CircleCheckBig,
   ExternalLink,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { translations } from '../i18n/translations';
 import { dim } from '../isMobile';
 import { format } from 'date-fns';
-import type { Note } from '../types';
-import LockPrompt from './LockPrompt';
 import { COLOR_HEX, COLOR_NAMES } from '../utils/format';
 
-type ToolsSubPage = 'hub' | 'statistics' | 'folders' | 'trash' | 'themes' | 'permissions';
+type ToolsSubPage = 'hub' | 'statistics' | 'trash' | 'themes' | 'permissions';
 
 const th = window.innerHeight;
 
@@ -64,9 +62,6 @@ export default function ToolsView() {
   if (subPage === 'statistics') {
     return <StatisticsView onBack={() => goTo('hub')} />;
   }
-  if (subPage === 'folders') {
-    return <FoldersView onBack={() => goTo('hub')} />;
-  }
   if (subPage === 'trash') {
     return <TrashView onBack={() => goTo('hub')} />;
   }
@@ -78,7 +73,6 @@ export default function ToolsView() {
   }
   const tools = [
     { id: 'statistics' as ToolsSubPage, icon: <BarChart3 size={dim.iconLg} />, label: t('statistics'), color: '#4f8ef7' },
-    { id: 'folders' as ToolsSubPage, icon: <Folder size={dim.iconLg} />, label: t('folders'), color: '#2dd4bf' },
     { id: 'trash' as ToolsSubPage, icon: <Trash2 size={dim.iconLg} />, label: t('trash'), color: '#f87171' },
     { id: 'themes' as ToolsSubPage, icon: <Palette size={dim.iconLg} />, label: t('themes'), color: '#fbbf24' },
     { id: 'permissions' as ToolsSubPage, icon: <Shield size={dim.iconLg} />, label: t('permissions'), color: '#f472b6' },
@@ -268,275 +262,6 @@ function StatisticsView({ onBack }: { onBack: () => void }) {
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-/* ---------- Folders ---------- */
-
-function FoldersView({ onBack }: { onBack: () => void }) {
-  const { noteFolders, notes, createFolder, renameFolder, deleteFolder,
-    addNoteToFolder, removeNoteFromFolder,
-    showLockPrompt, hideLockPrompt, lockPromptState, isFolderUnlocked } = useStore();
-  const [input, setInput] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState('');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const t = useT();
-
-  const handleCreate = () => {
-    const name = input.trim();
-    if (!name) return;
-    createFolder(name);
-    setInput('');
-  };
-
-  const handleRename = (id: string) => {
-    const name = editName.trim();
-    if (!name) return;
-    renameFolder(id, name);
-    setEditingId(null);
-  };
-
-  const handleDelete = (id: string) => {
-    deleteFolder(id);
-    if (expandedId === id) setExpandedId(null);
-  };
-
-  const handleFolderToggle = (folderId: string) => {
-    if (expandedId === folderId) { setExpandedId(null); return; }
-    const folder = noteFolders.find((f) => f.id === folderId);
-    if (folder?.password && !isFolderUnlocked(folderId)) {
-      showLockPrompt(folderId, 'folder', 'unlock');
-      return;
-    }
-    setExpandedId(folderId);
-  };
-
-  const folderNotes = (folderId: string): Note[] => {
-    const f = noteFolders.find((f) => f.id === folderId);
-    if (!f) return [];
-    return notes.filter((n) => f.noteIds.includes(n.id));
-  };
-
-  return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', height: '100%',
-      background: 'var(--surface-0)', overflow: 'hidden',
-    }}>
-      <SubHeader title={t('folders')} onBack={onBack} />
-
-      <div style={{
-        padding: `0 ${dim.sp6}px ${dim.sp3}px`,
-        display: 'flex', gap: dim.sp2, flexShrink: 0,
-      }}>
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); }}
-          placeholder={t('folder_name_placeholder')}
-          style={{
-            flex: 1, padding: dim.sp3,
-            borderRadius: dim.radiusSm, border: '1px solid var(--border-default)',
-            background: 'var(--surface-1)', color: 'var(--text-primary)',
-            fontSize: dim.textMd, fontWeight: 600, outline: 'none',
-          }}
-        />
-        <motion.button
-          whileTap={{ scale: 0.88 }}
-          onClick={handleCreate}
-          style={{
-            width: dim.barH, height: dim.barH,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'var(--accent)', border: 'none', borderRadius: dim.radiusSm,
-            cursor: 'pointer', color: 'white',
-          }}
-        >
-          <Plus size={dim.iconMd} strokeWidth={2.5} />
-        </motion.button>
-      </div>
-
-      <div style={{
-        flex: 1, overflowY: 'auto',
-        padding: `0 ${dim.sp6}px ${dim.sp7}px`,
-        display: 'flex', flexDirection: 'column', gap: dim.sp2,
-      }}>
-        {noteFolders.length === 0 && (
-          <div style={{
-            padding: `${Math.round(th * 0.08)}px 0`,
-            textAlign: 'center', color: 'var(--text-disabled)', fontSize: dim.textMd, fontWeight: 700,
-          }}>
-            {t('no_notes')}
-          </div>
-        )}
-        {noteFolders.map((folder) => (
-          <div key={folder.id} style={{
-            borderRadius: dim.radius,
-            border: '1px solid rgba(255,255,255,0.04)',
-            overflow: 'hidden',
-          }}>
-            <motion.div
-              whileTap={{ scale: 0.98 }}
-              onClick={() => handleFolderToggle(folder.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: dim.sp3,
-                padding: dim.sp4, cursor: 'pointer',
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
-              }}
-            >
-              {editingId !== folder.id ? (
-                <span style={{
-                  flex: 1, fontSize: dim.textMd, fontWeight: 700, color: 'var(--text-primary)',
-                }}>
-                  {folder.name}
-                </span>
-              ) : (
-                <input
-                  autoFocus
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleRename(folder.id); if (e.key === 'Escape') setEditingId(null); }}
-                  onBlur={() => handleRename(folder.id)}
-                  style={{
-                    flex: 1, padding: '2px 4px',
-                    borderRadius: 4, border: '1px solid var(--accent)',
-                    background: '#1a1a28', color: 'var(--text-primary)',
-                    fontSize: dim.textMd, fontWeight: 700, outline: 'none',
-                  }}
-                />
-              )}
-              <span style={{
-                fontSize: dim.textSm, fontWeight: 600, color: 'var(--text-tertiary)',
-              }}>
-                {folder.noteIds.length}
-              </span>
-              {editingId !== folder.id ? (
-                <>
-                  <motion.button
-                    whileTap={{ scale: 0.82 }}
-                    onClick={(e) => { e.stopPropagation(); showLockPrompt(folder.id, 'folder', folder.password ? 'remove' : 'set'); }}
-                    style={{ background: 'none', border: 'none', color: folder.password ? 'var(--accent)' : 'var(--text-disabled)', cursor: 'pointer', padding: 2 }}
-                  >
-                    {folder.password ? <Lock size={dim.iconSm} /> : <Unlock size={dim.iconSm} />}
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.82 }}
-                    onClick={(e) => { e.stopPropagation(); setEditingId(folder.id); setEditName(folder.name); }}
-                    style={{ background: 'none', border: 'none', color: '#4f8ef7', cursor: 'pointer', padding: 2 }}
-                  >
-                    <Folder size={dim.iconSm} />
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.82 }}
-                    onClick={(e) => { e.stopPropagation(); handleDelete(folder.id); }}
-                    style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 2 }}
-                  >
-                    <X size={dim.iconSm} />
-                  </motion.button>
-                </>
-              ) : null}
-            </motion.div>
-
-            {expandedId === folder.id && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-                style={{ overflow: 'hidden' }}
-              >
-                {/* Notes in folder */}
-                {folderNotes(folder.id).map((note) => (
-                  <div key={note.id} style={{
-                    display: 'flex', alignItems: 'center', gap: dim.sp2,
-                    padding: `${dim.sp3}px ${dim.sp4}px ${dim.sp3}px ${dim.sp6}px`,
-                    borderTop: '1px solid rgba(255,255,255,0.03)',
-                  }}>
-                    <div style={{
-                      width: 6, height: 6, borderRadius: '50%',
-                      background: COLOR_HEX[note.color] || 'var(--accent)', flexShrink: 0,
-                    }} />
-                    <span style={{
-                      flex: 1, fontSize: dim.textSm, fontWeight: 600, color: 'var(--text-secondary)',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    }}>
-                      {note.title || t('untitled')}
-                    </span>
-                    <motion.button
-                      whileTap={{ scale: 0.82 }}
-                      onClick={() => removeNoteFromFolder(note.id, folder.id)}
-                      style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 2 }}
-                    >
-                      <X size={dim.iconSm} />
-                    </motion.button>
-                  </div>
-                ))}
-
-                {/* Add notes not in folder */}
-                {notes.filter((n) => !folder.noteIds.includes(n.id)).length > 0 && (
-                  <div style={{
-                    padding: `${dim.sp2}px ${dim.sp6}px ${dim.sp3}px`,
-                    borderTop: '1px solid rgba(255,255,255,0.03)',
-                  }}>
-                    <div style={{
-                      fontSize: dim.textXs, fontWeight: 700, color: 'var(--text-disabled)',
-                      marginBottom: dim.sp2, textTransform: 'uppercase', letterSpacing: '0.04em',
-                    }}>
-                      + {t('add')}
-                    </div>
-                    {notes.filter((n) => !folder.noteIds.includes(n.id)).map((note) => (
-                      <div key={note.id} style={{
-                        display: 'flex', alignItems: 'center', gap: dim.sp2,
-                        padding: `${dim.sp2}px 0`,
-                      }}>
-                        <div style={{
-                          width: 6, height: 6, borderRadius: '50%',
-                          background: COLOR_HEX[note.color] || 'var(--accent)', flexShrink: 0,
-                        }} />
-                        <span style={{
-                          flex: 1, fontSize: dim.textSm, fontWeight: 600, color: 'var(--text-tertiary)',
-                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                        }}>
-                {note.title || t('untitled')}
-                        </span>
-                        <motion.button
-                          whileTap={{ scale: 0.82 }}
-                          onClick={() => addNoteToFolder(note.id, folder.id)}
-                          style={{ background: 'none', border: 'none', color: '#4ade80', cursor: 'pointer', padding: 2 }}
-                        >
-                          <Plus size={dim.iconSm} />
-                        </motion.button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {folderNotes(folder.id).length === 0 && notes.filter((n) => !folder.noteIds.includes(n.id)).length === 0 && (
-                  <div style={{
-                    padding: `${dim.sp3}px ${dim.sp6}px`,
-                    borderTop: '1px solid rgba(255,255,255,0.03)',
-                    fontSize: dim.textSm, fontWeight: 600, color: 'var(--text-disabled)',
-                  }}>
-                    {t('no_notes')}
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {lockPromptState && lockPromptState.kind === 'folder' && (
-        <LockPrompt
-          id={lockPromptState.id}
-          kind="folder"
-          mode={lockPromptState.mode}
-          onSuccess={() => {
-            if (lockPromptState.mode === 'unlock') setExpandedId(lockPromptState.id);
-            hideLockPrompt();
-          }}
-          onClose={hideLockPrompt}
-        />
-      )}
     </div>
   );
 }

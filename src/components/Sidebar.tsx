@@ -48,7 +48,7 @@ export default function Sidebar() {
             {/* Nav */}
             <div style={{ padding: '12px 10px 8px' }}>
               {[
-                { id: 'notes'     as const, icon: <FileText size={16}/>,    label: t('notes'),     badge: notes.length },
+                { id: 'notes'     as const, icon: <FileText size={16}/>,    label: t('notes'),     badge: notes.filter(n => !n.password).length },
                 { id: 'tasks'     as const, icon: <CheckSquare size={16}/>, label: t('tasks'),     badge: activeTasks || undefined },
                 { id: 'private'  as const, icon: <Lock size={16}/>,        label: t('private'), badge: notes.filter(n=>n.password).length || undefined },
                 ...(navigator.userAgent.includes('Android') ? [] : [{ id: 'converter' as const, icon: <Shuffle size={16}/>, label: t('converter'), badge: undefined }]),
