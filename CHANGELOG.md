@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-08-07
+
+### Added
+
+- Permissions screen: after granting app access permissions on Android, Spire asks to restart the app so the storage permission applies immediately (`restart_app` command + confirmation dialog, desktop builds restart via the executable)
+
+### Changed
+
+- Reduced and accent-aware lighting: splash, title bar, sidebar hover and the top-of-page glow on mobile now follow the selected accent color instead of the fixed violet tint
+- Replaced remaining hardcoded accent hexes in settings, tools, theme cards, file browser and welcome screen with theme-driven variables (no more `#7c6af7` in components)
+
+### Fixed
+
+- Mobile: opening a private note from the Private tab no longer closes it back to the list right after entering the password (desktop-only unlock guard no longer overrides the mobile view)
+- Added the missing label for the custom "N opens" option in the lock prompt (en + ru)
+
 ## [1.0.3] - 2026-08-07
 
 ### Added
