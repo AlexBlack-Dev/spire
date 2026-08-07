@@ -133,6 +133,10 @@ const en: Dict = {
   'storage_note': 'You will be redirected to app settings. Enable storage permission manually.',
   'perm_banner_text': 'Grant permissions for notifications & storage',
   'perm_banner_grant': 'Storage access required. Tap to grant.',
+  'perm_restart_title': 'Restart Spire?',
+  'perm_restart_desc': 'Storage access was granted. Restart the app now to apply the changes.',
+  'perm_restart_now': 'Restart now',
+  'perm_restarting': 'Restarting...',
 
   // Toasts
   'toast_note_not_found': 'Note not found',
@@ -181,6 +185,7 @@ const en: Dict = {
   'lock_always': 'Always',
   'lock_for_time': 'For time:',
   'lock_for_opens': 'For opens:',
+  'lock_custom_opens': 'N',
   'lock_1open': '1 open',
   'lock_3opens': '3 opens',
   'lock_5opens': '5 opens',
@@ -359,6 +364,10 @@ const ru: Dict = {
   'storage_note': 'Вы будете перенаправлены в настройки приложения. Включите разрешение вручную.',
   'perm_banner_text': 'Разрешите доступ к уведомлениям и хранилищу',
   'perm_banner_grant': 'Требуется доступ к хранилищу. Нажмите, чтобы разрешить.',
+  'perm_restart_title': 'Перезапустить Spire?',
+  'perm_restart_desc': 'Доступ к хранилищу выдан. Перезапустите приложение, чтобы изменения вступили в силу.',
+  'perm_restart_now': 'Перезапустить',
+  'perm_restarting': 'Перезапуск...',
 
   // Toasts
   'toast_note_not_found': 'Заметка не найдена',
@@ -407,6 +416,7 @@ const ru: Dict = {
   'lock_always': 'Всегда',
   'lock_for_time': 'На время:',
   'lock_for_opens': 'На заходы:',
+  'lock_custom_opens': 'N',
   'lock_1open': '1 заход',
   'lock_3opens': '3 захода',
   'lock_5opens': '5 заходов',

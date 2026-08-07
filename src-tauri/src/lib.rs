@@ -275,6 +275,45 @@ fn check_storage_permission() -> Result<bool, String> {
     check_storage_permission_impl()
 }
 
+#[cfg(target_os = "android")]
+fn restart_app_impl() -> Result<(), String> {
+    use std::sync::mpsc;
+    let (tx, rx) = mpsc::channel();
+
+    wry::prelude::dispatch(move |env, _activity, _webview| {
+        let result = match env.call_static_method(
+            "com/spire/notes/MainActivity",
+            "restartApp",
+            "()Z",
+            &[],
+        ) {
+            Ok(v) => {
+                if v.z().unwrap_or(false) { Ok(()) } else { Err("restartApp returned false".into()) }
+            }
+            Err(_) => {
+                let _ = env.exception_clear();
+                Err("restartApp call failed".into())
+            }
+        };
+        let _ = tx.send(result);
+    });
+
+    rx.recv().map_err(|e| format!("Channel error: {}", e))?
+}
+
+#[cfg(not(target_os = "android"))]
+fn restart_app_impl() -> Result<(), String> {
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    let mut child = std::process::Command::new(&exe).spawn().map_err(|e| e.to_string())?;
+    let _ = child.kill();
+    std::process::exit(0);
+}
+
+#[tauri::command]
+fn restart_app() -> Result<(), String> {
+    restart_app_impl()
+}
+
 // ---------------------------------------------------------------------------
 // Save dialog: Android SAF via direct JNI + raw FD (official plugin pattern)
 // Desktop via tauri-plugin-dialog
@@ -563,7 +602,7 @@ pub fn run() {
             rename_file,
             save_binary,
             convert_image, read_image_base64, migrate_from_blum,
-            open_app_settings, check_storage_permission,
+            open_app_settings, check_storage_permission, restart_app,
             save_file_dialog, write_content_to_uri, take_persistable_uri,
             list_directory, get_storage_root, save_to_path
         ])

@@ -50,6 +50,22 @@ class MainActivity : TauriActivity() {
                 false
             }
         }
+
+        @JvmStatic
+        fun restartApp(): Boolean {
+            val ctx = appContext ?: return false
+            return try {
+                val intent = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)
+                    ?: return false
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                ctx.startActivity(intent)
+                Runtime.getRuntime().exit(0)
+                true
+            } catch (e: Exception) {
+                android.util.Log.e("SPIRE", "restartApp: ${e.message}")
+                false
+            }
+        }
     }
 
     private val saveLauncher = registerForActivityResult(

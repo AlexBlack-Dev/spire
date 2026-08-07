@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react';
+﻿import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import {
   BarChart3, Folder, Trash2, Palette, Shield,
@@ -422,7 +422,7 @@ function ThemesView({ onBack }: { onBack: () => void }) {
         }}>
           <div style={{
             fontSize: dim.textSm, fontWeight: 700,
-            color: theme === 'dark' ? 'var(--text-disabled)' : '#888',
+            color: 'var(--text-disabled)',
             marginBottom: dim.sp3, textTransform: 'uppercase', letterSpacing: '0.04em',
           }}>
             {t('settings')}
@@ -432,14 +432,12 @@ function ThemesView({ onBack }: { onBack: () => void }) {
               icon={<Moon size={dim.iconLg} />}
               label={t('dark_mode')}
               selected={theme === 'dark'}
-              themeMode={theme}
               onClick={() => handleTheme('dark')}
             />
             <ThemeCard
               icon={<Sun size={dim.iconLg} />}
               label={t('light_mode')}
               selected={theme === 'light'}
-              themeMode={theme}
               onClick={() => handleTheme('light')}
             />
           </div>
@@ -455,7 +453,7 @@ function ThemesView({ onBack }: { onBack: () => void }) {
         }}>
           <div style={{
             fontSize: dim.textSm, fontWeight: 700,
-            color: theme === 'dark' ? 'var(--text-disabled)' : '#888',
+            color: 'var(--text-disabled)',
             marginBottom: dim.sp3, textTransform: 'uppercase', letterSpacing: '0.04em',
           }}>
             {t('accent_color')}
@@ -494,9 +492,8 @@ function ThemesView({ onBack }: { onBack: () => void }) {
   );
 }
 
-function ThemeCard({ icon, label, selected, themeMode, onClick }: {
-  icon: React.ReactNode; label: string; selected: boolean;
-  themeMode: 'dark' | 'light'; onClick: () => void;
+function ThemeCard({ icon, label, selected, onClick }: {
+  icon: ReactNode; label: string; selected: boolean; onClick: () => void;
 }) {
   return (
     <motion.div
@@ -509,13 +506,13 @@ function ThemeCard({ icon, label, selected, themeMode, onClick }: {
         borderRadius: dim.radius,
         cursor: 'pointer',
         background: selected
-          ? (themeMode === 'dark' ? 'rgba(124,106,247,0.15)' : 'rgba(124,106,247,0.1)')
+          ? 'color-mix(in srgb, var(--accent) 14%, transparent)'
           : 'transparent',
-        border: `1px solid ${selected ? 'var(--accent)' : (themeMode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)')}`,
-        color: themeMode === 'dark' ? 'var(--text-primary)' : '#222',
+        border: `1px solid ${selected ? 'var(--accent)' : 'var(--border-default)'}`,
+        color: 'var(--text-primary)',
       }}
     >
-      <div style={{ color: selected ? 'var(--accent)' : (themeMode === 'dark' ? 'var(--text-secondary)' : '#666') }}>
+      <div style={{ color: selected ? 'var(--accent)' : 'var(--text-secondary)' }}>
         {icon}
       </div>
       <span style={{ fontSize: dim.textSm, fontWeight: 700 }}>{label}</span>
@@ -528,13 +525,30 @@ function ThemeCard({ icon, label, selected, themeMode, onClick }: {
 function PermissionsView({ onBack }: { onBack: () => void }) {
   const t = useT();
   const [storageGranted, setStorageGranted] = useState(false);
+  const [restartPrompt, setRestartPrompt] = useState(false);
+  const [restarting, setRestarting] = useState(false);
 
   const checkPermission = async () => {
     try {
       const { invoke } = await import('@tauri-apps/api/core');
       const ok = await invoke<boolean>('check_storage_permission');
-      setStorageGranted(ok);
+      setStorageGranted((prev) => {
+        if (!prev && ok) setRestartPrompt(true);
+        return ok;
+      });
     } catch {}
+  };
+
+  const handleRestart = async () => {
+    setRestarting(true);
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      await invoke('restart_app');
+    } catch (e) {
+      console.warn('restart_app failed', e);
+      setRestarting(false);
+      setRestartPrompt(false);
+    }
   };
 
   useEffect(() => {
@@ -632,8 +646,68 @@ function PermissionsView({ onBack }: { onBack: () => void }) {
           }}>
             {t('storage_note')}
           </div>
-        </div>
+</div>
       </div>
+      {restartPrompt && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 400,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.55)', padding: dim.sp6,
+        }}>
+          <div style={{
+            width: '100%', maxWidth: 320,
+            background: 'var(--surface-1)', border: '1px solid var(--border-default)',
+            borderRadius: 18, padding: dim.sp6,
+          }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 12, marginBottom: dim.sp4,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(74,222,128,0.15)', color: '#4ade80',
+            }}>
+              <CircleCheckBig size={22} />
+            </div>
+            <div style={{
+              fontSize: dim.textLg, fontWeight: 800, color: 'var(--text-primary)',
+              letterSpacing: '-0.02em', marginBottom: dim.sp2,
+            }}>
+              {t('perm_restart_title')}
+            </div>
+            <div style={{
+              fontSize: dim.textSm, fontWeight: 500, color: 'var(--text-secondary)',
+              lineHeight: 1.55, marginBottom: dim.sp5,
+            }}>
+              {t('perm_restart_desc')}
+            </div>
+            <div style={{ display: 'flex', gap: dim.sp2 }}>
+              <button
+                onClick={() => setRestartPrompt(false)}
+                disabled={restarting}
+                style={{
+                  flex: 1, padding: `${dim.sp3}px 0`,
+                  background: 'transparent', border: '1px solid var(--border-default)',
+                  borderRadius: 10, cursor: 'pointer',
+                  fontSize: dim.textSm, fontWeight: 700, color: 'var(--text-secondary)',
+                }}
+              >
+                {t('update_later')}
+              </button>
+              <button
+                onClick={handleRestart}
+                disabled={restarting}
+                style={{
+                  flex: 1.4, padding: `${dim.sp3}px 0`,
+                  background: 'var(--accent)', border: 'none', borderRadius: 10,
+                  cursor: restarting ? 'default' : 'pointer',
+                  fontSize: dim.textSm, fontWeight: 800, color: '#fff',
+                  opacity: restarting ? 0.6 : 1,
+                }}
+              >
+                {restarting ? t('perm_restarting') : t('perm_restart_now')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
