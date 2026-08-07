@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { ChevronLeft, Pin, Star, Trash2, Menu, Save, Lock, Unlock, ShieldAlert } from 'lucide-react';
+import { ChevronLeft, Pin, Star, Trash2, Menu, Save, Lock, Unlock, ShieldAlert, Pencil } from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -383,6 +383,7 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
   const accentRgba = (a: number) => hexToRgba(accent, a);
 
   const [kbOpen, setKbOpen] = useState(false);
+  const editMode = note ? note.editMode !== false : true;
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
@@ -496,6 +497,9 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
         <IconBtn onClick={() => { saveFile(note.id).catch((e) => console.warn('save failed', e)); }} active={false} activeColor="#4ade80" noAnim={noAnim}>
           <Save size={dim.iconMd} />
         </IconBtn>
+        <IconBtn onClick={() => updateNote(note.id, { editMode: !editMode })} active={!editMode} activeColor={accent} noAnim={noAnim}>
+          <Pencil size={dim.iconMd} />
+        </IconBtn>
         <IconBtn onClick={() => togglePin(note.id)} active={note.isPinned} activeColor={accent} noAnim={noAnim}>
           <Pin size={dim.iconMd} />
         </IconBtn>
@@ -514,7 +518,7 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
 
       <div style={{ padding: `0 ${dim.sp6}px`, flexShrink: 0 }}>
         <div style={{ display: 'flex', gap: dim.sp3, marginBottom: dim.sp3 }}>
-          {COLOR_NAMES.map((c) => (
+          {editMode && COLOR_NAMES.map((c) => (
             <motion.button
               key={c}
               whileTap={noAnim ? {} : { scale: 0.75 }}
@@ -531,18 +535,29 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
           ))}
         </div>
 
-        <input
-          value={note.title}
-          onChange={(e) => updateNote(note.id, { title: e.target.value })}
-          placeholder={t('title_placeholder')}
-          style={{
-            background: 'none', border: 'none', outline: 'none',
+        {editMode ? (
+          <input
+            value={note.title}
+            onChange={(e) => updateNote(note.id, { title: e.target.value })}
+            placeholder={t('title_placeholder')}
+            style={{
+              background: 'none', border: 'none', outline: 'none',
+              width: '100%', fontSize: dim.textXxl, fontWeight: 800,
+              color: 'var(--text-primary)', letterSpacing: '-0.03em',
+              userSelect: 'text', padding: `${dim.sp2}px 0`,
+              marginBottom: dim.sp1, minHeight: dim.barH,
+            }}
+          />
+        ) : (
+          <div style={{
             width: '100%', fontSize: dim.textXxl, fontWeight: 800,
             color: 'var(--text-primary)', letterSpacing: '-0.03em',
             userSelect: 'text', padding: `${dim.sp2}px 0`,
-            marginBottom: dim.sp1, minHeight: dim.barH,
-          }}
-        />
+            marginBottom: dim.sp1, wordBreak: 'break-word',
+          }}>
+            {note.title}
+          </div>
+        )}
 
         <div style={{
           display: 'flex', alignItems: 'center', gap: dim.sp2, marginBottom: dim.sp3,
@@ -556,7 +571,7 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
         <div style={{ height: 1, background: 'var(--border-subtle)' }} />
       </div>
 
-      {editor && !isSpreadsheet && !isPlainFile && (
+      {editMode && editor && !isSpreadsheet && !isPlainFile && (
         <FormatToolbar editor={editor} noAnim={noAnim} />
       )}
 
@@ -575,22 +590,39 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
           padding: `${dim.sp5}px ${dim.sp6}px ${kbOpen ? Math.round(ih * 0.25) : Math.round(ih * 0.1)}px`,
           userSelect: 'text', minWidth: 0,
         }}>
-          <textarea
-            value={rawDraft}
-            onChange={(e) => {
-              setRawDraft(e.target.value);
-              updateNote(note.id, { content: e.target.value });
-            }}
-            spellCheck={false}
-            wrap="off"
-            style={{
-              width: '100%', minHeight: '50vh',
-              background: 'none', border: 'none', outline: 'none', resize: 'none',
-              fontFamily: "'JetBrains Mono', 'Inter', ui-monospace, monospace",
-              fontSize: 13, lineHeight: 1.6, color: 'var(--text-primary)',
-              userSelect: 'text', tabSize: 4, padding: 0,
-            }}
-          />
+          {!editMode ? (
+            <div style={{
+              background: 'var(--surface-1)', borderRadius: 14,
+              border: `1px solid ${accentRgba(0.4)}`,
+              boxShadow: `0 0 32px ${accentRgba(0.12)}`,
+              padding: `${dim.sp4}px ${dim.sp4}px`, minHeight: '45vh',
+            }}>
+              <pre style={{
+                margin: 0, fontSize: 13, lineHeight: 1.6,
+                fontFamily: "'JetBrains Mono', 'Inter', ui-monospace, monospace",
+                color: 'var(--text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+              }}>
+                {note.content}
+              </pre>
+            </div>
+          ) : (
+            <textarea
+              value={rawDraft}
+              onChange={(e) => {
+                setRawDraft(e.target.value);
+                updateNote(note.id, { content: e.target.value });
+              }}
+              spellCheck={false}
+              wrap="off"
+              style={{
+                width: '100%', minHeight: '50vh',
+                background: 'none', border: 'none', outline: 'none', resize: 'none',
+                fontFamily: "'JetBrains Mono', 'Inter', ui-monospace, monospace",
+                fontSize: 13, lineHeight: 1.6, color: 'var(--text-primary)',
+                userSelect: 'text', tabSize: 4, padding: 0,
+              }}
+            />
+          )}
         </div>
       ) : (
         <div style={{
@@ -598,8 +630,19 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
           padding: `${dim.sp5}px ${dim.sp6}px ${kbOpen ? Math.round(ih * 0.25) : Math.round(ih * 0.1)}px`,
           userSelect: 'text', minWidth: 0,
         }}>
-          <EditorContent editor={editor} />
-      </div>
+          {!editMode ? (
+            <div style={{
+              background: 'var(--surface-1)', borderRadius: 14,
+              border: `1px solid ${accentRgba(0.4)}`,
+              boxShadow: `0 0 32px ${accentRgba(0.12)}`,
+              padding: `${dim.sp4}px ${dim.sp4}px`,
+            }}>
+              <div className="tiptap-editor" dangerouslySetInnerHTML={{ __html: note.content }} />
+            </div>
+          ) : (
+            <EditorContent editor={editor} />
+          )}
+        </div>
       )}
     </div>
   );

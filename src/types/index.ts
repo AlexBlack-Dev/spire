@@ -14,6 +14,7 @@ export interface Note {
   updatedAt: string;
   filePath?: string;
   password?: string;
+  editMode?: boolean;
 }
 
 export interface Task {

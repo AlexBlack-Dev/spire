@@ -11,7 +11,7 @@ import TableRow from '@tiptap/extension-table-row';
 import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
 import {
-  Pin, Star, Trash2, Lock,
+  Pin, Star, Trash2, Lock, Pencil,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { format } from 'date-fns';
@@ -20,7 +20,7 @@ import { translations } from '../i18n/translations';
 import SpreadsheetEditor from './SpreadsheetEditor';
 import TagRow from './TagRow';
 import FormatToolbar from './FormatToolbar';
-import { COLOR_HEX, COLOR_NAMES, getFileInfo } from '../utils/format';
+import { COLOR_HEX, COLOR_NAMES, getFileInfo, hexToRgba } from '../utils/format';
 import { sliceToText } from '../utils/tiptapText';
 
 function parseCSV(text: string): string[][] {
@@ -316,6 +316,13 @@ export default function NoteEditor() {
   }
 
   const accentColor = COLOR_HEX[note.color] || COLOR_HEX.violet;
+  const editMode = note.editMode !== false;
+  const previewCard: React.CSSProperties = {
+    background: 'var(--surface-1)',
+    borderRadius: 12,
+    border: `1px solid ${hexToRgba(accentColor, 0.4)}`,
+    boxShadow: `0 0 32px ${hexToRgba(accentColor, 0.12)}`,
+  };
 
   return (
     <div
@@ -329,7 +336,7 @@ export default function NoteEditor() {
       <div style={{ padding: isSpreadsheet ? '8px 14px 0' : '20px 24px 0', flexShrink: 0, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {COLOR_NAMES.map((c) => (
+            {editMode && COLOR_NAMES.map((c) => (
               <button
                 key={c}
                 onClick={() => updateNote(note.id, { color: c })}
@@ -345,6 +352,9 @@ export default function NoteEditor() {
           </div>
 
           <div style={{ display: 'flex', gap: 3 }}>
+            <ActionBtn icon={<Pencil size={14}/>} active={!editMode} activeColor={accentColor}
+              title={t(editMode ? 'edit_mode' : 'view_mode')}
+              onClick={() => updateNote(note.id, { editMode: !editMode })} />
             <ActionBtn icon={<Pin size={14}/>}   active={note.isPinned}   activeColor={accentColor} onClick={() => togglePin(note.id)} />
             <ActionBtn icon={<Star size={14}/>}  active={note.isFavorite} activeColor="#fbbf24"     onClick={() => toggleFavorite(note.id)} />
             <ActionBtn icon={<Lock size={14}/>}  active={!!note.password} activeColor={accentColor} onClick={() => showLockPrompt(note.id, 'note', note.password ? 'remove' : 'set')} />
@@ -353,17 +363,27 @@ export default function NoteEditor() {
         </div>
 
         {/* Title */}
-        <input
-          value={note.title}
-          onChange={handleTitleChange}
-          placeholder={t('title_placeholder')}
-          style={{
-            background: 'none', border: 'none', outline: 'none',
+        {editMode ? (
+          <input
+            value={note.title}
+            onChange={handleTitleChange}
+            placeholder={t('title_placeholder')}
+            style={{
+              background: 'none', border: 'none', outline: 'none',
+              width: '100%', fontSize: 28, fontWeight: 800,
+              color: 'var(--text-primary)', letterSpacing: '-0.03em',
+              userSelect: 'text', marginBottom: 8,
+            }}
+          />
+        ) : (
+          <div style={{
             width: '100%', fontSize: 28, fontWeight: 800,
             color: 'var(--text-primary)', letterSpacing: '-0.03em',
-            userSelect: 'text', marginBottom: 8,
-          }}
-        />
+            userSelect: 'text', marginBottom: 8, wordBreak: 'break-word',
+          }}>
+            {note.title}
+          </div>
+        )}
 
         {/* Meta */}
         <div style={{
@@ -379,14 +399,14 @@ export default function NoteEditor() {
               <span style={{ color: 'var(--accent)', fontWeight: 700 }}>.{ext}</span>
             </>
           )}
-          <TagRow note={note} updateNote={updateNote} />
+          {editMode && <TagRow note={note} updateNote={updateNote} />}
         </div>
 
         <div style={{ height: 1, background: 'var(--border-subtle)' }} />
       </div>
 
       {/* Toolbar - only show for editable rich-text formats */}
-      {editor && !renderedContent && !isPlainFile && (
+      {editMode && editor && !renderedContent && !isPlainFile && (
         <FormatToolbar editor={editor} />
       )}
 
@@ -402,36 +422,58 @@ export default function NoteEditor() {
         </div>
       ) : isPlainFile ? (
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px 48px', userSelect: 'text', minWidth: 0 }}>
-          {renderedContent && (
-            <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-              <ModeBtn active={!rawPreview} onClick={() => setRawPreview(false)} label={t('source_mode')} />
-              <ModeBtn active={rawPreview} onClick={() => setRawPreview(true)} label={t('badge_preview')} />
+          {!editMode ? (
+            <div style={{ ...previewCard, padding: '20px 22px', minHeight: '50vh' }}>
+              {renderedContent ? (
+                <div>{renderedContent}</div>
+              ) : (
+                <pre style={{
+                  margin: 0, fontSize: 13.5, lineHeight: 1.6,
+                  fontFamily: "'JetBrains Mono', 'Inter', ui-monospace, monospace",
+                  color: 'var(--text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                }}>
+                  {note.content}
+                </pre>
+              )}
             </div>
-          )}
-          {rawPreview && renderedContent ? (
-            <div>{renderedContent}</div>
           ) : (
-            <textarea
-              value={rawDraft}
-              onChange={(e) => {
-                setRawDraft(e.target.value);
-                if (note) updateNote(note.id, { content: e.target.value });
-              }}
-              spellCheck={false}
-              wrap="off"
-              style={{
-                width: '100%', minHeight: '55vh',
-                background: 'none', border: 'none', outline: 'none', resize: 'none',
-                fontFamily: "'JetBrains Mono', 'Inter', ui-monospace, monospace",
-                fontSize: 13.5, lineHeight: 1.6, color: 'var(--text-primary)',
-                userSelect: 'text', tabSize: 4, padding: 0,
-              }}
-            />
+            <>
+              {renderedContent && (
+                <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+                  <ModeBtn active={!rawPreview} onClick={() => setRawPreview(false)} label={t('source_mode')} />
+                  <ModeBtn active={rawPreview} onClick={() => setRawPreview(true)} label={t('badge_preview')} />
+                </div>
+              )}
+              {rawPreview && renderedContent ? (
+                <div>{renderedContent}</div>
+              ) : (
+                <textarea
+                  value={rawDraft}
+                  onChange={(e) => {
+                    setRawDraft(e.target.value);
+                    if (note) updateNote(note.id, { content: e.target.value });
+                  }}
+                  spellCheck={false}
+                  wrap="off"
+                  style={{
+                    width: '100%', minHeight: '55vh',
+                    background: 'none', border: 'none', outline: 'none', resize: 'none',
+                    fontFamily: "'JetBrains Mono', 'Inter', ui-monospace, monospace",
+                    fontSize: 13.5, lineHeight: 1.6, color: 'var(--text-primary)',
+                    userSelect: 'text', tabSize: 4, padding: 0,
+                  }}
+                />
+              )}
+            </>
           )}
         </div>
       ) : (
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 48px', userSelect: 'text', minWidth: 0 }}>
-          {renderedContent ? (
+          {!editMode ? (
+            <div style={{ ...previewCard, padding: '24px 26px' }}>
+              <div className="tiptap-editor" dangerouslySetInnerHTML={{ __html: note.content }} />
+            </div>
+          ) : renderedContent ? (
             <div>
               <div style={{
                 display: 'inline-block', fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)',
@@ -452,13 +494,14 @@ export default function NoteEditor() {
   );
 }
 
-function ActionBtn({ icon, active, activeColor, onClick, danger }: {
+function ActionBtn({ icon, active, activeColor, onClick, danger, title }: {
   icon: React.ReactNode; active: boolean; activeColor: string;
-  onClick: () => void; danger?: boolean;
+  onClick: () => void; danger?: boolean; title?: string;
 }) {
   return (
     <button
       onClick={onClick}
+      title={title}
       style={{
         width: 32, height: 32,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
