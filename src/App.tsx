@@ -65,7 +65,7 @@ export default function App() {
     if (!activeNoteId) return;
     const note = notes.find((n) => n.id === activeNoteId);
     if (!note?.password) return;
-    if (viewMode !== 'private') {
+    if (viewMode !== 'private' && !isMobile) {
       useStore.getState().setActiveNote(null);
       return;
     }

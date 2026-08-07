@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Lock, Unlock, ChevronLeft } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { translations } from '../i18n/translations';
-import { dim, isMobile } from '../isMobile';
+import { dim } from '../isMobile';
 
 type Mode = 'unlock' | 'set' | 'remove';
 
@@ -43,6 +43,16 @@ export default function LockPrompt({ id, kind, mode, onSuccess, onClose }: {
     { label: t('lock_3opens'), value: 3 },
     { label: t('lock_5opens'), value: 5 },
   ];
+
+  const [customOpens, setCustomOpens] = useState('');
+  const customOpensValue = Math.max(1, Math.min(999, parseInt(customOpens, 10) || 0));
+
+  function selectCustomOpens(value: string) {
+    setCustomOpens(value.replace(/[^\d]/g, ''));
+    if (/^\d+$/.test(value)) {
+      setSelected({ type: 'opens', value: Math.max(1, Math.min(999, parseInt(value, 10))) });
+    }
+  }
 
   async function handleSubmit() {
     setError('');
@@ -174,7 +184,7 @@ export default function LockPrompt({ id, kind, mode, onSuccess, onClose }: {
                   </motion.button>
                 ))}
               </div>
-              {kind === 'note' && !isMobile && (
+              {kind === 'note' && (
                 <div style={{ display: 'flex', gap: dim.sp2, flexWrap: 'wrap' }}>
                   <div style={{ fontSize: dim.textXs, fontWeight: 600, color: 'var(--text-disabled)', marginRight: dim.sp1 }}>
                     {t('lock_for_opens')}
@@ -195,6 +205,22 @@ export default function LockPrompt({ id, kind, mode, onSuccess, onClose }: {
                       {o.label}
                     </motion.button>
                   ))}
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder={t('lock_custom_opens')}
+                    value={customOpens}
+                    onChange={(e) => selectCustomOpens(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && customOpensValue > 0 && handleSubmit()}
+                    style={{
+                      width: 64, padding: `${dim.sp1}px ${dim.sp2}px`,
+                      fontSize: dim.textXs, fontWeight: 700,
+                      background: selected.type === 'opens' && !OPENS.some((o) => o.value === selected.value)
+                        ? 'var(--accent)' : 'var(--surface-2)',
+                      color: selected.type === 'opens' && selected.value === customOpensValue ? '#fff' : 'var(--text-secondary)',
+                      border: 'none', borderRadius: dim.radiusSm, outline: 'none', textAlign: 'center',
+                    }}
+                  />
                 </div>
               )}
             </div>
