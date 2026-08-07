@@ -1,6 +1,6 @@
 # Spire
 
-[![Release](https://img.shields.io/badge/release-v1.0.2-blue)](https://github.com/AlexBlack-Dev/spire/releases/latest)
+[![Release](https://img.shields.io/badge/release-v1.0.3-blue)](https://github.com/AlexBlack-Dev/spire/releases/latest)
 [![CI](https://github.com/AlexBlack-Dev/spire/actions/workflows/release.yml/badge.svg)](https://github.com/AlexBlack-Dev/spire/actions)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -16,6 +16,7 @@ Multifunctional note-taking app built with **Tauri v2 + React + TypeScript**.
 ## Features
 
 - **Notes** — create, edit, search, favorites, trash, folders
+- **Rich-text editor** — formatting toolbar, tables, task lists (Tiptap)
 - **Tasks** — task list with priorities
 - **File Browser** — directory navigation, file saving
 - **File Notes** — open any file as a note: raw text editing, spreadsheets (XLSX/XLS/ODS), CSV/JSON/MD preview
@@ -24,6 +25,7 @@ Multifunctional note-taking app built with **Tauri v2 + React + TypeScript**.
 - **Backup** — export/import all data as JSON
 - **Themes** — dark and light themes with custom accent color
 - **Languages** — Russian and English
+- **Update Notifications** — checks GitHub releases and notifies when a new version is available
 - **Splash Screen** — animated loading screen with accent color
 
 ### Android
@@ -80,9 +82,10 @@ src/
 │   ├── MobileLayout.tsx      # Main layout for mobile
 │   ├── BottomNav.tsx         # Bottom navigation
 │   ├── NoteEditor.tsx        # Note editor (Tiptap)
+│   ├── FormatToolbar.tsx     # Shared formatting toolbar
 │   ├── MobileNoteList.tsx    # Note list
 │   ├── TasksView.tsx         # Tasks tab
-│   ├── ToolsView.tsx         # Utilities (themes, folders, trash, stats)
+│   ├── ToolsView.tsx         # Utilities (themes, trash, stats)
 │   ├── FileBrowser.tsx       # File browser
 │   ├── LockPrompt.tsx        # Lock screen
 │   ├── SplashScreen.tsx      # Splash screen
@@ -110,8 +113,8 @@ src-tauri/
 Releases are automatically built via GitHub Actions when a tag is pushed:
 
 ```bash
-git tag v1.0.2
-git push origin v1.0.2
+git tag v1.0.3
+git push origin v1.0.3
 ```
 
 This will build the Windows EXE and Android APK, which will be uploaded to GitHub Releases.
