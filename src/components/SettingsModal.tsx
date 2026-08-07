@@ -109,7 +109,7 @@ export default function SettingsModal() {
                     style={{
                       flex: 1, padding: '10px 16px',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                      background: theme === 'dark' ? 'rgba(124,106,247,0.15)' : 'transparent',
+                      background: theme === 'dark' ? 'color-mix(in srgb, var(--accent) 14%, transparent)' : 'transparent',
                       border: theme === 'dark' ? '1px solid var(--accent)' : '1px solid var(--border-default)',
                       borderRadius: 10,
                       color: theme === 'dark' ? 'var(--accent)' : 'var(--text-tertiary)',
@@ -124,7 +124,7 @@ export default function SettingsModal() {
                     style={{
                       flex: 1, padding: '10px 16px',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                      background: theme === 'light' ? 'rgba(124,106,247,0.15)' : 'transparent',
+                      background: theme === 'light' ? 'color-mix(in srgb, var(--accent) 14%, transparent)' : 'transparent',
                       border: theme === 'light' ? '1px solid var(--accent)' : '1px solid var(--border-default)',
                       borderRadius: 10,
                       color: theme === 'light' ? 'var(--accent)' : 'var(--text-tertiary)',

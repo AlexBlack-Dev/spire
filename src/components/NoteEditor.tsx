@@ -315,7 +315,7 @@ export default function NoteEditor() {
     );
   }
 
-  const accentColor = COLOR_HEX[note.color] || '#7c6af7';
+  const accentColor = COLOR_HEX[note.color] || COLOR_HEX.violet;
 
   return (
     <div

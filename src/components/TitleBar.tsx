@@ -135,12 +135,12 @@ export default function TitleBar() {
               position: 'absolute', top: '50%', left: '50%',
               transform: 'translate(-50%,-50%)',
               width: 44, height: 44, borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(124,106,247,0.15) 0%, transparent 70%)',
+              background: 'radial-gradient(circle, color-mix(in srgb, var(--accent) 10%, transparent) 0%, transparent 70%)',
               filter: 'blur(6px)', pointerEvents: 'none',
             }} />
             <img src="/favicon.png" width={26} height={26} alt="Spire"
               style={{ borderRadius: 5, display: 'block', position: 'relative',
-                filter: 'drop-shadow(0 0 4px rgba(124,106,247,0.3))' }}
+                filter: 'drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 15%, transparent))' }}
             />
           </div>
           <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>

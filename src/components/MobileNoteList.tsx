@@ -58,7 +58,10 @@ export default function MobileNoteList({ privateOnly }: { privateOnly?: boolean 
       <div style={{
         position: 'absolute', top: 'calc(0px - var(--sat, 0px))', left: 0, right: 0,
         height: 'calc(260px + var(--sat, 0px))',
-        background: `radial-gradient(ellipse 90% 60% at 50% 0%, ${accentRgba(0.16)} 0%, transparent 70%)`,
+        background: [
+          `linear-gradient(180deg, ${accentRgba(0.05)} 0%, transparent 100%)`,
+          `radial-gradient(ellipse 90% 60% at 50% 0%, ${accentRgba(0.05)} 0%, transparent 70%)`,
+        ].join(', '),
         pointerEvents: 'none',
       }} />
       <motion.div
@@ -75,7 +78,7 @@ export default function MobileNoteList({ privateOnly }: { privateOnly?: boolean 
         <div style={{
           display: 'flex', alignItems: 'center', gap: dim.sp3,
           background: 'var(--surface-2)', borderRadius: dim.radius, padding: `${dim.sp3}px ${dim.sp5}px`,
-          boxShadow: `0 8px 32px ${accentRgba(0.08)}`,
+          boxShadow: `0 8px 32px ${accentRgba(0.04)}`,
         }}>
           <Search size={dim.iconSm} color="var(--text-disabled)" />
           <input
@@ -136,7 +139,7 @@ function NoteRow({ note, active, index, onClick, language, onDelete, onLock, onT
   onMoveDown: () => void;
 }) {
   const t = (key: string) => translations[language][key] || key;
-  const color = COLOR_HEX[note.color] || '#7c6af7';
+  const color = COLOR_HEX[note.color] || COLOR_HEX.violet;
   const preview = notePreview(note.content, !!note.filePath);
   const showFileExtensions = useStore((s) => s.showFileExtensions);
   const ext = note.filePath ? (note.filePath.split('.').pop()?.toLowerCase() || '') : '';

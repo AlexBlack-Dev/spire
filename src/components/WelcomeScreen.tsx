@@ -3,11 +3,14 @@ import { FileText, CheckSquare, ArrowRight } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { translations } from '../i18n/translations';
 import { dim } from '../isMobile';
+import { COLOR_HEX, hexToRgba } from '../utils/format';
 
 export default function WelcomeScreen() {
-  const { createNote, setViewMode, language } = useStore();
+  const { createNote, setViewMode, language, accentColor } = useStore();
   const t = (key: string) => translations[language][key] || key;
   const reduced = useReducedMotion();
+  const accent = COLOR_HEX[accentColor] || 'var(--accent)';
+  const glow = (a: number) => hexToRgba(accent, a);
 
   const fade = reduced ? { duration: 0 } : { duration: 0.35, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] };
 
@@ -46,7 +49,7 @@ export default function WelcomeScreen() {
               transform: 'translate(-50%, -50%)',
               width: 100, height: 100,
               borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(124,106,247,0.2) 0%, transparent 70%)',
+              background: `radial-gradient(circle, ${glow(0.08)} 0%, transparent 70%)`,
               filter: 'blur(12px)',
               pointerEvents: 'none',
             }}
@@ -55,7 +58,7 @@ export default function WelcomeScreen() {
             src="/favicon.png"
             width={60} height={60}
             alt="Spire"
-            style={{ imageRendering: 'auto', display: 'block', position: 'relative', filter: 'drop-shadow(0 0 6px rgba(124,106,247,0.3))' }}
+            style={{ imageRendering: 'auto', display: 'block', position: 'relative', filter: `drop-shadow(0 0 6px ${glow(0.12)})` }}
           />
         </motion.div>
 

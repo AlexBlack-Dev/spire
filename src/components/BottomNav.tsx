@@ -42,12 +42,12 @@ export default function BottomNav({ activeTab, onTabChange }: {
         width: '100%', height: barH, position: 'relative',
         background: 'var(--surface-1)',
         borderRadius: barH / 2,
-        boxShadow: `0 4px 24px rgba(0,0,0,0.3), 0 0 40px ${accentRgba(0.12)}`,
+        boxShadow: `0 4px 24px rgba(0,0,0,0.3), 0 0 40px ${accentRgba(0.05)}`,
       }}>
         <div style={{
           position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
           width: plusSz * 1.9, height: plusSz * 1.9, borderRadius: '50%',
-          background: `radial-gradient(circle, ${accentRgba(0.22)} 0%, transparent 70%)`,
+          background: `radial-gradient(circle, ${accentRgba(0.10)} 0%, transparent 70%)`,
           filter: 'blur(10px)', pointerEvents: 'none',
         }} />
         {renderTab(tabDefs[0])}
@@ -65,7 +65,7 @@ export default function BottomNav({ activeTab, onTabChange }: {
               background: 'var(--accent)',
               border: 'none',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: `0 4px 16px rgba(0,0,0,0.4), 0 0 24px ${accentRgba(0.5)}`,
+              boxShadow: `0 4px 16px rgba(0,0,0,0.4), 0 0 24px ${accentRgba(0.24)}`,
               cursor: 'pointer',
             }}
           >

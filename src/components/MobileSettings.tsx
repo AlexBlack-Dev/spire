@@ -22,7 +22,10 @@ export default function MobileSettings({ onBack }: { onBack?: () => void }) {
       <div style={{
         position: 'absolute', top: 'calc(0px - var(--sat, 0px))', left: 0, right: 0,
         height: 'calc(240px + var(--sat, 0px))',
-        background: `radial-gradient(ellipse 90% 60% at 50% 0%, ${accentRgba(0.16)} 0%, transparent 70%)`,
+        background: [
+          `linear-gradient(180deg, ${accentRgba(0.05)} 0%, transparent 100%)`,
+          `radial-gradient(ellipse 90% 60% at 50% 0%, ${accentRgba(0.05)} 0%, transparent 70%)`,
+        ].join(', '),
         pointerEvents: 'none',
       }} />
       {/* Header */}

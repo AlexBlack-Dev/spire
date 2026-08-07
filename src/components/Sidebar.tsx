@@ -205,7 +205,7 @@ export default function Sidebar() {
               ? 'linear-gradient(180deg, var(--accent), var(--accent-hover))'
               : 'var(--surface-1)',
             boxShadow: triggerHovered
-              ? '4px 0 16px rgba(124,106,247,0.4)'
+              ? '4px 0 16px color-mix(in srgb, var(--accent) 18%, transparent)'
               : '1px 0 4px rgba(0,0,0,0.2)',
           }}
           transition={{ duration: 0.18 }}
@@ -312,7 +312,7 @@ function NoteRow({ note, active, hovered, index, onClick, onDelete, onHover, onM
   const showLockPrompt = useStore((s) => s.showLockPrompt);
   const showFileExtensions = useStore((s) => s.showFileExtensions);
   const t = (key: string) => translations[language][key] || key;
-  const color = COLOR_HEX[note.color] || '#7c6af7';
+  const color = COLOR_HEX[note.color] || COLOR_HEX.violet;
   const preview = notePreview(note.content, !!note.filePath);
   const ext = note.filePath ? (note.filePath.split('.').pop()?.toLowerCase() || '') : '';
 

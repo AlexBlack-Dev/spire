@@ -39,6 +39,7 @@ export default function MobileLayout() {
   const openFile = useStore((s) => s.openFile);
   const language = useStore((s) => s.language);
   const splashDone = useStore((s) => s.splashDone);
+  const notesCount = useStore((s) => s.notes.length);
   const settingsOpen = useStore((s) => s.settingsOpen);
   const setSettingsOpen = useStore((s) => s.setSettingsOpen);
   const setToolsSubPage = useStore((s) => s.setToolsSubPage);
@@ -268,7 +269,7 @@ export default function MobileLayout() {
       )}
 
       {/* Spire menu */}
-      {splashDone && !showEditor && (
+      {splashDone && !showEditor && !(activeTab === 'notes' && notesCount === 0) && (
       <div ref={menuRef} style={{ position: 'fixed', top: `calc(var(--sat, 0px) + ${dim.sp3}px)`, right: dim.sp3, zIndex: 200 }}>
         <motion.button
           whileTap={{ scale: 0.88 }}
@@ -444,7 +445,10 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
         <div style={{
           position: 'absolute', top: 'calc(0px - var(--sat, 0px))', left: 0, right: 0,
           height: 'calc(180px + var(--sat, 0px))',
-          background: `radial-gradient(ellipse 90% 60% at 50% 0%, ${accentRgba(0.14)} 0%, transparent 70%)`,
+          background: [
+            `linear-gradient(180deg, ${accentRgba(0.05)} 0%, transparent 100%)`,
+            `radial-gradient(ellipse 90% 60% at 50% 0%, ${accentRgba(0.05)} 0%, transparent 70%)`,
+          ].join(', '),
           pointerEvents: 'none',
         }} />
         <EditorTopBar onBack={onBack} />
@@ -465,7 +469,10 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
       <div style={{
         position: 'absolute', top: 'calc(0px - var(--sat, 0px))', left: 0, right: 0,
         height: 'calc(180px + var(--sat, 0px))',
-        background: `radial-gradient(ellipse 90% 60% at 50% 0%, ${accentRgba(0.14)} 0%, transparent 70%)`,
+        background: [
+          `linear-gradient(180deg, ${accentRgba(0.05)} 0%, transparent 100%)`,
+          `radial-gradient(ellipse 90% 60% at 50% 0%, ${accentRgba(0.05)} 0%, transparent 70%)`,
+        ].join(', '),
         pointerEvents: 'none',
       }} />
       <div style={{
