@@ -137,6 +137,10 @@ const en: Dict = {
   'perm_restart_desc': 'Storage access was granted. Restart the app now to apply the changes.',
   'perm_restart_now': 'Restart now',
   'perm_restarting': 'Restarting...',
+  'edit_mode': 'Edit',
+  'view_mode': 'View',
+  'private_empty_title': 'No private notes yet',
+  'private_empty_desc': 'Notes protected with a password will appear here.',
 
   // Toasts
   'toast_note_not_found': 'Note not found',
@@ -162,6 +166,7 @@ const en: Dict = {
   'update_desc': 'A new version of Spire is here with fixes and improvements. Open the release page to download and install it.',
   'update_download': 'Get update',
   'update_later': 'Later',
+  'update_whats_new': "What's new",
 
   // Lock prompt
   'lock_set_password': 'Set Password',
@@ -368,6 +373,10 @@ const ru: Dict = {
   'perm_restart_desc': 'Доступ к хранилищу выдан. Перезапустите приложение, чтобы изменения вступили в силу.',
   'perm_restart_now': 'Перезапустить',
   'perm_restarting': 'Перезапуск...',
+  'edit_mode': 'Редактировать',
+  'view_mode': 'Просмотр',
+  'private_empty_title': 'Нет приватных заметок',
+  'private_empty_desc': 'Заметки с паролем появятся здесь.',
 
   // Toasts
   'toast_note_not_found': 'Заметка не найдена',
@@ -393,6 +402,7 @@ const ru: Dict = {
   'update_desc': 'Вышла новая версия Spire с исправлениями и улучшениями. Откройте страницу релиза, чтобы скачать и установить её.',
   'update_download': 'Получить',
   'update_later': 'Позже',
+  'update_whats_new': 'Что нового',
 
   // Lock prompt
   'lock_set_password': 'Установить пароль',
