@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.8] - 2026-08-08
+
+### Changed
+
+- The "What's new" tab now lists every release (desktop sidebar + mobile list) with collapsible details per version; the latest release is expanded by default
+
+### Fixed
+
+- The "What's new" tab no longer hangs on the loading state: release headings from the changelog are parsed correctly
+
 ## [1.0.7] - 2026-08-08
 
 ### Added
