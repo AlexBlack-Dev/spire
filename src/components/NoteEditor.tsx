@@ -11,7 +11,7 @@ import TableRow from '@tiptap/extension-table-row';
 import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
 import {
-  Pin, Star, Trash2, Lock, Pencil,
+  Pin, Star, Trash2, Lock, Pencil, Eye,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { format } from 'date-fns';
@@ -207,12 +207,13 @@ export default function NoteEditor() {
   const [rawPreview, setRawPreview] = useState(false);
   const rawLoadedId = useRef<string | null>(null);
   useEffect(() => {
-    if (isPlainFile && rawLoadedId.current !== note!.id) {
-      rawLoadedId.current = note!.id;
-      setRawDraft(note!.content);
+    if (!isPlainFile || !note) return;
+    if (rawLoadedId.current !== note.id || rawDraft !== note.content) {
+      rawLoadedId.current = note.id;
+      setRawDraft(note.content);
       setRawPreview(false);
     }
-  }, [note?.id, isPlainFile]);
+  }, [note?.id, isPlainFile, note?.content, rawDraft]);
 
   const displayWordCount = isPlainFile
     ? (rawDraft.trim() ? rawDraft.trim().split(/\s+/).length : 0)
@@ -320,8 +321,11 @@ export default function NoteEditor() {
   const previewCard: React.CSSProperties = {
     background: 'var(--surface-1)',
     borderRadius: 12,
-    border: `1px solid ${hexToRgba(accentColor, 0.4)}`,
-    boxShadow: `0 0 32px ${hexToRgba(accentColor, 0.12)}`,
+    boxShadow: [
+      `0 0 40px ${hexToRgba(accentColor, 0.28)}`,
+      `0 0 96px ${hexToRgba(accentColor, 0.12)}`,
+      '0 16px 48px rgba(0,0,0,0.35)',
+    ].join(', '),
   };
 
   return (
@@ -351,10 +355,18 @@ export default function NoteEditor() {
             ))}
           </div>
 
-          <div style={{ display: 'flex', gap: 3 }}>
-            <ActionBtn icon={<Pencil size={14}/>} active={!editMode} activeColor={accentColor}
-              title={t(editMode ? 'edit_mode' : 'view_mode')}
-              onClick={() => updateNote(note.id, { editMode: !editMode })} />
+          <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+            <div style={{
+              display: 'flex', gap: 2, background: 'var(--surface-2)',
+              borderRadius: 8, padding: 2, marginRight: 6,
+            }}>
+              <SegItem active={editMode} activeColor={accentColor}
+                icon={<Pencil size={11}/>} label={t('edit_mode')}
+                onClick={() => { if (!editMode) updateNote(note.id, { editMode: true }); }} />
+              <SegItem active={!editMode} activeColor={accentColor}
+                icon={<Eye size={11}/>} label={t('view_mode')}
+                onClick={() => { if (editMode) updateNote(note.id, { editMode: false }); }} />
+            </div>
             <ActionBtn icon={<Pin size={14}/>}   active={note.isPinned}   activeColor={accentColor} onClick={() => togglePin(note.id)} />
             <ActionBtn icon={<Star size={14}/>}  active={note.isFavorite} activeColor="#fbbf24"     onClick={() => toggleFavorite(note.id)} />
             <ActionBtn icon={<Lock size={14}/>}  active={!!note.password} activeColor={accentColor} onClick={() => showLockPrompt(note.id, 'note', note.password ? 'remove' : 'set')} />
@@ -491,6 +503,29 @@ export default function NoteEditor() {
         </div>
       )}
     </div>
+  );
+}
+
+function SegItem({ active, activeColor, icon, label, onClick }: {
+  active: boolean; activeColor: string; icon: React.ReactNode;
+  label: string; onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 4,
+        padding: '4px 9px', border: 'none', borderRadius: 6, cursor: 'pointer',
+        background: active ? 'var(--accent-dim)' : 'transparent',
+        color: active ? activeColor : 'var(--text-tertiary)',
+        fontSize: 11, fontWeight: 800, transition: 'all 0.15s',
+      }}
+      onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--surface-3)'; } }}
+      onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; } }}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }
 
