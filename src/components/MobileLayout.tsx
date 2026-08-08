@@ -57,6 +57,7 @@ export default function MobileLayout() {
   const showLockPrompt = useStore((s) => s.showLockPrompt);
   const [storageGranted, setStorageGranted] = useState(true);
   const needsPermissionRedirect = useStore((s) => s.needsPermissionRedirect);
+  const changelogRequest = useStore((s) => s.changelogRequest);
 
   useEffect(() => {
     const check = async () => {
@@ -118,6 +119,13 @@ export default function MobileLayout() {
       useStore.setState({ needsPermissionRedirect: false });
     }
   }, [needsPermissionRedirect]);
+
+  useEffect(() => {
+    if (!changelogRequest) return;
+    setToolsSubPage('changelog');
+    setActiveTab('tools');
+    setMobileView('tab');
+  }, [changelogRequest]);
 
   const [, forceUpdate] = useState(0);
   useEffect(() => {
@@ -477,8 +485,8 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
         position: 'absolute', top: 'calc(0px - var(--sat, 0px))', left: 0, right: 0,
         height: 'calc(180px + var(--sat, 0px))',
         background: [
-          `linear-gradient(180deg, ${accentRgba(0.05)} 0%, transparent 100%)`,
-          `radial-gradient(ellipse 90% 60% at 50% 0%, ${accentRgba(0.05)} 0%, transparent 70%)`,
+          `linear-gradient(180deg, ${noteAccentRgba(0.06)} 0%, transparent 100%)`,
+          `radial-gradient(ellipse 90% 60% at 50% 0%, ${noteAccentRgba(0.06)} 0%, transparent 70%)`,
         ].join(', '),
         pointerEvents: 'none',
       }} />
@@ -604,12 +612,12 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
         }}>
           {!editMode ? (
             <div style={{
-              background: 'var(--surface-1)', borderRadius: 14,
-              boxShadow: [
-                `0 0 40px ${noteAccentRgba(0.28)}`,
-                `0 0 96px ${noteAccentRgba(0.12)}`,
-                '0 16px 48px rgba(0,0,0,0.35)',
+              background: [
+                `linear-gradient(180deg, ${noteAccentRgba(0.14)} 0%, transparent 38%)`,
+                'var(--surface-1)',
               ].join(', '),
+              borderTop: `3px solid ${noteAccent}`,
+              borderRadius: 14,
               padding: `${dim.sp4}px ${dim.sp4}px`, minHeight: '45vh',
             }}>
               <pre style={{
@@ -647,12 +655,12 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
         }}>
           {!editMode ? (
             <div style={{
-              background: 'var(--surface-1)', borderRadius: 14,
-              boxShadow: [
-                `0 0 40px ${noteAccentRgba(0.28)}`,
-                `0 0 96px ${noteAccentRgba(0.12)}`,
-                '0 16px 48px rgba(0,0,0,0.35)',
+              background: [
+                `linear-gradient(180deg, ${noteAccentRgba(0.14)} 0%, transparent 38%)`,
+                'var(--surface-1)',
               ].join(', '),
+              borderTop: `3px solid ${noteAccent}`,
+              borderRadius: 14,
               padding: `${dim.sp4}px ${dim.sp4}px`,
             }}>
               <div className="tiptap-editor" dangerouslySetInnerHTML={{ __html: note.content }} />
