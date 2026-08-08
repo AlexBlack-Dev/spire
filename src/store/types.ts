@@ -1,5 +1,6 @@
 import type { Note, Task, ViewMode, SortMode, NoteColor, Folder, ThemeMode } from '../types';
 import type { Language } from '../i18n/translations';
+import type { ChangelogEntry } from '../utils/changelog';
 
 export interface LogEntry {
   time: string;
@@ -41,6 +42,10 @@ export interface SpireStore {
   needsPermissionRedirect: boolean;
   antiPaste: boolean;
   changelogRequest: number;
+  changelogEntries: ChangelogEntry[];
+  changelogLoading: boolean;
+  changelogFailed: boolean;
+  changelogVersion: string | null;
   showFileExtensions: boolean;
   toasts: ToastItem[];
 
@@ -118,6 +123,8 @@ export interface SpireStore {
   setToolsSubPage: (page: string | null) => void;
   dismissPermBanner: () => void;
   requestChangelog: () => void;
+  fetchChangelog: () => void;
+  setChangelogVersion: (version: string | null) => void;
   addLog: (msg: string) => void;
   exportData: () => Promise<void>;
   importData: () => Promise<void>;

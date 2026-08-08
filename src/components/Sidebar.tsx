@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, CheckSquare, Lock, Star, Search, Plus, Pin, Trash2, ChevronLeft, Shuffle, ScrollText, ArrowUp, ArrowDown } from 'lucide-react';
+import { FileText, CheckSquare, Lock, Star, Search, Plus, Pin, Trash2, ChevronLeft, ChevronDown, Shuffle, ScrollText, ArrowUp, ArrowDown } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { translations } from '../i18n/translations';
 import type { Note } from '../types';
@@ -11,6 +11,8 @@ export default function Sidebar() {
     notes, tasks, viewMode, searchQuery, activeNoteId, sidebarOpen,
     setViewMode, setSearchQuery, createNote, setActiveNote, deleteNote,
     moveNoteUp, moveNoteDown, toggleSidebar, language,
+    changelogEntries, changelogLoading, changelogFailed,
+    changelogVersion, fetchChangelog, setChangelogVersion,
   } = useStore();
   const t = (key: string) => translations[language][key] || key;
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -70,7 +72,76 @@ export default function Sidebar() {
 
             <div style={{ height: 1, background: 'var(--border-subtle)', margin: '2px 12px' }} />
 
-            {viewMode !== 'tasks' && (
+            {viewMode === 'changelog' ? (
+              <div style={{ flex: 1, overflowY: 'auto', padding: '8px 10px 16px' }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  height: 46, padding: '0 8px',
+                  fontSize: 11, fontWeight: 700, color: 'var(--text-disabled)',
+                  letterSpacing: '0.09em', textTransform: 'uppercase',
+                }}>
+                  <ScrollText size={12} />
+                  {t('changelog')}
+                </div>
+                {changelogLoading && changelogEntries.length === 0 ? (
+                  <div style={{ padding: '24px 12px', textAlign: 'center', fontSize: 13, fontWeight: 500, color: 'var(--text-tertiary)' }}>
+                    {t('loading')}
+                  </div>
+                ) : changelogFailed ? (
+                  <div style={{ padding: '24px 12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-tertiary)', marginBottom: 10 }}>
+                      {t('changelog_failed')}
+                    </div>
+                    <button
+                      onClick={fetchChangelog}
+                      style={{
+                        background: 'none', border: '1px solid var(--border-default)',
+                        borderRadius: 8, padding: '6px 14px',
+                        color: 'var(--accent)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                      }}
+                    >
+                      {t('retry')}
+                    </button>
+                  </div>
+                ) : (
+                  changelogEntries.map((entry) => {
+                    const active = entry.version === (changelogVersion ?? changelogEntries[0]?.version);
+                    return (
+                      <button
+                        key={entry.version}
+                        onClick={() => setChangelogVersion(active ? null : entry.version)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 8,
+                          width: '100%', boxSizing: 'border-box',
+                          background: active ? 'var(--surface-2)' : 'transparent',
+                          border: `1px solid ${active ? 'var(--border-default)' : 'transparent'}`,
+                          borderRadius: 8, padding: '9px 12px', cursor: 'pointer',
+                          textAlign: 'left', marginBottom: 2,
+                        }}
+                      >
+                        <span style={{
+                          fontSize: 13, fontWeight: 800, color: active ? 'var(--accent)' : 'var(--text-secondary)',
+                          letterSpacing: '-0.01em',
+                        }}>
+                          v{entry.version}
+                        </span>
+                        <span style={{ flex: 1 }} />
+                        {entry.date && (
+                          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-disabled)' }}>
+                            {entry.date}
+                          </span>
+                        )}
+                        <ChevronDown size={13} style={{
+                          color: active ? 'var(--accent)' : 'var(--text-disabled)',
+                          transition: 'transform 0.15s',
+                          transform: active ? 'rotate(180deg)' : 'none',
+                        }} />
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            ) : viewMode !== 'tasks' ? (
               <>
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -153,7 +224,7 @@ export default function Sidebar() {
                   )}
                 </div>
               </>
-            )}
+            ) : null}
 
             {viewMode === 'tasks' && (
               <div style={{ flex: 1, padding: '14px' }}>
