@@ -42,6 +42,7 @@ export interface SpireStore {
   needsPermissionRedirect: boolean;
   antiPaste: boolean;
   changelogRequest: number;
+  updateCheckRequest: number;
   changelogEntries: ChangelogEntry[];
   changelogLoading: boolean;
   changelogFailed: boolean;
@@ -123,6 +124,7 @@ export interface SpireStore {
   setToolsSubPage: (page: string | null) => void;
   dismissPermBanner: () => void;
   requestChangelog: () => void;
+  checkForUpdates: () => void;
   fetchChangelog: () => void;
   setChangelogVersion: (version: string | null) => void;
   addLog: (msg: string) => void;

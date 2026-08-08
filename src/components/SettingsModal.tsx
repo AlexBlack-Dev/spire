@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Download, Upload, Github, Moon, Sun, Check } from 'lucide-react';
+import { X, Download, Upload, Github, Moon, Sun, Check, RefreshCw } from 'lucide-react';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useStore } from '../store/useStore';
 import { translations, type Language } from '../i18n/translations';
@@ -7,7 +7,7 @@ import { COLOR_HEX, COLOR_NAMES } from '../utils/format';
 import { APP_VERSION } from '../version';
 
 export default function SettingsModal() {
-  const { settingsOpen, setSettingsOpen, language, setLanguage, exportData, importData, theme, setTheme, accentColor, setAccentColor, showFileExtensions, setShowFileExtensions } = useStore();
+  const { settingsOpen, setSettingsOpen, language, setLanguage, exportData, importData, theme, setTheme, accentColor, setAccentColor, showFileExtensions, setShowFileExtensions, checkForUpdates } = useStore();
   const t = (key: string) => translations[language][key] || key;
 
   const openGitHub = () => openUrl('https://github.com/AlexBlack-Dev');
@@ -69,8 +69,27 @@ export default function SettingsModal() {
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-tertiary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   {t('settings_version')}
                 </div>
-                <div style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-secondary)' }}>
-                  {APP_VERSION}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                  <div style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-secondary)' }}>
+                    {APP_VERSION}
+                  </div>
+                  <button
+                    onClick={checkForUpdates}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      padding: '7px 12px',
+                      background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+                      border: '1px solid color-mix(in srgb, var(--accent) 35%, transparent)',
+                      borderRadius: 9,
+                      color: 'var(--accent)', fontSize: 12, fontWeight: 700,
+                      cursor: 'pointer', transition: 'all 0.12s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--accent) 18%, transparent)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--accent) 10%, transparent)'; }}
+                  >
+                    <RefreshCw size={13} />
+                    {t('update_check')}
+                  </button>
                 </div>
               </div>
 

@@ -60,6 +60,7 @@ interface LatestInfo {
 export default function UpdateChecker() {
   const language = useStore((s) => s.language);
   const accentColor = useStore((s) => s.accentColor);
+  const updateCheckRequest = useStore((s) => s.updateCheckRequest);
   const t = (key: string) => translations[language][key] || key;
   const [latest, setLatest] = useState<LatestInfo | null>(null);
   const [dismissed, setDismissed] = useState(false);
@@ -68,43 +69,64 @@ export default function UpdateChecker() {
 
   useEffect(() => {
     let cancelled = false;
+    setDismissed(false);
     (async () => {
       try {
         const res = await fetch(REPO_URL, {
           headers: { Accept: 'application/vnd.github+json' },
         });
-        if (!res.ok) return;
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         const tag = String(data.tag_name || '');
         const htmlUrl = String(data.html_url || `https://github.com/AlexBlack-Dev/spire/releases`);
         const body = String(data.body || '');
         if (cancelled) return;
-        if (!tag || !isNewer(tag, APP_VERSION)) return;
-
-        const assets: Array<{ name?: unknown; browser_download_url?: unknown }> =
-          Array.isArray(data.assets) ? data.assets : [];
-        const winAsset = assets
-          .map((a) => ({
-            name: String(a.name || ''),
-            url: String(a.browser_download_url || ''),
-          }))
-          .filter((a) => a.name && a.url && /\.(exe|msi)$/i.test(a.name))
-          .sort((a, b) => {
-            const score = (n: string) => (n.endsWith('.exe') ? 0 : 1);
-            return score(a.name) - score(b.name);
-          })[0] ?? null;
-
-        setLatest({
-          version: tag.replace(/^v/i, ''),
-          url: htmlUrl,
-          body,
-          installer: isMobile ? null : winAsset,
-        });
-      } catch {
-        // offline / rate-limited — silent
+        if (tag && isNewer(tag, APP_VERSION)) {
+          const assets: Array<{ name?: unknown; browser_download_url?: unknown }> =
+            Array.isArray(data.assets) ? data.assets : [];
+          const winAsset = assets
+            .map((a) => ({
+              name: String(a.name || ''),
+              url: String(a.browser_download_url || ''),
+            }))
+            .filter((a) => a.name && a.url && /\.(exe|msi)$/i.test(a.name))
+            .sort((a, b) => {
+              const score = (n: string) => (n.endsWith('.exe') ? 0 : 1);
+              return score(a.name) - score(b.name);
+            })[0] ?? null;
+          setLatest({
+            version: tag.replace(/^v/i, ''),
+            url: htmlUrl,
+            body,
+            installer: isMobile ? null : winAsset,
+          });
+        } else if (updateCheckRequest > 0) {
+          useStore.getState().showToast(t('update_up_to_date'), 'success');
+        }
+      } catch (e) {
+        if (cancelled) return;
+        console.warn('update check failed', e);
+        if (updateCheckRequest > 0) {
+          useStore.getState().showToast(t('update_check_failed'), 'error');
+        }
       }
     })();
     return () => { cancelled = true; };
+  }, [updateCheckRequest]);
+
+  useEffect(() => {
+    let unlisten: (() => void) | null = null;
+    (async () => {
+      try {
+        const { listen } = await import('@tauri-apps/api/event');
+        unlisten = await listen<{ percent: number }>('update-progress', (e) => {
+          setProgress(Math.max(0, Math.min(100, Number(e.payload?.percent) || 0)));
+        });
+      } catch {
+        // browser dev — no progress events
+      }
+    })();
+    return () => { unlisten?.(); };
   }, []);
 
   const openRelease = async () => {
@@ -129,40 +151,21 @@ export default function UpdateChecker() {
     setInstalling(true);
     setProgress(0);
     try {
-      const { writeFile } = await import('@tauri-apps/plugin-fs');
+      const { invoke } = await import('@tauri-apps/api/core');
       const { downloadDir } = await import('@tauri-apps/api/path');
-      const { openUrl } = await import('@tauri-apps/plugin-opener');
-      const res = await fetch(latest.installer.url);
-      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
-      const total = Number(res.headers.get('content-length') || 0);
-      const reader = res.body.getReader();
-      const chunks: Uint8Array[] = [];
-      let loaded = 0;
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (value) {
-          chunks.push(value);
-          loaded += value.length;
-          if (total > 0) setProgress(Math.floor((loaded / total) * 100));
-        }
-      }
-      const size = chunks.reduce((acc, c) => acc + c.length, 0);
-      const buf = new Uint8Array(size);
-      let offset = 0;
-      for (const c of chunks) {
-        buf.set(c, offset);
-        offset += c.length;
-      }
+      const { openPath } = await import('@tauri-apps/plugin-opener');
       const dir = await downloadDir();
       const target = `${dir}${pathSep}${latest.installer.name}`;
-      await writeFile(target, buf);
-      await openUrl(`file:///${target.replace(/\\/g, '/')}`);
+      await invoke('download_release', { url: latest.installer.url, dest: target });
+      await openPath(target);
       useStore.getState().showToast(t('update_launched'), 'success');
       setDismissed(true);
     } catch (e) {
       console.warn('auto install failed', e);
-      useStore.getState().showToast(t('update_install_failed'), 'error');
+      const msg = e instanceof Error ? e.message : String(e);
+      useStore.getState().addLog(`update install: ${msg}`);
+      useStore.getState().showToast(`${t('update_install_failed')} — ${msg}`, 'error');
+      openRelease();
     } finally {
       setInstalling(false);
     }
@@ -205,20 +208,12 @@ export default function UpdateChecker() {
 
           <div style={{ padding: `${dim.sp6}px ${dim.sp6}px 0`, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{ position: 'relative', marginBottom: dim.sp4 }}>
-              <div style={{
-                width: 64, height: 64, borderRadius: 20,
-                background: `linear-gradient(145deg, ${rgba(0.32)} 0%, ${rgba(0.08)} 100%)`,
-                border: `1px solid ${rgba(0.35)}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: `0 0 32px ${rgba(0.3)}`,
-              }}>
-                <img src="/favicon.png" width={36} height={36} alt="Spire" style={{ borderRadius: 8 }} />
-              </div>
+              <img src="/favicon.png" width={64} height={64} alt="Spire" />
               <motion.div
                 style={{
-                  position: 'absolute', top: -3, right: -3, width: 13, height: 13,
+                  position: 'absolute', top: -3, right: -6, width: 15, height: 15,
                   borderRadius: '50%', background: '#4ade80',
-                  border: '2.5px solid var(--surface-1)',
+                  border: '3px solid var(--surface-1)',
                 }}
                 animate={{ scale: [1, 1.25, 1], opacity: [1, 0.75, 1] }}
                 transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
@@ -253,7 +248,7 @@ export default function UpdateChecker() {
               fontSize: 11, fontWeight: 800, color: 'var(--text-tertiary)',
               textTransform: 'uppercase', letterSpacing: '0.08em',
             }}>
-              <img src="/favicon.png" width={12} height={12} alt="" style={{ borderRadius: 3 }} />
+              <img src="/favicon.png" width={12} height={12} alt="" />
               {t('update_whats_new')}
             </div>
             {notes.length > 0 ? (

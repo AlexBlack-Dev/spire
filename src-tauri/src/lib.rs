@@ -498,6 +498,33 @@ fn take_persistable_uri(uri: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+async fn download_release(app: tauri::AppHandle, url: String, dest: String) -> Result<(), String> {
+    let client = reqwest::Client::builder()
+        .user_agent("Spire-Updater")
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let mut res = client.get(&url).send().await.map_err(|e| e.to_string())?;
+    if !res.status().is_success() {
+        return Err(format!("HTTP {}", res.status()));
+    }
+
+    let total = res.content_length().unwrap_or(0);
+    let mut out = std::fs::File::create(&dest).map_err(|e| format!("create {}: {}", dest, e))?;
+    let mut downloaded: u64 = 0;
+
+    while let Some(chunk) = res.chunk().await.map_err(|e| e.to_string())? {
+        std::io::Write::write_all(&mut out, &chunk).map_err(|e| e.to_string())?;
+        downloaded += chunk.len() as u64;
+        if total > 0 {
+            let percent = ((downloaded as f64 / total as f64) * 100.0) as u32;
+            let _ = app.emit("update-progress", serde_json::json!({ "percent": percent }));
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
 async fn write_content_to_uri(
     uri: String,
     content: String,
@@ -604,7 +631,8 @@ pub fn run() {
             convert_image, read_image_base64, migrate_from_blum,
             open_app_settings, check_storage_permission, restart_app,
             save_file_dialog, write_content_to_uri, take_persistable_uri,
-            list_directory, get_storage_root, save_to_path
+            list_directory, get_storage_root, save_to_path,
+            download_release
         ])
         .run(tauri::generate_context!())
     {

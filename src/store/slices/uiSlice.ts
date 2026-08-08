@@ -20,6 +20,7 @@ export const uiSlice: SpireSlice = (set) => ({
   errorLogs: [],
   antiPaste: false,
   changelogRequest: 0,
+  updateCheckRequest: 0,
   changelogEntries: [] as ChangelogEntry[],
   changelogLoading: false,
   changelogFailed: false,
@@ -54,6 +55,7 @@ export const uiSlice: SpireSlice = (set) => ({
   setToolsSubPage: (page) => set({ toolsSubPage: page }),
   dismissPermBanner: () => set({ permBannerDismissed: true }),
   requestChangelog: () => set({ changelogRequest: Date.now() }),
+  checkForUpdates: () => set({ updateCheckRequest: Date.now() }),
   fetchChangelog: () => {
     set({ changelogLoading: true, changelogFailed: false });
     fetch(CHANGELOG_URL)

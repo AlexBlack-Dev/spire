@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { openUrl } from '@tauri-apps/plugin-opener';
-import { ChevronLeft, Download, Upload, Github } from 'lucide-react';
+import { ChevronLeft, Download, Upload, Github, RefreshCw } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { translations, type Language } from '../i18n/translations';
 import { dim } from '../isMobile';
@@ -8,7 +8,7 @@ import { COLOR_HEX, hexToRgba } from '../utils/format';
 import { APP_VERSION } from '../version';
 
 export default function MobileSettings({ onBack }: { onBack?: () => void }) {
-  const { language, setLanguage, exportData, importData, accentColor, showFileExtensions, setShowFileExtensions } = useStore();
+  const { language, setLanguage, exportData, importData, accentColor, showFileExtensions, setShowFileExtensions, checkForUpdates } = useStore();
   const t = (key: string) => translations[language][key] || key;
   const accent = COLOR_HEX[accentColor];
   const accentRgba = (a: number) => hexToRgba(accent, a);
@@ -58,8 +58,25 @@ export default function MobileSettings({ onBack }: { onBack?: () => void }) {
       <div style={{ flex: 1, overflowY: 'auto', padding: `${dim.sp7}px ${dim.sp6}px` }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: dim.sp8 }}>
           <Section label={t('settings_version')}>
-            <div style={{ fontSize: dim.textMd, fontWeight: 800, color: 'var(--text-secondary)' }}>
-              {APP_VERSION}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: dim.sp3 }}>
+              <div style={{ fontSize: dim.textMd, fontWeight: 800, color: 'var(--text-secondary)' }}>
+                {APP_VERSION}
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.92 }}
+                onClick={checkForUpdates}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: dim.sp2,
+                  padding: `${dim.sp2}px ${dim.sp4}px`,
+                  background: accentRgba(0.1), border: `1px solid ${accentRgba(0.35)}`,
+                  borderRadius: dim.radiusSm,
+                  color: 'var(--accent)', fontSize: dim.textSm, fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                <RefreshCw size={dim.iconSm} />
+                {t('update_check')}
+              </motion.button>
             </div>
           </Section>
 
