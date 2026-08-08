@@ -680,22 +680,10 @@ function PermissionsView({ onBack }: { onBack: () => void }) {
             </div>
             <div style={{ display: 'flex', gap: dim.sp2 }}>
               <button
-                onClick={() => setRestartPrompt(false)}
-                disabled={restarting}
-                style={{
-                  flex: 1, padding: `${dim.sp3}px 0`,
-                  background: 'transparent', border: '1px solid var(--border-default)',
-                  borderRadius: 10, cursor: 'pointer',
-                  fontSize: dim.textSm, fontWeight: 700, color: 'var(--text-secondary)',
-                }}
-              >
-                {t('update_later')}
-              </button>
-              <button
                 onClick={handleRestart}
                 disabled={restarting}
                 style={{
-                  flex: 1.4, padding: `${dim.sp3}px 0`,
+                  flex: 1, padding: `${dim.sp3}px 0`,
                   background: 'var(--accent)', border: 'none', borderRadius: 10,
                   cursor: restarting ? 'default' : 'pointer',
                   fontSize: dim.textSm, fontWeight: 800, color: '#fff',

@@ -59,7 +59,14 @@ class MainActivity : TauriActivity() {
                     ?: return false
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 ctx.startActivity(intent)
-                Runtime.getRuntime().exit(0)
+                Thread {
+                    try {
+                        Thread.sleep(400)
+                    } catch (_: InterruptedException) {
+                        // ignore
+                    }
+                    Runtime.getRuntime().exit(0)
+                }.start()
                 true
             } catch (e: Exception) {
                 android.util.Log.e("SPIRE", "restartApp: ${e.message}")

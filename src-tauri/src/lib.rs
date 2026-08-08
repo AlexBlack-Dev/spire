@@ -304,8 +304,8 @@ fn restart_app_impl() -> Result<(), String> {
 #[cfg(not(target_os = "android"))]
 fn restart_app_impl() -> Result<(), String> {
     let exe = std::env::current_exe().map_err(|e| e.to_string())?;
-    let mut child = std::process::Command::new(&exe).spawn().map_err(|e| e.to_string())?;
-    let _ = child.kill();
+    std::process::Command::new(&exe).spawn().map_err(|e| e.to_string())?;
+    std::thread::sleep(std::time::Duration::from_millis(150));
     std::process::exit(0);
 }
 
