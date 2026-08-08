@@ -319,13 +319,9 @@ export default function NoteEditor() {
   const accentColor = COLOR_HEX[note.color] || COLOR_HEX.violet;
   const editMode = note.editMode !== false;
   const previewCard: React.CSSProperties = {
-    background: 'var(--surface-1)',
+    background: `linear-gradient(180deg, ${hexToRgba(accentColor, 0.14)} 0%, transparent 38%), var(--surface-1)`,
     borderRadius: 12,
-    boxShadow: [
-      `0 0 40px ${hexToRgba(accentColor, 0.28)}`,
-      `0 0 96px ${hexToRgba(accentColor, 0.12)}`,
-      '0 16px 48px rgba(0,0,0,0.35)',
-    ].join(', '),
+    borderTop: `3px solid ${accentColor}`,
   };
 
   return (
