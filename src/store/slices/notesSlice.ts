@@ -1,12 +1,12 @@
 import { v4 as uuidv4 } from 'uuid';
 import { open } from '@tauri-apps/plugin-dialog';
-import { writeTextFile, readTextFile, writeFile } from '@tauri-apps/plugin-fs';
+import { readTextFile } from '@tauri-apps/plugin-fs';
 import { invoke } from '@tauri-apps/api/core';
 import type { Note } from '../../types';
 import { isMobile, pathSep } from '../../isMobile';
 import {
   COLORS, tKey, getContentText, htmlToMarkdown, htmlToFullHtml,
-  readFileAsBase64, base64ToBytes, fileExt,
+  readFileAsBase64, fileExt,
 } from '../helpers';
 import type { SpireSlice, SaveFormat } from '../types';
 
@@ -33,6 +33,7 @@ export const notesSlice: SpireSlice = (set, get) => ({
       isFavorite: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      editMode: true,
     };
     set((s) => ({ notes: [newNote, ...s.notes], activeNoteId: newNote.id }));
   },
@@ -140,6 +141,7 @@ export const notesSlice: SpireSlice = (set, get) => ({
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       filePath: path,
+      editMode: true,
     };
     set((s) => ({ notes: [newNote, ...s.notes], activeNoteId: newNote.id, viewMode: 'notes' }));
     return true;
@@ -221,9 +223,9 @@ export const notesSlice: SpireSlice = (set, get) => ({
     }
     try {
       if (isBinary) {
-        await writeFile(newPath, base64ToBytes(note.content));
+        await invoke('save_binary', { path: newPath, content: note.content });
       } else {
-        await writeTextFile(newPath, text);
+        await invoke('save_to_path', { filePath: newPath, content: text });
       }
       get().showToast(tKey(get().language, 'toast_saved'));
       return true;
@@ -341,6 +343,7 @@ export const notesSlice: SpireSlice = (set, get) => ({
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       filePath: path,
+      editMode: true,
     };
     set((s) => ({ notes: [newNote, ...s.notes], activeNoteId: newNote.id, viewMode: 'notes' }));
   },
