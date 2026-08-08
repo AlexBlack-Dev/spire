@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { ChevronLeft, Pin, Star, Trash2, Menu, Save, Lock, Unlock, ShieldAlert, Pencil } from 'lucide-react';
+import { ChevronLeft, Pin, Star, Trash2, Menu, Save, Lock, Unlock, ShieldAlert, Pencil, Eye } from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -59,7 +59,7 @@ export default function MobileLayout() {
   const needsPermissionRedirect = useStore((s) => s.needsPermissionRedirect);
 
   useEffect(() => {
-    (async () => {
+    const check = async () => {
       try {
         const { invoke } = await import('@tauri-apps/api/core');
         const ok = await invoke<boolean>('check_storage_permission');
@@ -67,7 +67,11 @@ export default function MobileLayout() {
       } catch {
         setStorageGranted(false);
       }
-    })();
+    };
+    check();
+    const onVis = () => { if (document.visibilityState === 'visible') check(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
   }, []);
 
   const prevNoteRef = useRef<string | null>(null);
@@ -374,13 +378,15 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
   const [rawDraft, setRawDraft] = useState('');
   const rawLoadedId = useRef<string | null>(null);
   useEffect(() => {
-    if (isPlainFile && note && rawLoadedId.current !== note.id) {
+    if (isPlainFile && note && (rawLoadedId.current !== note.id || rawDraft !== note.content)) {
       rawLoadedId.current = note.id;
       setRawDraft(note.content);
     }
-  }, [note?.id, isPlainFile]);
+  }, [note?.id, isPlainFile, note?.content, rawDraft]);
   const accent = COLOR_HEX[accentColor];
   const accentRgba = (a: number) => hexToRgba(accent, a);
+  const noteAccent = COLOR_HEX[(note?.color ?? 'violet') as keyof typeof COLOR_HEX];
+  const noteAccentRgba = (a: number) => hexToRgba(noteAccent, a);
 
   const [kbOpen, setKbOpen] = useState(false);
   const editMode = note ? note.editMode !== false : true;
@@ -497,10 +503,7 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
         <IconBtn onClick={() => { saveFile(note.id).catch((e) => console.warn('save failed', e)); }} active={false} activeColor="#4ade80" noAnim={noAnim}>
           <Save size={dim.iconMd} />
         </IconBtn>
-        <IconBtn onClick={() => updateNote(note.id, { editMode: !editMode })} active={!editMode} activeColor={accent} noAnim={noAnim}>
-          <Pencil size={dim.iconMd} />
-        </IconBtn>
-        <IconBtn onClick={() => togglePin(note.id)} active={note.isPinned} activeColor={accent} noAnim={noAnim}>
+        <IconBtn onClick={() => togglePin(note.id)} active={note.isPinned} activeColor={noteAccent} noAnim={noAnim}>
           <Pin size={dim.iconMd} />
         </IconBtn>
         <IconBtn onClick={() => toggleFavorite(note.id)} active={note.isFavorite} activeColor="#fbbf24" noAnim={noAnim}>
@@ -517,7 +520,8 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
       </div>
 
       <div style={{ padding: `0 ${dim.sp6}px`, flexShrink: 0 }}>
-        <div style={{ display: 'flex', gap: dim.sp3, marginBottom: dim.sp3 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: dim.sp3 }}>
+        <div style={{ display: 'flex', gap: dim.sp3 }}>
           {editMode && COLOR_NAMES.map((c) => (
             <motion.button
               key={c}
@@ -530,10 +534,18 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
                 border: 'none',
                 opacity: note.color === c ? 1 : 0.3,
                 cursor: 'pointer', outline: 'none',
+                boxShadow: note.color === c ? `0 0 12px ${hexToRgba(COLOR_HEX[c], 0.9)}` : 'none',
               }}
             />
           ))}
         </div>
+        <div style={{ display: 'flex', gap: 2, background: 'var(--surface-2)', borderRadius: 8, padding: 2 }}>
+          <SegBtn active={editMode} activeColor={noteAccent} icon={<Pencil size={12} />} label={t('edit_mode')}
+            onClick={() => { if (!editMode) updateNote(note.id, { editMode: true }); }} />
+          <SegBtn active={!editMode} activeColor={noteAccent} icon={<Eye size={12} />} label={t('view_mode')}
+            onClick={() => { if (editMode) updateNote(note.id, { editMode: false }); }} />
+        </div>
+      </div>
 
         {editMode ? (
           <input
@@ -593,8 +605,11 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
           {!editMode ? (
             <div style={{
               background: 'var(--surface-1)', borderRadius: 14,
-              border: `1px solid ${accentRgba(0.4)}`,
-              boxShadow: `0 0 32px ${accentRgba(0.12)}`,
+              boxShadow: [
+                `0 0 40px ${noteAccentRgba(0.28)}`,
+                `0 0 96px ${noteAccentRgba(0.12)}`,
+                '0 16px 48px rgba(0,0,0,0.35)',
+              ].join(', '),
               padding: `${dim.sp4}px ${dim.sp4}px`, minHeight: '45vh',
             }}>
               <pre style={{
@@ -633,8 +648,11 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
           {!editMode ? (
             <div style={{
               background: 'var(--surface-1)', borderRadius: 14,
-              border: `1px solid ${accentRgba(0.4)}`,
-              boxShadow: `0 0 32px ${accentRgba(0.12)}`,
+              boxShadow: [
+                `0 0 40px ${noteAccentRgba(0.28)}`,
+                `0 0 96px ${noteAccentRgba(0.12)}`,
+                '0 16px 48px rgba(0,0,0,0.35)',
+              ].join(', '),
               padding: `${dim.sp4}px ${dim.sp4}px`,
             }}>
               <div className="tiptap-editor" dangerouslySetInnerHTML={{ __html: note.content }} />
@@ -686,6 +704,27 @@ function MenuItem({ label, onClick }: { label: string; onClick: () => void }) {
 
 function MenuSep() {
   return <div style={{ height: 1, background: 'var(--border-default)', margin: '3px 4px' }} />;
+}
+
+function SegBtn({ active, activeColor, icon, label, onClick }: {
+  active: boolean; activeColor: string; icon: React.ReactNode;
+  label: string; onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 3,
+        padding: '5px 9px', border: 'none', borderRadius: 6,
+        background: active ? 'var(--accent-dim)' : 'transparent',
+        color: active ? activeColor : 'var(--text-tertiary)',
+        fontSize: 11, fontWeight: 800, cursor: 'pointer',
+      }}
+    >
+      {icon}
+      {label}
+    </button>
+  );
 }
 
 function IconBtn({ children, onClick, active, activeColor, noAnim }: {
