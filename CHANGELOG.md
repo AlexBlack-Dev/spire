@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.6] - 2026-08-08
+
+### Changed
+
+- Editor mode switch is now the classic Edit/View segmented control on desktop and mobile (no custom pencil toggle)
+- The note color is rendered as a soft ambient glow around the preview card instead of a visible border; on mobile the glow follows the note color, not the app accent
+- Removed the restart prompt from the permissions screen: the storage banner disappears immediately once access is granted (visibility re-check), no restart dialog anymore
+
+### Fixed
+
+- Saving a note to a file no longer leaks raw HTML into the editor: after a successful save the note content is replaced with the actual saved text (markdown/HTML for .md/.html, plain text otherwise)
+
 ## [1.0.5] - 2026-08-08
 
 ## [1.0.4] - 2026-08-07
