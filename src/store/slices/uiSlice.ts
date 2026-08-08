@@ -15,6 +15,7 @@ export const uiSlice: SpireSlice = (set) => ({
   permBannerDismissed: false,
   errorLogs: [],
   antiPaste: false,
+  changelogRequest: 0,
   showFileExtensions: false,
   toasts: [],
 
@@ -44,6 +45,7 @@ export const uiSlice: SpireSlice = (set) => ({
   setSplashDone: () => set({ splashDone: true }),
   setToolsSubPage: (page) => set({ toolsSubPage: page }),
   dismissPermBanner: () => set({ permBannerDismissed: true }),
+  requestChangelog: () => set({ changelogRequest: Date.now() }),
   addLog: (msg) => set((s) => {
     const logs = [{ time: new Date().toLocaleString(), msg }, ...s.errorLogs].slice(0, 200);
     return { errorLogs: logs };

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, CheckSquare, Lock, Star, Search, Plus, Pin, Trash2, ChevronLeft, Shuffle, ArrowUp, ArrowDown } from 'lucide-react';
+import { FileText, CheckSquare, Lock, Star, Search, Plus, Pin, Trash2, ChevronLeft, Shuffle, ScrollText, ArrowUp, ArrowDown } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { translations } from '../i18n/translations';
 import type { Note } from '../types';
@@ -52,6 +52,7 @@ export default function Sidebar() {
                 { id: 'tasks'     as const, icon: <CheckSquare size={16}/>, label: t('tasks'),     badge: activeTasks || undefined },
                 { id: 'private'  as const, icon: <Lock size={16}/>,        label: t('private'), badge: notes.filter(n=>n.password).length || undefined },
                 ...(navigator.userAgent.includes('Android') ? [] : [{ id: 'converter' as const, icon: <Shuffle size={16}/>, label: t('converter'), badge: undefined }]),
+                { id: 'changelog' as const, icon: <ScrollText size={16}/>, label: t('changelog'), badge: undefined },
               ].map((item) => (
                 <NavItem key={item.id} icon={item.icon} label={item.label}
                   badge={item.badge} active={viewMode === item.id}

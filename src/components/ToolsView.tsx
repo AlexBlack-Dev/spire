@@ -4,15 +4,16 @@ import {
   BarChart3, Folder, Trash2, Palette, Shield,
   ChevronRight, ChevronLeft, X, RotateCcw,
   Sun, Moon, Check, Star, CircleCheckBig,
-  ExternalLink,
+  ExternalLink, ScrollText,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { translations } from '../i18n/translations';
 import { dim } from '../isMobile';
 import { format } from 'date-fns';
 import { COLOR_HEX, COLOR_NAMES } from '../utils/format';
+import ChangelogView from './ChangelogView';
 
-type ToolsSubPage = 'hub' | 'statistics' | 'trash' | 'themes' | 'permissions';
+type ToolsSubPage = 'hub' | 'statistics' | 'trash' | 'themes' | 'permissions' | 'changelog';
 
 const th = window.innerHeight;
 
@@ -71,11 +72,15 @@ export default function ToolsView() {
   if (subPage === 'permissions') {
     return <PermissionsView onBack={() => goTo('hub')} />;
   }
+  if (subPage === 'changelog') {
+    return <ChangelogView onBack={() => goTo('hub')} />;
+  }
   const tools = [
     { id: 'statistics' as ToolsSubPage, icon: <BarChart3 size={dim.iconLg} />, label: t('statistics'), color: '#4f8ef7' },
     { id: 'trash' as ToolsSubPage, icon: <Trash2 size={dim.iconLg} />, label: t('trash'), color: '#f87171' },
     { id: 'themes' as ToolsSubPage, icon: <Palette size={dim.iconLg} />, label: t('themes'), color: '#fbbf24' },
     { id: 'permissions' as ToolsSubPage, icon: <Shield size={dim.iconLg} />, label: t('permissions'), color: '#f472b6' },
+    { id: 'changelog' as ToolsSubPage, icon: <ScrollText size={dim.iconLg} />, label: t('changelog'), color: '#a78bfa' },
   ];
 
   return (

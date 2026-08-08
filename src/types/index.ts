@@ -36,7 +36,7 @@ export interface Folder {
 
 export type ThemeMode = 'dark' | 'light';
 
-export type ViewMode = 'notes' | 'tasks' | 'favorites' | 'private' | 'converter';
+export type ViewMode = 'notes' | 'tasks' | 'favorites' | 'private' | 'converter' | 'changelog';
 export type SortMode = 'date' | 'title' | 'color';
 
 export type FormatCategory = 'text' | 'image' | 'document';

@@ -7,6 +7,7 @@ import TasksView from './components/TasksView';
 import WelcomeScreen from './components/WelcomeScreen';
 import PrivateEmpty from './components/PrivateEmpty';
 import ConverterView from './components/ConverterView';
+import ChangelogView from './components/ChangelogView';
 import SettingsModal from './components/SettingsModal';
 import SplashScreen from './components/SplashScreen';
 import MobileLayout from './components/MobileLayout';
@@ -193,6 +194,15 @@ export default function App() {
                   style={{ flex: 1, display: 'flex', overflow: 'hidden' }}
                 >
                   <ConverterView />
+                </motion.div>
+              ) : viewMode === 'changelog' ? (
+                <motion.div key="changelog"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  style={{ flex: 1, display: 'flex', overflow: 'hidden' }}
+                >
+                  <ChangelogView />
                 </motion.div>
               ) : showPrivateEmpty ? (
                 <motion.div key="private-empty"

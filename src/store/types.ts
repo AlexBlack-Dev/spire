@@ -40,6 +40,7 @@ export interface SpireStore {
   fileBrowserNoteId: string | null;
   needsPermissionRedirect: boolean;
   antiPaste: boolean;
+  changelogRequest: number;
   showFileExtensions: boolean;
   toasts: ToastItem[];
 
@@ -116,6 +117,7 @@ export interface SpireStore {
   setSplashDone: () => void;
   setToolsSubPage: (page: string | null) => void;
   dismissPermBanner: () => void;
+  requestChangelog: () => void;
   addLog: (msg: string) => void;
   exportData: () => Promise<void>;
   importData: () => Promise<void>;
