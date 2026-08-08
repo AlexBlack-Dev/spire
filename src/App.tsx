@@ -5,6 +5,7 @@ import Sidebar from './components/Sidebar';
 import NoteEditor from './components/NoteEditor';
 import TasksView from './components/TasksView';
 import WelcomeScreen from './components/WelcomeScreen';
+import PrivateEmpty from './components/PrivateEmpty';
 import ConverterView from './components/ConverterView';
 import SettingsModal from './components/SettingsModal';
 import SplashScreen from './components/SplashScreen';
@@ -38,6 +39,8 @@ export default function App() {
 
   const showEditor  = viewMode === 'notes' || viewMode === 'private';
   const showWelcome = showEditor && !activeNoteId;
+  const privateNotes = notes.filter((n) => n.password);
+  const showPrivateEmpty = viewMode === 'private' && privateNotes.length === 0 && !activeNoteId;
 
   const activeNote = notes.find((n) => n.id === activeNoteId);
   const expiry = activeNoteId ? (lockedNoteExpiries[activeNoteId] ?? 0) : 0;
@@ -61,6 +64,8 @@ export default function App() {
       }
     }
     prevNoteRef.current = activeNoteId;
+
+    if (isMobile) return;
 
     if (!activeNoteId) return;
     const note = notes.find((n) => n.id === activeNoteId);
@@ -188,6 +193,15 @@ export default function App() {
                   style={{ flex: 1, display: 'flex', overflow: 'hidden' }}
                 >
                   <ConverterView />
+                </motion.div>
+              ) : showPrivateEmpty ? (
+                <motion.div key="private-empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  style={{ flex: 1, display: 'flex', overflow: 'hidden' }}
+                >
+                  <PrivateEmpty />
                 </motion.div>
               ) : showWelcome ? (
                 <motion.div key="welcome"

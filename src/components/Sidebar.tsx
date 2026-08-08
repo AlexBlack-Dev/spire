@@ -55,7 +55,14 @@ export default function Sidebar() {
               ].map((item) => (
                 <NavItem key={item.id} icon={item.icon} label={item.label}
                   badge={item.badge} active={viewMode === item.id}
-                  onClick={() => setViewMode(item.id)}
+                  onClick={() => {
+                    if (item.id === 'private') {
+                      const s = useStore.getState();
+                      const cur = s.notes.find((n) => n.id === s.activeNoteId);
+                      if (cur && !cur.password) s.setActiveNote(null);
+                    }
+                    setViewMode(item.id);
+                  }}
                 />
               ))}
             </div>
