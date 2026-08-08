@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.9] - 2026-08-08
+
+### Added
+
+- "Check for updates" button in the settings (desktop + mobile): re-runs the update check and shows a toast when already on the latest version
+- Update installer now downloads in-app: the update dialog downloads the installer through a Rust command (bypassing GitHub CORS) with a live progress bar and launches it from the Downloads folder
+
+### Changed
+
+- Update dialog redesigned: the app logo is shown at full size without the surrounding square container; version comparison chip, "What's new" bullets and localized section headings added
+- Changelog section headings (Added / Changed / Fixed / Removed) and the empty-changelog placeholder are now localized (EN/RU)
+
+### Fixed
+
+- The NSIS installer "Run Spire" checkbox now reliably launches the app after installation (built with the current bundler that runs the app via `RunAsUser`)
+- Android release APKs are signed with a stable keystore kept in the repository, so updates install over the previous version without uninstalling
+
 ## [1.0.8] - 2026-08-08
 
 ### Changed
@@ -46,6 +63,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Saving a note to a file no longer leaks raw HTML into the editor: after a successful save the note content is replaced with the actual saved text (markdown/HTML for .md/.html, plain text otherwise)
 
 ## [1.0.5] - 2026-08-08
+
+### Added
+
+- Empty-state placeholder for the Private tab on desktop
+- The update dialog now shows a "What's new" list with the most recent changes (localized EN/RU)
+
+### Changed
+
+- App restart after granting storage permission is more stable (permission applied immediately)
+
+### Fixed
+
+- Saving file notes via the Rust commands no longer relies on the fs scope on desktop
 
 ## [1.0.4] - 2026-08-07
 
