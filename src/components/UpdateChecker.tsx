@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, ArrowRight, Sparkles } from 'lucide-react';
+import { Download, ArrowRight } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { translations } from '../i18n/translations';
 import { APP_VERSION } from '../version';
-import { dim } from '../isMobile';
+import { dim, isMobile, pathSep } from '../isMobile';
 import { COLOR_HEX, hexToRgba } from '../utils/format';
 
 const REPO_URL = 'https://api.github.com/repos/AlexBlack-Dev/spire/releases/latest';
-const RELEASES_PAGE = 'https://github.com/AlexBlack-Dev/spire/releases';
 
 function parseVersion(v: string): number[] {
   return v.replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
@@ -46,12 +45,26 @@ function extractNotes(body: string): string[] {
   return notes;
 }
 
+interface InstallerAsset {
+  name: string;
+  url: string;
+}
+
+interface LatestInfo {
+  version: string;
+  url: string;
+  body: string;
+  installer: InstallerAsset | null;
+}
+
 export default function UpdateChecker() {
   const language = useStore((s) => s.language);
   const accentColor = useStore((s) => s.accentColor);
   const t = (key: string) => translations[language][key] || key;
-  const [latest, setLatest] = useState<{ version: string; url: string; body: string } | null>(null);
+  const [latest, setLatest] = useState<LatestInfo | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const [installing, setInstalling] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,12 +76,30 @@ export default function UpdateChecker() {
         if (!res.ok) return;
         const data = await res.json();
         const tag = String(data.tag_name || '');
-        const htmlUrl = String(data.html_url || RELEASES_PAGE);
+        const htmlUrl = String(data.html_url || `https://github.com/AlexBlack-Dev/spire/releases`);
         const body = String(data.body || '');
         if (cancelled) return;
-        if (tag && isNewer(tag, APP_VERSION)) {
-          setLatest({ version: tag.replace(/^v/i, ''), url: htmlUrl, body });
-        }
+        if (!tag || !isNewer(tag, APP_VERSION)) return;
+
+        const assets: Array<{ name?: unknown; browser_download_url?: unknown }> =
+          Array.isArray(data.assets) ? data.assets : [];
+        const winAsset = assets
+          .map((a) => ({
+            name: String(a.name || ''),
+            url: String(a.browser_download_url || ''),
+          }))
+          .filter((a) => a.name && a.url && /\.(exe|msi)$/i.test(a.name))
+          .sort((a, b) => {
+            const score = (n: string) => (n.endsWith('.exe') ? 0 : 1);
+            return score(a.name) - score(b.name);
+          })[0] ?? null;
+
+        setLatest({
+          version: tag.replace(/^v/i, ''),
+          url: htmlUrl,
+          body,
+          installer: isMobile ? null : winAsset,
+        });
       } catch {
         // offline / rate-limited — silent
       }
@@ -83,6 +114,57 @@ export default function UpdateChecker() {
       await openUrl(latest.url);
     } catch {
       window.open(latest.url, '_blank');
+    }
+  };
+
+  const openChangelog = () => {
+    const s = useStore.getState();
+    if (isMobile) s.requestChangelog();
+    else s.setViewMode('changelog');
+    setDismissed(true);
+  };
+
+  const installUpdate = async () => {
+    if (!latest?.installer) return;
+    setInstalling(true);
+    setProgress(0);
+    try {
+      const { writeFile } = await import('@tauri-apps/plugin-fs');
+      const { downloadDir } = await import('@tauri-apps/api/path');
+      const { openUrl } = await import('@tauri-apps/plugin-opener');
+      const res = await fetch(latest.installer.url);
+      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+      const total = Number(res.headers.get('content-length') || 0);
+      const reader = res.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let loaded = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value) {
+          chunks.push(value);
+          loaded += value.length;
+          if (total > 0) setProgress(Math.floor((loaded / total) * 100));
+        }
+      }
+      const size = chunks.reduce((acc, c) => acc + c.length, 0);
+      const buf = new Uint8Array(size);
+      let offset = 0;
+      for (const c of chunks) {
+        buf.set(c, offset);
+        offset += c.length;
+      }
+      const dir = await downloadDir();
+      const target = `${dir}${pathSep}${latest.installer.name}`;
+      await writeFile(target, buf);
+      await openUrl(`file:///${target.replace(/\\/g, '/')}`);
+      useStore.getState().showToast(t('update_launched'), 'success');
+      setDismissed(true);
+    } catch (e) {
+      console.warn('auto install failed', e);
+      useStore.getState().showToast(t('update_install_failed'), 'error');
+    } finally {
+      setInstalling(false);
     }
   };
 
@@ -128,10 +210,9 @@ export default function UpdateChecker() {
                 background: `linear-gradient(145deg, ${rgba(0.32)} 0%, ${rgba(0.08)} 100%)`,
                 border: `1px solid ${rgba(0.35)}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: accent,
                 boxShadow: `0 0 32px ${rgba(0.3)}`,
               }}>
-                <Sparkles size={26} />
+                <img src="/favicon.png" width={36} height={36} alt="Spire" style={{ borderRadius: 8 }} />
               </div>
               <motion.div
                 style={{
@@ -172,7 +253,7 @@ export default function UpdateChecker() {
               fontSize: 11, fontWeight: 800, color: 'var(--text-tertiary)',
               textTransform: 'uppercase', letterSpacing: '0.08em',
             }}>
-              <Sparkles size={12} style={{ color: accent }} />
+              <img src="/favicon.png" width={12} height={12} alt="" style={{ borderRadius: 3 }} />
               {t('update_whats_new')}
             </div>
             {notes.length > 0 ? (
@@ -203,10 +284,10 @@ export default function UpdateChecker() {
             )}
           </div>
 
-          <div style={{ padding: dim.sp6, display: 'flex', flexDirection: 'column', gap: dim.sp2 }}>
+          <div style={{ padding: dim.sp6, display: 'flex', flexDirection: 'column', gap: dim.sp3 }}>
             <motion.button
               whileTap={{ scale: 0.97 }}
-              onClick={openRelease}
+              onClick={latest.installer ? installUpdate : openRelease}
               style={{
                 width: '100%', padding: `${dim.sp4}px 0`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: dim.sp2,
@@ -217,12 +298,25 @@ export default function UpdateChecker() {
               }}
             >
               <Download size={17} />
-              {t('update_download')}
+              {installing ? `${t('update_downloading')} ${progress}%` : (latest.installer ? t('update_install') : t('update_download'))}
             </motion.button>
+            <button
+              onClick={openChangelog}
+              style={{
+                width: '100%', padding: `${dim.sp3}px 0`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: rgba(0.1), border: `1px solid ${rgba(0.3)}`,
+                borderRadius: 12,
+                color: accent, fontSize: dim.textMd, fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              {t('update_see_changes')}
+            </button>
             <button
               onClick={() => setDismissed(true)}
               style={{
-                width: '100%', padding: `${dim.sp2}px 0`,
+                width: '100%', padding: `${dim.sp1}px 0`,
                 background: 'none', border: 'none', cursor: 'pointer',
                 fontSize: dim.textSm, fontWeight: 600, color: 'var(--text-tertiary)',
               }}
