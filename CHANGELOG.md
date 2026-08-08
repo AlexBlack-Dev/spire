@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.7] - 2026-08-08
+
+### Added
+
+- New "What's new" tab showing the full changelog (fetched from the repo) — desktop sidebar entry and a Tools entry on mobile
+- Update dialog now installs updates in-app: the primary button downloads the installer into Downloads and launches it with a progress indicator; the secondary button opens the changelog tab
+
+### Changed
+
+- The update dialog shows the Spire app icon instead of the sparkle icon
+- The preview card no longer glows with a colored outline: the note color is rendered as a subtle top accent line and gradient (desktop and mobile)
+
+### Removed
+
+- Removed the "Block copy/paste" toggle from mobile settings
+
 ## [1.0.6] - 2026-08-08
 
 ### Changed
