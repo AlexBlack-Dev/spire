@@ -15,8 +15,9 @@ dist-ssr
 # Rust / Tauri build artifacts
 src-tauri/target/
 
-# Android signing (generated in CI, never stored in the repo)
-src-tauri/gen/android/app/debug.keystore
+# Android signing (stable debug keystore is committed for consistent signatures)
+src-tauri/gen/android/app/*.jks
+src-tauri/gen/android/app/*.p12
 
 # Editor directories and files
 .vscode/*

@@ -119,13 +119,17 @@ jobs:
 
       - name: Generate Android signing keystore
         run: |
-          keytool -genkeypair -v \
-            -keystore src-tauri/gen/android/app/debug.keystore \
-            -alias "${{ secrets.SPIRE_KEY_ALIAS || 'androiddebugkey' }}" \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass "${{ secrets.SPIRE_KEYSTORE_PASSWORD || 'android' }}" \
-            -keypass "${{ secrets.SPIRE_KEY_PASSWORD || 'android' }}" \
-            -dname "CN=Spire, OU=Spire, O=Spire, L=City, ST=State, C=US"
+          if [ ! -f "src-tauri/gen/android/app/debug.keystore" ]; then
+            keytool -genkeypair -v \
+              -keystore src-tauri/gen/android/app/debug.keystore \
+              -alias "${{ secrets.SPIRE_KEY_ALIAS || 'androiddebugkey' }}" \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "${{ secrets.SPIRE_KEYSTORE_PASSWORD || 'android' }}" \
+              -keypass "${{ secrets.SPIRE_KEY_PASSWORD || 'android' }}" \
+              -dname "CN=Spire, OU=Spire, O=Spire, L=City, ST=State, C=US"
+          else
+            echo "Stable keystore found in repo, keeping signature"
+          fi
 
       - name: Build Android APK
         run: npx tauri android build --target aarch64
