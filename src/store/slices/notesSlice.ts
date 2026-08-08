@@ -179,7 +179,7 @@ export const notesSlice: SpireSlice = (set, get) => ({
           content: text,
         });
         if (!uri) { get().showToast(tKey(get().language, 'toast_save_cancelled')); return false; }
-        get().updateNote(id, { filePath: uri });
+        get().updateNote(id, { filePath: uri, content: text });
         get().showToast(tKey(get().language, 'toast_saved'));
         return true;
       } catch (e) {
@@ -240,10 +240,20 @@ export const notesSlice: SpireSlice = (set, get) => ({
   finishFileBrowserSave: async (id, path) => {
     const note = get().notes.find((n) => n.id === id);
     if (!note) { set({ fileBrowserOpen: false, fileBrowserNoteId: null }); return false; }
-    const text = note.filePath ? note.content : getContentText(note.content);
+    const ext = fileExt(path);
+    let text = note.content;
+    if (note.filePath) {
+      text = note.content;
+    } else if (ext === 'md') {
+      text = `# ${note.title}\n\n${htmlToMarkdown(note.content)}`;
+    } else if (ext === 'html') {
+      text = htmlToFullHtml(note.title, note.content);
+    } else {
+      text = getContentText(note.content);
+    }
     try {
       await invoke('save_to_path', { filePath: path, content: text });
-      get().updateNote(id, { filePath: path });
+      get().updateNote(id, { filePath: path, content: text });
       get().showToast(tKey(get().language, 'toast_saved'));
       set({ fileBrowserOpen: false, fileBrowserNoteId: null });
       return true;
