@@ -525,30 +525,13 @@ function ThemeCard({ icon, label, selected, onClick }: {
 function PermissionsView({ onBack }: { onBack: () => void }) {
   const t = useT();
   const [storageGranted, setStorageGranted] = useState(false);
-  const [restartPrompt, setRestartPrompt] = useState(false);
-  const [restarting, setRestarting] = useState(false);
 
   const checkPermission = async () => {
     try {
       const { invoke } = await import('@tauri-apps/api/core');
       const ok = await invoke<boolean>('check_storage_permission');
-      setStorageGranted((prev) => {
-        if (!prev && ok) setRestartPrompt(true);
-        return ok;
-      });
+      setStorageGranted(ok);
     } catch {}
-  };
-
-  const handleRestart = async () => {
-    setRestarting(true);
-    try {
-      const { invoke } = await import('@tauri-apps/api/core');
-      await invoke('restart_app');
-    } catch (e) {
-      console.warn('restart_app failed', e);
-      setRestarting(false);
-      setRestartPrompt(false);
-    }
   };
 
   useEffect(() => {
@@ -648,54 +631,6 @@ function PermissionsView({ onBack }: { onBack: () => void }) {
           </div>
 </div>
       </div>
-      {restartPrompt && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 400,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(0,0,0,0.55)', padding: dim.sp6,
-        }}>
-          <div style={{
-            width: '100%', maxWidth: 320,
-            background: 'var(--surface-1)', border: '1px solid var(--border-default)',
-            borderRadius: 18, padding: dim.sp6,
-          }}>
-            <div style={{
-              width: 44, height: 44, borderRadius: 12, marginBottom: dim.sp4,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(74,222,128,0.15)', color: '#4ade80',
-            }}>
-              <CircleCheckBig size={22} />
-            </div>
-            <div style={{
-              fontSize: dim.textLg, fontWeight: 800, color: 'var(--text-primary)',
-              letterSpacing: '-0.02em', marginBottom: dim.sp2,
-            }}>
-              {t('perm_restart_title')}
-            </div>
-            <div style={{
-              fontSize: dim.textSm, fontWeight: 500, color: 'var(--text-secondary)',
-              lineHeight: 1.55, marginBottom: dim.sp5,
-            }}>
-              {t('perm_restart_desc')}
-            </div>
-            <div style={{ display: 'flex', gap: dim.sp2 }}>
-              <button
-                onClick={handleRestart}
-                disabled={restarting}
-                style={{
-                  flex: 1, padding: `${dim.sp3}px 0`,
-                  background: 'var(--accent)', border: 'none', borderRadius: 10,
-                  cursor: restarting ? 'default' : 'pointer',
-                  fontSize: dim.textSm, fontWeight: 800, color: '#fff',
-                  opacity: restarting ? 0.6 : 1,
-                }}
-              >
-                {restarting ? t('perm_restarting') : t('perm_restart_now')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
