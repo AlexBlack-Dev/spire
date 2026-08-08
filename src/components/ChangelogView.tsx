@@ -14,6 +14,13 @@ const SECTION_COLORS: Record<string, string> = {
   Removed: '#f87171',
 };
 
+const SECTION_KEYS: Record<string, string> = {
+  Added: 'changelog_sec_added',
+  Changed: 'changelog_sec_changed',
+  Fixed: 'changelog_sec_fixed',
+  Removed: 'changelog_sec_removed',
+};
+
 export default function ChangelogView({ onBack }: { onBack?: () => void }) {
   const language = useStore((s) => s.language);
   const accentColor = useStore((s) => s.accentColor);
@@ -178,7 +185,14 @@ export default function ChangelogView({ onBack }: { onBack?: () => void }) {
               </span>
             )}
           </div>
-          {selected.sections.map((s) => {
+          {selected.sections.length === 0 ? (
+            <div style={{
+              fontSize: dim.textSm, fontWeight: 500,
+              color: 'var(--text-tertiary)', lineHeight: 1.55,
+            }}>
+              {t('changelog_empty')}
+            </div>
+          ) : selected.sections.map((s) => {
             const color = SECTION_COLORS[s.heading] || accent;
             return (
               <div key={s.heading} style={{ marginBottom: dim.sp3 }}>
@@ -191,7 +205,7 @@ export default function ChangelogView({ onBack }: { onBack?: () => void }) {
                   <span style={{
                     width: 6, height: 6, borderRadius: '50%', background: color,
                   }} />
-                  {s.heading}
+                  {t(SECTION_KEYS[s.heading] || `changelog_sec_${s.heading.toLowerCase()}`) || s.heading}
                 </div>
                 <ul style={{
                   listStyle: 'none', margin: 0, padding: 0,
