@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-19
+
+### Added
+
+- Run script files (.bat/.cmd/.ps1/.vbs/.js/.sh) directly from the note editor via a new "Run" button and the `run_script` Rust command; scripts open from the OS file association
+- Download validation for update installers: only artifacts from the official Spire release page are accepted, with a size cap (512 MB)
+- Strict Content Security Policy for production builds (self-hosted assets, IPC, GitHub API), with CSP disabled in dev
+- Hardened the markdown view: rendering is now DOM-based with sanitized HTML (scripts, iframes and `javascript:` links stripped)
+
+### Changed
+
+- Autosave in the editor is debounced (400 ms), updates no longer touch `updatedAt` when nothing changed
+- Note search in the sidebar and mobile list is debounced and runs against a stripped-content index instead of re-parsing HTML per keystroke
+- Long note lists use `content-visibility` so offscreen rows are not rendered
+- Zustand selectors split per field in all components, removing full-store re-renders
+- All components migrated to the typed `useT()` i18n hook (`Dict` type from translations) — typos in translation keys are now compile-time errors
+- Spreadsheet editor preserves cell formulas on save (untouched formula cells are kept, new `=` values are stored as formulas); structural edits invalidate formulas safely
+- All semantic colors (danger/star/priority/toast icons) now use CSS variables instead of hardcoded hex
+- Tauri API calls in components use dynamic imports, so the browser dev environment no longer crashes on missing IPC
+
+### Fixed
+
+- Downloading updates no longer redirects to the release page in a browser: downloads go through the validated Rust command
+- Migration from old BLUM/BLUNT data runs at most once (persisted flag), preventing duplicate migration on every launch
+- Error logs are now persisted across app restarts (they were only kept in memory)
+- Empty catch blocks replaced with explicit logging (storage permission, spreadsheet parse/save, update events)
+
 ## [1.0.9] - 2026-08-08
 
 ### Added
