@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- App no longer freezes with a blank/crashed window on systems with unstable GPU support (VMware and other virtual machines): WebView2 now renders in software mode
+
 ## [1.1.0] - 2026-08-19
 
 ### Added
