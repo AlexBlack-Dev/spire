@@ -4,9 +4,9 @@ import { useStore } from '../store/useStore';
 import { dim } from '../isMobile';
 
 const ICONS = {
-  success: <CheckCircle2 size={16} color="#4ade80" />,
-  error: <AlertTriangle size={16} color="#f87171" />,
-  info: <Info size={16} color="#4f8ef7" />,
+  success: <CheckCircle2 size={16} color="var(--c-green)" />,
+  error: <AlertTriangle size={16} color="var(--c-rose)" />,
+  info: <Info size={16} color="var(--c-blue)" />,
 } as const;
 
 export default function Toasts() {

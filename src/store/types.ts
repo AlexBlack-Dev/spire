@@ -141,6 +141,7 @@ export interface SpireStore {
 
   // Converter
   converterSelectFile: () => Promise<void>;
+  converterSetInput: (path: string, fmt: string) => void;
   setConverterOutputFormat: (fmt: string) => void;
   runConversion: () => Promise<void>;
   resetConverter: () => void;

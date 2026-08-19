@@ -1,11 +1,9 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { useStore } from '../store/useStore';
-import { translations } from '../i18n/translations';
+import { useT } from '../i18n/useT';
 import type { Note } from '../types';
 
 export default function TagRow({ note, updateNote }: { note: Note; updateNote: (id: string, updates: Partial<Note>) => void }) {
-  const language = useStore((s) => s.language);
-  const t = (key: string) => translations[language][key] || key;
+  const t = useT();
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();

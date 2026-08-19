@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, Unlock, ChevronLeft } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { translations } from '../i18n/translations';
+import { useT } from '../i18n/useT';
 import { dim } from '../isMobile';
 
 type Mode = 'unlock' | 'set' | 'remove';
@@ -14,13 +14,18 @@ export default function LockPrompt({ id, kind, mode, onSuccess, onClose }: {
   onSuccess: () => void;
   onClose: () => void;
 }) {
-  const language = useStore((s) => s.language);
-  const t = (key: string) => translations[language][key] || key;
-  const {
-    setNotePassword, clearNotePassword, verifyNotePassword, unlockNote, unlockNoteOpens,
-    setFolderPassword, clearFolderPassword, verifyFolderPassword, unlockFolder,
-    notes, noteFolders,
-  } = useStore();
+  const t = useT();
+  const setNotePassword = useStore((s) => s.setNotePassword);
+  const clearNotePassword = useStore((s) => s.clearNotePassword);
+  const verifyNotePassword = useStore((s) => s.verifyNotePassword);
+  const unlockNote = useStore((s) => s.unlockNote);
+  const unlockNoteOpens = useStore((s) => s.unlockNoteOpens);
+  const setFolderPassword = useStore((s) => s.setFolderPassword);
+  const clearFolderPassword = useStore((s) => s.clearFolderPassword);
+  const verifyFolderPassword = useStore((s) => s.verifyFolderPassword);
+  const unlockFolder = useStore((s) => s.unlockFolder);
+  const notes = useStore((s) => s.notes);
+  const noteFolders = useStore((s) => s.noteFolders);
   const target = kind === 'note'
     ? notes.find((n) => n.id === id)
     : noteFolders.find((f) => f.id === id);
@@ -137,7 +142,7 @@ export default function LockPrompt({ id, kind, mode, onSuccess, onClose }: {
             style={{
               width: '100%', padding: `${dim.sp3}px ${dim.sp4}px`,
               fontSize: dim.textMd, fontWeight: 500,
-              background: 'var(--surface-2)', border: error ? '1.5px solid #f87171' : '1.5px solid var(--border-default)',
+              background: 'var(--surface-2)', border: error ? '1.5px solid var(--c-rose)' : '1.5px solid var(--border-default)',
               borderRadius: dim.radiusSm, color: 'var(--text-primary)', outline: 'none',
             }}
           />
@@ -227,7 +232,7 @@ export default function LockPrompt({ id, kind, mode, onSuccess, onClose }: {
           )}
         </div>
 
-        {error && <div style={{ fontSize: dim.textSm, fontWeight: 600, color: '#f87171' }}>{error}</div>}
+        {error && <div style={{ fontSize: dim.textSm, fontWeight: 600, color: 'var(--c-rose)' }}>{error}</div>}
 
         <motion.button whileTap={{ scale: 0.95 }} onClick={handleSubmit} disabled={busy} style={{
           width: '100%', maxWidth: 320, padding: `${dim.sp3}px 0`,

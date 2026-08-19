@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
 import { useStore } from '../store/useStore';
-import { translations } from '../i18n/translations';
+import { translations, type Dict } from '../i18n/translations';
 import * as XLSX from 'xlsx';
 import { Save, Plus, Trash2 } from 'lucide-react';
 
@@ -19,9 +18,10 @@ const ZEBRA_BG = 'color-mix(in srgb, var(--surface-3) 30%, transparent)';
 type CellValue = string | number | boolean | null;
 
 export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Props) {
-  const { updateNote, language } = useStore();
-  const t = (key: string, vars?: Record<string, string | number>) => {
-    const s = translations[language][key] || key;
+  const updateNote = useStore((s) => s.updateNote);
+  const language = useStore((s) => s.language);
+  const t = (key: keyof Dict, vars?: Record<string, string | number>) => {
+    const s = translations[language][key];
     return vars ? s.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? `{${k}}`)) : s;
   };
   const [sheetNames, setSheetNames] = useState<string[]>([]);
@@ -38,6 +38,8 @@ export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Pro
   const workbookRef = useRef<XLSX.WorkBook | null>(null);
   const tableRef = useRef<HTMLDivElement>(null);
   const resizeRef = useRef<{ col: number; startX: number; startWidth: number } | null>(null);
+  const formulasRef = useRef<Map<string, string>>(new Map());
+  const originalValuesRef = useRef<CellValue[][]>([]);
 
   useEffect(() => {
     try {
@@ -48,7 +50,9 @@ export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Pro
       workbookRef.current = wb;
       setSheetNames(wb.SheetNames);
       loadSheet(wb, 0);
-    } catch {}
+    } catch (e) {
+      console.warn('spreadsheet parse failed', e);
+    }
   }, [base64]);
 
   function loadSheet(wb: XLSX.WorkBook, idx: number) {
@@ -61,9 +65,24 @@ export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Pro
       return;
     }
     const h = data[0].map((c) => String(c ?? ''));
+    const body = data.slice(1);
     setHeaders(h);
-    setRows(data.slice(1));
+    setRows(body);
     setColWidths(h.map(() => DEFAULT_COL_WIDTH));
+    originalValuesRef.current = body.map((r) => [...r]);
+    const fmap = new Map<string, string>();
+    const range = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']) : null;
+    if (range) {
+      for (let r = range.s.r; r <= range.e.r; r++) {
+        for (let c = range.s.c; c <= range.e.c; c++) {
+          const cell = ws[XLSX.utils.encode_cell({ r, c })];
+          if (cell && typeof cell.f === 'string' && cell.f.startsWith('=')) {
+            fmap.set(`${r - 1},${c}`, cell.f);
+          }
+        }
+      }
+    }
+    formulasRef.current = fmap;
   }
 
   const changeSheet = (idx: number) => {
@@ -94,6 +113,7 @@ export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Pro
       next.splice(idx, 0, new Array(headers.length).fill(''));
       return next;
     });
+    invalidateFormulas();
     setDirty(true);
   };
 
@@ -103,6 +123,7 @@ export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Pro
     } else {
       setRows(prev => prev.filter((_, i) => i !== ri));
     }
+    invalidateFormulas();
     setDirty(true);
     setSelectedCell(null);
   };
@@ -124,6 +145,7 @@ export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Pro
       next.splice(idx, 0, DEFAULT_COL_WIDTH);
       return next;
     });
+    invalidateFormulas();
     setDirty(true);
   };
 
@@ -132,6 +154,7 @@ export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Pro
     setHeaders(prev => prev.filter((_, i) => i !== ci));
     setRows(prev => prev.map(r => r.filter((_, i) => i !== ci)));
     setColWidths(prev => prev.filter((_, i) => i !== ci));
+    invalidateFormulas();
     setDirty(true);
     setSelectedCell(null);
   };
@@ -142,20 +165,44 @@ export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Pro
     updateCellValue(ri, ci, '');
   };
 
+  const invalidateFormulas = () => {
+    formulasRef.current.clear();
+    originalValuesRef.current = rows.map((r) => [...r]);
+  };
+
   const handleSave = useCallback(async () => {
     if (!workbookRef.current) return;
     const wsName = workbookRef.current.SheetNames[activeSheet];
     const wsData = [headers, ...rows];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const orig = originalValuesRef.current;
+    for (let ri = 0; ri < rows.length; ri++) {
+      for (let ci = 0; ci < headers.length; ci++) {
+        const cur = rows[ri]?.[ci];
+        const addr = XLSX.utils.encode_cell({ r: ri + 1, c: ci });
+        const f = formulasRef.current.get(`${ri},${ci}`);
+        const unchanged = cur === orig?.[ri]?.[ci] || cur === undefined || cur === null || cur === '';
+        if (f && unchanged) {
+          ws[addr] = { t: 'n', f, v: undefined };
+        } else if (typeof cur === 'string' && cur.startsWith('=')) {
+          ws[addr] = { t: 's', f: cur, v: undefined };
+        }
+      }
+    }
     workbookRef.current.Sheets[wsName] = ws;
     const outBinary = XLSX.write(workbookRef.current, { type: 'binary', bookType: ext as XLSX.BookType });
     const b64 = btoa(outBinary);
     updateNote(noteId, { content: b64 });
     if (filePath) {
       try {
+        const { invoke } = await import('@tauri-apps/api/core');
         await invoke('save_binary', { path: filePath, content: b64 });
-      } catch {}
+      } catch (e) {
+        console.warn(`save_binary failed for ${filePath}`, e);
+      }
     }
+    formulasRef.current.clear();
+    originalValuesRef.current = rows.map((r) => [...r]);
     setDirty(false);
   }, [headers, rows, activeSheet, filePath, noteId, ext]);
 
@@ -508,7 +555,7 @@ export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Pro
                       background: 'transparent', border: 'none',
                       color: 'var(--text-disabled)', cursor: 'pointer', fontSize: 10,
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; }}
+                    onMouseEnter={e => { e.currentTarget.style.color = 'var(--c-rose)'; }}
                     onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-disabled)'; }}
                   >
                     <Trash2 size={10} />
@@ -603,7 +650,7 @@ function CtxItem({ label, onClick, danger }: { label: string; onClick: () => voi
       style={{
         display: 'block', width: '100%', padding: '6px 10px',
         background: 'transparent', border: 'none', borderRadius: 6,
-        color: danger ? '#f87171' : 'var(--text-secondary)',
+        color: danger ? 'var(--c-rose)' : 'var(--text-secondary)',
         fontSize: 12, fontWeight: 400, textAlign: 'left',
         cursor: 'pointer', whiteSpace: 'nowrap',
       }}

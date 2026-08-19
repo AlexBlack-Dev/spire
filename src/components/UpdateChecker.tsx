@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, ArrowRight } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { translations } from '../i18n/translations';
+import { useT } from '../i18n/useT';
 import { APP_VERSION } from '../version';
 import { dim, isMobile, pathSep } from '../isMobile';
 import { COLOR_HEX, hexToRgba } from '../utils/format';
@@ -58,10 +58,9 @@ interface LatestInfo {
 }
 
 export default function UpdateChecker() {
-  const language = useStore((s) => s.language);
   const accentColor = useStore((s) => s.accentColor);
   const updateCheckRequest = useStore((s) => s.updateCheckRequest);
-  const t = (key: string) => translations[language][key] || key;
+  const t = useT();
   const [latest, setLatest] = useState<LatestInfo | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [installing, setInstalling] = useState(false);
@@ -122,8 +121,8 @@ export default function UpdateChecker() {
         unlisten = await listen<{ percent: number }>('update-progress', (e) => {
           setProgress(Math.max(0, Math.min(100, Number(e.payload?.percent) || 0)));
         });
-      } catch {
-        // browser dev — no progress events
+      } catch (e) {
+        console.warn('update-progress listen failed', e);
       }
     })();
     return () => { unlisten?.(); };
@@ -212,7 +211,7 @@ export default function UpdateChecker() {
               <motion.div
                 style={{
                   position: 'absolute', top: -3, right: -6, width: 15, height: 15,
-                  borderRadius: '50%', background: '#4ade80',
+                  borderRadius: '50%', background: 'var(--c-green)',
                   border: '3px solid var(--surface-1)',
                 }}
                 animate={{ scale: [1, 1.25, 1], opacity: [1, 0.75, 1] }}

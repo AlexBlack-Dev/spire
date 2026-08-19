@@ -1,24 +1,30 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, ArrowRight, Download, RefreshCw, FileCode, Image, AlertCircle } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { translations } from '../i18n/translations';
+import { translations, type Dict } from '../i18n/translations';
 import { conversionFormats } from '../types';
 
 export default function ConverterView() {
-  const {
-    converterInputFile, converterOutputFormat,
-    converterPreview, converterLoading,
-    converterSelectFile, setConverterOutputFormat,
-    runConversion, resetConverter, converterDropNote,
-    language,
-  } = useStore();
-  const t = (key: string, vars?: Record<string, string>) => {
-    const s = translations[language][key] || key;
+  const converterInputFile = useStore((s) => s.converterInputFile);
+  const converterOutputFormat = useStore((s) => s.converterOutputFormat);
+  const converterPreview = useStore((s) => s.converterPreview);
+  const converterLoading = useStore((s) => s.converterLoading);
+  const converterSelectFile = useStore((s) => s.converterSelectFile);
+  const setConverterOutputFormat = useStore((s) => s.setConverterOutputFormat);
+  const runConversion = useStore((s) => s.runConversion);
+  const resetConverter = useStore((s) => s.resetConverter);
+  const converterDropNote = useStore((s) => s.converterDropNote);
+  const converterSetInput = useStore((s) => s.converterSetInput);
+  const language = useStore((s) => s.language);
+  const t = (key: keyof Dict, vars?: Record<string, string>) => {
+    const s = translations[language][key];
     return vars ? s.replace(/\{(\w+)\}/g, (_, k: string) => vars[k] ?? `{${k}}`) : s;
   };
   const [dragOver, setDragOver] = useState(false);
   const [dropFailed, setDropFailed] = useState(false);
+  const dropTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (dropTimerRef.current) clearTimeout(dropTimerRef.current); }, []);
 
   const isImage = (ext: string) => conversionFormats[ext]?.category === 'image';
 
@@ -43,7 +49,8 @@ export default function ConverterView() {
     if (noteId) {
       if (!converterDropNote(noteId)) {
         setDropFailed(true);
-        setTimeout(() => setDropFailed(false), 2500);
+        if (dropTimerRef.current) clearTimeout(dropTimerRef.current);
+        dropTimerRef.current = setTimeout(() => setDropFailed(false), 2500);
       }
       return;
     }
@@ -51,7 +58,7 @@ export default function ConverterView() {
     if (path) {
       const ext = path.split('.').pop()?.toLowerCase() || '';
       const fmt = conversionFormats[ext] ? ext : 'txt';
-      useStore.setState({ converterInputFile: path, converterOutputFormat: fmt, converterPreview: null });
+      converterSetInput(path, fmt);
     }
   };
 
@@ -103,9 +110,9 @@ export default function ConverterView() {
               </div>
               {dropFailed && (
                 <div style={{
-                  marginTop: 12, fontSize: 12, fontWeight: 600, color: '#f87171',
-                  background: 'color-mix(in srgb, #f87171 12%, transparent)',
-                  border: '1px solid color-mix(in srgb, #f87171 30%, transparent)',
+                  marginTop: 12, fontSize: 12, fontWeight: 600, color: 'var(--c-rose)',
+                  background: 'color-mix(in srgb, var(--c-rose) 12%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--c-rose) 30%, transparent)',
                   borderRadius: 8, padding: '6px 12px',
                 }}>
                   {t('conv_drop_file_only')}
@@ -116,7 +123,7 @@ export default function ConverterView() {
         ) : !isSupported ? (
           /* ===== UNSUPPORTED ===== */
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-            <AlertCircle size={36} color="#f87171" style={{ marginBottom: 14 }} />
+            <AlertCircle size={36} color="var(--c-rose)" style={{ marginBottom: 14 }} />
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>
               {t('conv_unsupported')}
             </div>
@@ -157,7 +164,7 @@ export default function ConverterView() {
                     background: 'transparent', border: 'none', color: 'var(--text-disabled)',
                     cursor: 'pointer', fontSize: 12, fontWeight: 600, padding: '4px 8px', borderRadius: 6,
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = 'var(--surface-2)'; }}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--c-rose)'; e.currentTarget.style.background = 'var(--surface-2)'; }}
                   onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-disabled)'; e.currentTarget.style.background = 'transparent'; }}
                 >
                   {t('conv_change')}
@@ -245,9 +252,9 @@ export default function ConverterView() {
               )}
               {dropFailed && (
                 <div style={{
-                  fontSize: 12, fontWeight: 600, color: '#f87171',
-                  background: 'color-mix(in srgb, #f87171 12%, transparent)',
-                  border: '1px solid color-mix(in srgb, #f87171 30%, transparent)',
+                  fontSize: 12, fontWeight: 600, color: 'var(--c-rose)',
+                  background: 'color-mix(in srgb, var(--c-rose) 12%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--c-rose) 30%, transparent)',
                   borderRadius: 8, padding: '6px 12px', flexShrink: 0,
                 }}>
                   {t('conv_drop_file_only')}

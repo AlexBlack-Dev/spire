@@ -1,29 +1,58 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, CheckSquare, Lock, Star, Search, Plus, Pin, Trash2, ChevronLeft, ChevronDown, Shuffle, ScrollText, ArrowUp, ArrowDown } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { translations } from '../i18n/translations';
+import { useT } from '../i18n/useT';
 import type { Note } from '../types';
-import { COLOR_HEX, formatDateFn, notePreview } from '../utils/format';
+import { COLOR_HEX, formatDateFn, notePreview, getContentText } from '../utils/format';
 
 export default function Sidebar() {
-  const {
-    notes, tasks, viewMode, searchQuery, activeNoteId, sidebarOpen,
-    setViewMode, setSearchQuery, createNote, setActiveNote, deleteNote,
-    moveNoteUp, moveNoteDown, toggleSidebar, language,
-    changelogEntries, changelogLoading, changelogFailed,
-    changelogVersion, fetchChangelog, setChangelogVersion,
-  } = useStore();
-  const t = (key: string) => translations[language][key] || key;
+  const notes = useStore((s) => s.notes);
+  const tasks = useStore((s) => s.tasks);
+  const viewMode = useStore((s) => s.viewMode);
+  const searchQuery = useStore((s) => s.searchQuery);
+  const activeNoteId = useStore((s) => s.activeNoteId);
+  const sidebarOpen = useStore((s) => s.sidebarOpen);
+  const setViewMode = useStore((s) => s.setViewMode);
+  const setSearchQuery = useStore((s) => s.setSearchQuery);
+  const createNote = useStore((s) => s.createNote);
+  const setActiveNote = useStore((s) => s.setActiveNote);
+  const deleteNote = useStore((s) => s.deleteNote);
+  const moveNoteUp = useStore((s) => s.moveNoteUp);
+  const moveNoteDown = useStore((s) => s.moveNoteDown);
+  const toggleSidebar = useStore((s) => s.toggleSidebar);
+  const changelogEntries = useStore((s) => s.changelogEntries);
+  const changelogLoading = useStore((s) => s.changelogLoading);
+  const changelogFailed = useStore((s) => s.changelogFailed);
+  const changelogVersion = useStore((s) => s.changelogVersion);
+  const fetchChangelog = useStore((s) => s.fetchChangelog);
+  const setChangelogVersion = useStore((s) => s.setChangelogVersion);
+  const t = useT();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [triggerHovered, setTriggerHovered] = useState(false);
+  const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
 
-  const filtered = notes.filter((n) => {
-    const q = searchQuery.toLowerCase();
-    if (viewMode === 'private') return !!n.password && (n.title.toLowerCase().includes(q) || n.content.replace(/<[^>]*>/g, '').toLowerCase().includes(q));
-    if (n.password) return false;
-    return n.title.toLowerCase().includes(q) || n.content.replace(/<[^>]*>/g, '').toLowerCase().includes(q);
-  });
+  useEffect(() => {
+    const id = window.setTimeout(() => setDebouncedQuery(searchQuery), 200);
+    return () => clearTimeout(id);
+  }, [searchQuery]);
+
+  const strippedIndex = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const n of notes) map.set(n.id, getContentText(n.content));
+    return map;
+  }, [notes]);
+
+  const filtered = useMemo(() => {
+    const q = debouncedQuery.trim().toLowerCase();
+    const base = viewMode === 'private'
+      ? notes.filter((n) => n.password)
+      : notes.filter((n) => !n.password);
+    if (!q) return base;
+    return base.filter((n) =>
+      n.title.toLowerCase().includes(q) || (strippedIndex.get(n.id) ?? '').toLowerCase().includes(q)
+    );
+  }, [notes, viewMode, debouncedQuery, strippedIndex]);
 
   const pinned   = filtered.filter((n) => n.isPinned);
   const unpinned = filtered.filter((n) => !n.isPinned);
@@ -193,25 +222,25 @@ export default function Sidebar() {
 
                 <div style={{ flex: 1, overflowY: 'auto', padding: '0 6px 16px' }}>
                   {pinned.length > 0 && <SectionLabel icon={<Pin size={10}/>} label={t('pinned')} />}
-                  {pinned.map((note, i) => (
+                  {pinned.map((note) => (
                     <NoteRow key={note.id} note={note}
                       active={activeNoteId === note.id} hovered={hoveredId === note.id}
-                      index={i} onClick={() => setActiveNote(note.id)}
+                      onClick={() => setActiveNote(note.id)}
                       onDelete={() => deleteNote(note.id)} onHover={setHoveredId}
                       onMoveUp={() => moveNoteUp(note.id)}
                       onMoveDown={() => moveNoteDown(note.id)}
-                      isFirst={i === 0} isLast={i === pinned.length - 1 && unpinned.length === 0}
+                      isFirst={false} isLast={pinned.length === 1 && unpinned.length === 0}
                     />
                   ))}
                   {unpinned.length > 0 && pinned.length > 0 && <SectionLabel label={t('all')} />}
-                  {unpinned.map((note, i) => (
+                  {unpinned.map((note) => (
                     <NoteRow key={note.id} note={note}
                       active={activeNoteId === note.id} hovered={hoveredId === note.id}
-                      index={i + pinned.length} onClick={() => setActiveNote(note.id)}
+                      onClick={() => setActiveNote(note.id)}
                       onDelete={() => deleteNote(note.id)} onHover={setHoveredId}
                       onMoveUp={() => moveNoteUp(note.id)}
                       onMoveDown={() => moveNoteDown(note.id)}
-                      isFirst={i === 0 && pinned.length === 0} isLast={i === unpinned.length - 1}
+                      isFirst={pinned.length === 0} isLast={unpinned.length === 1}
                     />
                   ))}
                   {filtered.length === 0 && (
@@ -357,10 +386,11 @@ function MoveBtn({ onClick, children, danger }: { onClick: (e: React.MouseEvent)
       style={{
         width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: 'transparent', border: 'none', borderRadius: 4,
-        color: danger ? '#7a4a4a' : 'var(--text-disabled)', cursor: 'pointer', transition: 'color 0.15s',
+        color: danger ? 'color-mix(in srgb, var(--c-rose) 55%, var(--surface-1))' : 'var(--text-disabled)',
+        cursor: 'pointer', transition: 'color 0.15s',
       }}
-      onMouseEnter={e => (e.currentTarget.style.color = danger ? '#f87171' : 'var(--accent)')}
-      onMouseLeave={e => (e.currentTarget.style.color = danger ? '#7a4a4a' : 'var(--text-disabled)')}
+      onMouseEnter={e => (e.currentTarget.style.color = danger ? 'var(--c-rose)' : 'var(--accent)')}
+      onMouseLeave={e => (e.currentTarget.style.color = danger ? 'color-mix(in srgb, var(--c-rose) 55%, var(--surface-1))' : 'var(--text-disabled)')}
     >
       {children}
     </motion.button>
@@ -380,8 +410,8 @@ function SectionLabel({ icon, label }: { icon?: React.ReactNode; label: string }
   );
 }
 
-function NoteRow({ note, active, hovered, index, onClick, onDelete, onHover, onMoveUp, onMoveDown, isFirst, isLast }: {
-  note: Note; active: boolean; hovered: boolean; index: number;
+function NoteRow({ note, active, hovered, onClick, onDelete, onHover, onMoveUp, onMoveDown, isFirst, isLast }: {
+  note: Note; active: boolean; hovered: boolean;
   onClick: () => void; onDelete: () => void;
   onHover: (id: string | null) => void;
   onMoveUp?: () => void; onMoveDown?: () => void;
@@ -390,7 +420,7 @@ function NoteRow({ note, active, hovered, index, onClick, onDelete, onHover, onM
   const language = useStore((s) => s.language);
   const showLockPrompt = useStore((s) => s.showLockPrompt);
   const showFileExtensions = useStore((s) => s.showFileExtensions);
-  const t = (key: string) => translations[language][key] || key;
+  const t = useT();
   const color = COLOR_HEX[note.color] || COLOR_HEX.violet;
   const preview = notePreview(note.content, !!note.filePath);
   const ext = note.filePath ? (note.filePath.split('.').pop()?.toLowerCase() || '') : '';
@@ -403,12 +433,10 @@ function NoteRow({ note, active, hovered, index, onClick, onDelete, onHover, onM
         de.dataTransfer.setData('application/x-spire-note', note.id);
         de.dataTransfer.effectAllowed = 'copy';
       }}
-      initial={{ opacity: 0, x: -8 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.025, duration: 0.2 }}
       onClick={onClick}
       onMouseEnter={() => onHover(note.id)}
       onMouseLeave={() => onHover(null)}
+      className="note-row"
       style={{
         padding: '9px 10px', borderRadius: 8, marginBottom: 2,
         cursor: 'pointer',
@@ -426,7 +454,7 @@ function NoteRow({ note, active, hovered, index, onClick, onDelete, onHover, onM
             display: 'flex', alignItems: 'center', gap: 5,
           }}>
             {note.isFavorite && (
-              <Star size={11} color="#fbbf24" fill="#fbbf24" style={{ flexShrink: 0 }} />
+              <Star size={11} color="var(--c-amber)" fill="var(--c-amber)" style={{ flexShrink: 0 }} />
             )}
             {note.password && (
               <Lock size={10} color="var(--accent)" style={{ flexShrink: 0 }} />

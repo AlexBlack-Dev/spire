@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, Flag, Pencil, Check, Circle } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { translations } from '../i18n/translations';
+import { useT } from '../i18n/useT';
+import type { Dict } from '../i18n/translations';
 import { dim } from '../isMobile';
 import { formatDateFn } from '../utils/format';
 import type { TaskPriority } from '../types';
@@ -10,13 +11,18 @@ import type { TaskPriority } from '../types';
 const PRIORITY_RANK: Record<TaskPriority, number> = { high: 0, medium: 1, low: 2 };
 
 export default function TasksView() {
-  const { tasks, createTask, toggleTask, updateTask, deleteTask, language } = useStore();
-  const t = (key: string) => translations[language][key] || key;
+  const tasks = useStore((s) => s.tasks);
+  const createTask = useStore((s) => s.createTask);
+  const toggleTask = useStore((s) => s.toggleTask);
+  const updateTask = useStore((s) => s.updateTask);
+  const deleteTask = useStore((s) => s.deleteTask);
+  const language = useStore((s) => s.language);
+  const t = useT();
   const formatDate = (iso: string) => formatDateFn(iso, language, true);
   const PRIORITY = {
-    low:    { color: '#4ade80', label: t('priority_low') },
-    medium: { color: '#fbbf24', label: t('priority_medium') },
-    high:   { color: '#f87171', label: t('priority_high') },
+    low:    { color: 'var(--c-green)', label: t('priority_low') },
+    medium: { color: 'var(--c-amber)', label: t('priority_medium') },
+    high:   { color: 'var(--c-rose)', label: t('priority_high') },
   } as const;
   type TaskFilter = 'all' | 'active' | 'done';
   const [input, setInput] = useState('');
@@ -317,7 +323,7 @@ export default function TasksView() {
                   onClick={() => deleteTask(task.id)}
                   style={{
                     background: 'none', border: 'none', cursor: 'pointer',
-                    color: '#f87171', display: 'flex', alignItems: 'center',
+                    color: 'var(--c-rose)', display: 'flex', alignItems: 'center',
                     padding: dim.sp1, flexShrink: 0, borderRadius: dim.radiusSm,
                   }}
                 >
@@ -332,11 +338,11 @@ export default function TasksView() {
   );
 }
 
-function PRIORITY_BADGE({ task, t }: { task: { priority: TaskPriority }; t: (key: string) => string }) {
+function PRIORITY_BADGE({ task, t }: { task: { priority: TaskPriority }; t: (key: keyof Dict) => string }) {
   const PRIORITY = {
-    low:    { color: '#4ade80', label: t('priority_low') },
-    medium: { color: '#fbbf24', label: t('priority_medium') },
-    high:   { color: '#f87171', label: t('priority_high') },
+    low:    { color: 'var(--c-green)', label: t('priority_low') },
+    medium: { color: 'var(--c-amber)', label: t('priority_medium') },
+    high:   { color: 'var(--c-rose)', label: t('priority_high') },
   } as const;
   const p = PRIORITY[task.priority];
   return (

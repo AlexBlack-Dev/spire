@@ -1,10 +1,8 @@
 import { Lock } from 'lucide-react';
-import { useStore } from '../store/useStore';
-import { translations } from '../i18n/translations';
+import { useT } from '../i18n/useT';
 
 export default function PrivateEmpty() {
-  const language = useStore((s) => s.language);
-  const t = (key: string) => translations[language][key] || key;
+  const t = useT();
 
   return (
     <div style={{

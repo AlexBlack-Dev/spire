@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { ChevronLeft, Pin, Star, Trash2, Menu, Save, Lock, Unlock, ShieldAlert, Pencil, Eye } from 'lucide-react';
+import { ChevronLeft, Pin, Star, Trash2, Menu, Save, Lock, Unlock, ShieldAlert, Pencil, Eye, Play } from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -25,11 +25,13 @@ import FormatToolbar from './FormatToolbar';
 import { useStore } from '../store/useStore';
 import { format } from 'date-fns';
 import { ru, enUS } from 'date-fns/locale';
-import { translations } from '../i18n/translations';
+import { useT } from '../i18n/useT';
 import type { MobileTab } from './BottomNav';
-import { dim } from '../isMobile';
-import { COLOR_HEX, COLOR_NAMES, getFileInfo, hexToRgba } from '../utils/format';
+import { dim, isMobile, useViewport } from '../isMobile';
+import { COLOR_HEX, COLOR_NAMES, getFileInfo, hexToRgba, sanitizeHtml } from '../utils/format';
 import { sliceToText } from '../utils/tiptapText';
+
+const SCRIPT_EXTS = ['bat', 'cmd', 'ps1', 'vbs', 'js', 'sh'];
 
 export default function MobileLayout() {
   const viewMode = useStore((s) => s.viewMode);
@@ -37,7 +39,6 @@ export default function MobileLayout() {
   const setActiveNote = useStore((s) => s.setActiveNote);
   const createNote = useStore((s) => s.createNote);
   const openFile = useStore((s) => s.openFile);
-  const language = useStore((s) => s.language);
   const splashDone = useStore((s) => s.splashDone);
   const notesCount = useStore((s) => s.notes.length);
   const settingsOpen = useStore((s) => s.settingsOpen);
@@ -46,7 +47,7 @@ export default function MobileLayout() {
   const fileBrowserOpen = useStore((s) => s.fileBrowserOpen);
   const fileBrowserNoteId = useStore((s) => s.fileBrowserNoteId);
   const finishFileBrowserSave = useStore((s) => s.finishFileBrowserSave);
-  const t = (key: string) => translations[language][key] || key;
+  const t = useT();
   const [mobileView, setMobileView] = useState<'tab' | 'editor'>('tab');
   const [activeTab, setActiveTab] = useState<MobileTab>('notes');
   const [spireMenuOpen, setSpireMenuOpen] = useState(false);
@@ -267,14 +268,14 @@ export default function MobileLayout() {
             left: dim.sp4, right: dim.sp4,
             display: 'flex', alignItems: 'center', gap: dim.sp2,
             padding: `${dim.sp3}px ${dim.sp4}px`,
-            background: 'rgba(248,113,113,0.12)',
-            border: '1px solid rgba(248,113,113,0.25)',
+            background: 'color-mix(in srgb, var(--c-rose) 12%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--c-rose) 25%, transparent)',
             borderRadius: dim.radius,
             zIndex: 60, cursor: 'pointer',
           }}
         >
-          <ShieldAlert size={dim.iconSm} color="#f87171" />
-          <span style={{ flex: 1, fontSize: dim.textSm, fontWeight: 600, color: '#f87171', wordBreak: 'break-word' }}>
+          <ShieldAlert size={dim.iconSm} color="var(--c-rose)" />
+          <span style={{ flex: 1, fontSize: dim.textSm, fontWeight: 600, color: 'var(--c-rose)', wordBreak: 'break-word' }}>
             {t('perm_banner_grant')}
           </span>
         </motion.div>
@@ -371,15 +372,21 @@ export default function MobileLayout() {
   );
 }
 
-const ih = window.innerHeight;
-
 function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: boolean | null }) {
-  const {
-    notes, activeNoteId, updateNote, deleteNote, togglePin, toggleFavorite,
-    saveFile,
-    language, accentColor, antiPaste,
-  } = useStore();
-  const t = (key: string) => translations[language][key] || key;
+  const notes = useStore((s) => s.notes);
+  const activeNoteId = useStore((s) => s.activeNoteId);
+  const updateNote = useStore((s) => s.updateNote);
+  const deleteNote = useStore((s) => s.deleteNote);
+  const togglePin = useStore((s) => s.togglePin);
+  const toggleFavorite = useStore((s) => s.toggleFavorite);
+  const saveFile = useStore((s) => s.saveFile);
+  const language = useStore((s) => s.language);
+  const accentColor = useStore((s) => s.accentColor);
+  const antiPaste = useStore((s) => s.antiPaste);
+  const showToast = useStore((s) => s.showToast);
+  const addLog = useStore((s) => s.addLog);
+  const t = useT();
+  const ih = useViewport();
   const note = notes.find((n) => n.id === activeNoteId);
   const { ext, isSpreadsheet, isPlainFile } = getFileInfo(note?.filePath);
 
@@ -408,6 +415,32 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
     vv.addEventListener('resize', onResize);
     return () => vv.removeEventListener('resize', onResize);
   }, []);
+
+  const pendingSaveRef = useRef<{ id: string; content: string } | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flushSave = useCallback(() => {
+    if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
+    if (pendingSaveRef.current) {
+      updateNote(pendingSaveRef.current.id, { content: pendingSaveRef.current.content });
+      pendingSaveRef.current = null;
+    }
+  }, [updateNote]);
+
+  useEffect(() => () => flushSave(), [flushSave]);
+
+  const isScript = !!note?.filePath && !isSpreadsheet && SCRIPT_EXTS.includes(ext);
+  const runScript = useCallback(async () => {
+    if (!note?.filePath) return;
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      await invoke('run_script', { path: note.filePath });
+      showToast(t('toast_run_ok'));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      showToast(t('toast_run_failed') + msg);
+      addLog('runScript: ' + msg);
+    }
+  }, [note?.filePath, showToast, t, addLog]);
 
   const editor = useEditor({
     extensions: [
@@ -446,7 +479,9 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
     },
     onUpdate: ({ editor }) => {
       if (note) {
-        updateNote(note.id, { content: editor.getHTML() });
+        pendingSaveRef.current = { id: note.id, content: editor.getHTML() };
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = setTimeout(flushSave, 400);
       }
     },
   });
@@ -508,21 +543,26 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
           <ChevronLeft size={dim.iconLg} strokeWidth={2.5} />
         </motion.button>
         <div style={{ flex: 1 }} />
-        <IconBtn onClick={() => { saveFile(note.id).catch((e) => console.warn('save failed', e)); }} active={false} activeColor="#4ade80" noAnim={noAnim}>
+        <IconBtn onClick={() => { saveFile(note.id).catch((e) => console.warn('save failed', e)); }} active={false} activeColor="var(--c-green)" noAnim={noAnim}>
           <Save size={dim.iconMd} />
         </IconBtn>
+        {!isMobile && isScript && (
+          <IconBtn onClick={() => runScript()} active={false} activeColor={noteAccent} noAnim={noAnim}>
+            <Play size={dim.iconMd} />
+          </IconBtn>
+        )}
         <IconBtn onClick={() => togglePin(note.id)} active={note.isPinned} activeColor={noteAccent} noAnim={noAnim}>
           <Pin size={dim.iconMd} />
         </IconBtn>
-        <IconBtn onClick={() => toggleFavorite(note.id)} active={note.isFavorite} activeColor="#fbbf24" noAnim={noAnim}>
-          <Star size={dim.iconMd} fill={note.isFavorite ? '#fbbf24' : 'none'} />
+        <IconBtn onClick={() => toggleFavorite(note.id)} active={note.isFavorite} activeColor="var(--c-amber)" noAnim={noAnim}>
+          <Star size={dim.iconMd} fill={note.isFavorite ? 'var(--c-amber)' : 'none'} />
         </IconBtn>
         <IconBtn onClick={() => {
           useStore.getState().showLockPrompt(note.id, 'note', note.password ? 'remove' : 'set');
         }} active={!!note.password} activeColor={accent} noAnim={noAnim}>
           {note.password ? <Lock size={dim.iconMd} /> : <Unlock size={dim.iconMd} />}
         </IconBtn>
-        <IconBtn onClick={() => { deleteNote(note.id); onBack(); }} active={false} activeColor="#f87171" noAnim={noAnim}>
+        <IconBtn onClick={() => { deleteNote(note.id); onBack(); }} active={false} activeColor="var(--c-rose)" noAnim={noAnim}>
           <Trash2 size={dim.iconMd} />
         </IconBtn>
       </div>
@@ -663,7 +703,7 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
               borderRadius: 14,
               padding: `${dim.sp4}px ${dim.sp4}px`,
             }}>
-              <div className="tiptap-editor" dangerouslySetInnerHTML={{ __html: note.content }} />
+              <div className="tiptap-editor" dangerouslySetInnerHTML={{ __html: sanitizeHtml(note.content) }} />
             </div>
           ) : (
             <EditorContent editor={editor} />

@@ -1,26 +1,33 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Minus, Square, X } from 'lucide-react';
-import { invoke } from '@tauri-apps/api/core';
 import { useStore } from '../store/useStore';
-import { translations } from '../i18n/translations';
+import { useT } from '../i18n/useT';
 
-// Window controls via Tauri core invoke
-const winMinimize       = () => invoke('plugin:window|minimize',        { label: 'main' }).catch(console.error);
-const winToggleMaximize = () => invoke('plugin:window|toggle_maximize', { label: 'main' }).catch(console.error);
-const winClose          = () => invoke('plugin:window|close',           { label: 'main' }).catch(console.error);
+// Window controls via Tauri core invoke (dynamic import so browser dev does not crash)
+const winMinimize = async () => { try { const { invoke } = await import('@tauri-apps/api/core'); await invoke('plugin:window|minimize', { label: 'main' }); } catch (e) { console.error('minimize failed', e); } };
+const winToggleMaximize = async () => { try { const { invoke } = await import('@tauri-apps/api/core'); await invoke('plugin:window|toggle_maximize', { label: 'main' }); } catch (e) { console.error('toggle_maximize failed', e); } };
+const winClose = async () => { try { const { invoke } = await import('@tauri-apps/api/core'); await invoke('plugin:window|close', { label: 'main' }); } catch (e) { console.error('close failed', e); } };
 
 export default function TitleBar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const {
-    notes, activeNoteId, deleteNote, togglePin, toggleFavorite,
-    createNote, setViewMode, openFile, saveFile,
-    saveFileAs, saveAsAny, getSaveFormats, setSettingsOpen, language,
-  } = useStore();
-  const t = (key: string) => translations[language][key] || key;
+  const notes = useStore((s) => s.notes);
+  const activeNoteId = useStore((s) => s.activeNoteId);
+  const deleteNote = useStore((s) => s.deleteNote);
+  const togglePin = useStore((s) => s.togglePin);
+  const toggleFavorite = useStore((s) => s.toggleFavorite);
+  const createNote = useStore((s) => s.createNote);
+  const setViewMode = useStore((s) => s.setViewMode);
+  const openFile = useStore((s) => s.openFile);
+  const saveFile = useStore((s) => s.saveFile);
+  const saveFileAs = useStore((s) => s.saveFileAs);
+  const saveAsAny = useStore((s) => s.saveAsAny);
+  const getSaveFormats = useStore((s) => s.getSaveFormats);
+  const setSettingsOpen = useStore((s) => s.setSettingsOpen);
+  const t = useT();
   const note = notes.find(n => n.id === activeNoteId);
   const saveFormats = getSaveFormats(note);
 
@@ -229,7 +236,7 @@ export default function TitleBar() {
                       background: 'transparent', 
                       border: 'none',
                       borderRadius: 7,
-                      color: item.disabled ? 'var(--text-disabled)' : item.danger ? '#f87171' : 'var(--text-secondary)',
+                      color: item.disabled ? 'var(--text-disabled)' : item.danger ? 'var(--c-rose)' : 'var(--text-secondary)',
                       cursor: item.disabled ? 'default' : 'pointer',
                       fontSize: 13, fontWeight: 400,
                       opacity: item.disabled ? 0.4 : 1,
@@ -260,7 +267,7 @@ export default function TitleBar() {
       <div style={{ display: 'flex', gap: 3, padding: '0 10px', flexShrink: 0, zIndex: 2 }}>
         <WinBtn icon={<Minus size={12}/>}  onClick={winMinimize}       hoverBg="var(--surface-2)" hoverColor="var(--text-secondary)" color="var(--text-tertiary)" />
         <WinBtn icon={<Square size={11}/>} onClick={winToggleMaximize} hoverBg="var(--surface-2)" hoverColor="var(--text-secondary)" color="var(--text-tertiary)" />
-        <WinBtn icon={<X size={12}/>}      onClick={winClose}          hoverBg="#2d1515" hoverColor="#f87171" color="#6b3a3a" />
+        <WinBtn icon={<X size={12}/>}      onClick={winClose}          hoverBg="color-mix(in srgb, var(--c-rose) 18%, transparent)" hoverColor="var(--c-rose)" color="color-mix(in srgb, var(--c-rose) 55%, var(--surface-1))" />
       </div>
     </div>
   );

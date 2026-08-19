@@ -1,5 +1,17 @@
+import { useEffect, useState } from 'react';
+
 export const isMobile = new URLSearchParams(window.location.search).has('mobile') || navigator.userAgent.includes('Android');
 export const pathSep = isMobile ? '/' : '\\';
+
+export function useViewport(): number {
+  const [ih, setIh] = useState(() => window.innerHeight);
+  useEffect(() => {
+    const handler = () => setIh(window.innerHeight);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  return ih;
+}
 
 function rnd(v: number) { return Math.round(v); }
 

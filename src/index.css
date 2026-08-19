@@ -77,6 +77,12 @@ body select {
   overflow-wrap: break-word;
 }
 
+/* Virtualized rendering for long note lists (renders only visible rows) */
+.note-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 48px;
+}
+
 :root {
   --sat: env(safe-area-inset-top, 0px);
   --sab: env(safe-area-inset-bottom, 0px);

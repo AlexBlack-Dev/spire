@@ -39,11 +39,18 @@ export const notesSlice: SpireSlice = (set, get) => ({
   },
 
   updateNote: (id, updates) => {
-    set((s) => ({
-      notes: s.notes.map((n) =>
-        n.id === id ? { ...n, ...updates, updatedAt: new Date().toISOString() } : n
-      ),
-    }));
+    set((s) => {
+      const target = s.notes.find((n) => n.id === id);
+      if (!target) return s;
+      const entries = Object.entries(updates) as [keyof Note, unknown][];
+      const changed = entries.some(([k, v]) => target[k] !== v);
+      if (!changed) return s;
+      return {
+        notes: s.notes.map((n) =>
+          n.id === id ? { ...n, ...updates, updatedAt: new Date().toISOString() } : n
+        ),
+      };
+    });
   },
 
   deleteNote: (id) => {

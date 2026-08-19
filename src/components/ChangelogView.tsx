@@ -2,16 +2,17 @@ import { useEffect, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronDown } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { translations } from '../i18n/translations';
+import { useT } from '../i18n/useT';
+import type { Dict } from '../i18n/translations';
 import { dim } from '../isMobile';
 import { COLOR_HEX, hexToRgba } from '../utils/format';
 import type { ChangelogEntry } from '../utils/changelog';
 
 const SECTION_COLORS: Record<string, string> = {
-  Added: '#4ade80',
-  Changed: '#fbbf24',
-  Fixed: '#4f8ef7',
-  Removed: '#f87171',
+  Added: 'var(--c-green)',
+  Changed: 'var(--c-amber)',
+  Fixed: 'var(--c-blue)',
+  Removed: 'var(--c-rose)',
 };
 
 const SECTION_KEYS: Record<string, string> = {
@@ -22,7 +23,6 @@ const SECTION_KEYS: Record<string, string> = {
 };
 
 export default function ChangelogView({ onBack }: { onBack?: () => void }) {
-  const language = useStore((s) => s.language);
   const accentColor = useStore((s) => s.accentColor);
   const entries = useStore((s) => s.changelogEntries);
   const changelogLoading = useStore((s) => s.changelogLoading);
@@ -30,7 +30,7 @@ export default function ChangelogView({ onBack }: { onBack?: () => void }) {
   const changelogVersion = useStore((s) => s.changelogVersion);
   const fetchChangelog = useStore((s) => s.fetchChangelog);
   const setChangelogVersion = useStore((s) => s.setChangelogVersion);
-  const t = (key: string) => translations[language][key] || key;
+  const t = useT();
 
   useEffect(() => {
     if (entries.length === 0 && !changelogLoading) fetchChangelog();
@@ -205,7 +205,7 @@ export default function ChangelogView({ onBack }: { onBack?: () => void }) {
                   <span style={{
                     width: 6, height: 6, borderRadius: '50%', background: color,
                   }} />
-                  {t(SECTION_KEYS[s.heading] || `changelog_sec_${s.heading.toLowerCase()}`) || s.heading}
+                  {t((SECTION_KEYS[s.heading] || `changelog_sec_${s.heading.toLowerCase()}`) as keyof Dict) || s.heading}
                 </div>
                 <ul style={{
                   listStyle: 'none', margin: 0, padding: 0,

@@ -22,6 +22,9 @@ export const converterSlice: SpireSlice = (set, get) => ({
 
   setConverterOutputFormat: (fmt) => set({ converterOutputFormat: fmt }),
 
+  converterSetInput: (path: string, fmt: string) =>
+    set({ converterInputFile: path, converterOutputFormat: fmt, converterPreview: null }),
+
   runConversion: async () => {
     const st = get();
     const inputPath = st.converterInputFile;

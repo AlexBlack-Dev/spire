@@ -1,22 +1,27 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Pin, Star, Trash2, Lock, Unlock, ChevronUp, ChevronDown } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { translations } from '../i18n/translations';
+import { useT } from '../i18n/useT';
 import { dim } from '../isMobile';
 import type { Note } from '../types';
-import { COLOR_HEX, hexToRgba, formatDateFn, notePreview } from '../utils/format';
+import { COLOR_HEX, hexToRgba, formatDateFn, notePreview, getContentText } from '../utils/format';
 import WelcomeScreen from './WelcomeScreen';
 
 export default function MobileNoteList({ privateOnly }: { privateOnly?: boolean }) {
-  const {
-    notes, searchQuery, activeNoteId,
-    setSearchQuery, setActiveNote, language,
-    deleteNote,
-    togglePin, toggleFavorite, moveNoteUp, moveNoteDown, showLockPrompt,
-    accentColor,
-  } = useStore();
-  const t = (key: string) => translations[language][key] || key;
+  const notes = useStore((s) => s.notes);
+  const searchQuery = useStore((s) => s.searchQuery);
+  const activeNoteId = useStore((s) => s.activeNoteId);
+  const setSearchQuery = useStore((s) => s.setSearchQuery);
+  const setActiveNote = useStore((s) => s.setActiveNote);
+  const deleteNote = useStore((s) => s.deleteNote);
+  const togglePin = useStore((s) => s.togglePin);
+  const toggleFavorite = useStore((s) => s.toggleFavorite);
+  const moveNoteUp = useStore((s) => s.moveNoteUp);
+  const moveNoteDown = useStore((s) => s.moveNoteDown);
+  const showLockPrompt = useStore((s) => s.showLockPrompt);
+  const accentColor = useStore((s) => s.accentColor);
+  const t = useT();
   const [localQuery, setLocalQuery] = useState(searchQuery);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const accent = COLOR_HEX[accentColor];
@@ -34,12 +39,20 @@ export default function MobileNoteList({ privateOnly }: { privateOnly?: boolean 
 
   useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
 
-  const filtered = notes.filter((n) => {
-    const q = localQuery.toLowerCase();
-    if (privateOnly) return !!n.password && (n.title.toLowerCase().includes(q) || n.content.replace(/<[^>]*>/g, '').toLowerCase().includes(q));
-    if (n.password) return false;
-    return n.title.toLowerCase().includes(q) || n.content.replace(/<[^>]*>/g, '').toLowerCase().includes(q);
-  });
+  const strippedIndex = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const n of notes) map.set(n.id, getContentText(n.content));
+    return map;
+  }, [notes]);
+
+  const filtered = useMemo(() => {
+    const q = localQuery.trim().toLowerCase();
+    const base = privateOnly ? notes.filter((n) => n.password) : notes.filter((n) => !n.password);
+    if (!q) return base;
+    return base.filter((n) =>
+      n.title.toLowerCase().includes(q) || (strippedIndex.get(n.id) ?? '').toLowerCase().includes(q)
+    );
+  }, [notes, localQuery, privateOnly, strippedIndex]);
 
   const handleLock = (noteId: string, hasPassword: boolean) => {
     showLockPrompt(noteId, 'note', hasPassword ? 'remove' : 'set');
@@ -98,13 +111,11 @@ export default function MobileNoteList({ privateOnly }: { privateOnly?: boolean 
         flex: 1, overflowY: 'auto',
         padding: `0 0 ${dim.sp7}px`,
       }}>
-        {filtered.map((note, i) => (
+        {filtered.map((note) => (
           <NoteRow
             key={note.id} note={note}
             active={activeNoteId === note.id}
-            index={i}
             onClick={() => setActiveNote(note.id)}
-            language={language}
             onDelete={() => deleteNote(note.id)}
             onLock={() => handleLock(note.id, !!note.password)}
             onTogglePin={() => togglePin(note.id)}
@@ -127,10 +138,9 @@ export default function MobileNoteList({ privateOnly }: { privateOnly?: boolean 
   );
 }
 
-function NoteRow({ note, active, index, onClick, language, onDelete, onLock, onTogglePin, onToggleFav, onMoveUp, onMoveDown }: {
-  note: Note; active: boolean; index: number;
+function NoteRow({ note, active, onClick, onDelete, onLock, onTogglePin, onToggleFav, onMoveUp, onMoveDown }: {
+  note: Note; active: boolean;
   onClick: () => void;
-  language: 'en' | 'ru';
   onDelete: () => void;
   onLock: () => void;
   onTogglePin: () => void;
@@ -138,10 +148,11 @@ function NoteRow({ note, active, index, onClick, language, onDelete, onLock, onT
   onMoveUp: () => void;
   onMoveDown: () => void;
 }) {
-  const t = (key: string) => translations[language][key] || key;
+  const t = useT();
   const color = COLOR_HEX[note.color] || COLOR_HEX.violet;
   const preview = notePreview(note.content, !!note.filePath);
   const showFileExtensions = useStore((s) => s.showFileExtensions);
+  const language = useStore((s) => s.language);
   const ext = note.filePath ? (note.filePath.split('.').pop()?.toLowerCase() || '') : '';
 
   return (
@@ -152,13 +163,12 @@ function NoteRow({ note, active, index, onClick, language, onDelete, onLock, onT
         de.dataTransfer.setData('application/x-spire-note', note.id);
         de.dataTransfer.effectAllowed = 'copy';
       }}
-      initial={{ opacity: 0, x: -8 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: Math.min(index * 0.015, 0.12), type: 'spring', stiffness: 300, damping: 24 }}
+      whileTap={{ scale: 0.995 }}
+      className="note-row"
       style={{
         display: 'flex', alignItems: 'center',
         padding: `${dim.sp4}px ${dim.sp6}px`,
-        background: active ? '#1a1a28' : 'transparent',
+        background: active ? 'var(--surface-2)' : 'transparent',
         borderBottom: '1px solid var(--border-subtle)',
       }}
     >
@@ -192,7 +202,7 @@ function NoteRow({ note, active, index, onClick, language, onDelete, onLock, onT
             display: 'flex', alignItems: 'center', gap: dim.sp1,
           }}>
             {note.isFavorite && (
-              <Star size={dim.iconSm} color="#fbbf24" fill="#fbbf24" style={{ flexShrink: 0 }} />
+              <Star size={dim.iconSm} color="var(--c-amber)" fill="var(--c-amber)" style={{ flexShrink: 0 }} />
             )}
             {note.isPinned && (
               <Pin size={dim.iconSm} color={color} fill={color} style={{ flexShrink: 0 }} />
@@ -225,13 +235,13 @@ function NoteRow({ note, active, index, onClick, language, onDelete, onLock, onT
       <ActionBtn onClick={(e) => { e.stopPropagation(); onTogglePin(); }} color={note.isPinned ? color : 'var(--text-disabled)'}>
         <Pin size={dim.iconSm} fill={note.isPinned ? color : 'none'} />
       </ActionBtn>
-      <ActionBtn onClick={(e) => { e.stopPropagation(); onToggleFav(); }} color={note.isFavorite ? '#fbbf24' : 'var(--text-disabled)'}>
-        <Star size={dim.iconSm} fill={note.isFavorite ? '#fbbf24' : 'none'} />
+      <ActionBtn onClick={(e) => { e.stopPropagation(); onToggleFav(); }} color={note.isFavorite ? 'var(--c-amber)' : 'var(--text-disabled)'}>
+        <Star size={dim.iconSm} fill={note.isFavorite ? 'var(--c-amber)' : 'none'} />
       </ActionBtn>
       <ActionBtn onClick={(e) => { e.stopPropagation(); onLock(); }} color={note.password ? 'var(--accent)' : 'var(--text-disabled)'}>
         {note.password ? <Lock size={dim.iconSm} /> : <Unlock size={dim.iconSm} />}
       </ActionBtn>
-      <ActionBtn onClick={(e) => { navigator.vibrate?.(10); e.stopPropagation(); onDelete(); }} color="#f87171">
+      <ActionBtn onClick={(e) => { navigator.vibrate?.(10); e.stopPropagation(); onDelete(); }} color="var(--c-rose)">
         <Trash2 size={dim.iconSm} />
       </ActionBtn>
     </motion.div>

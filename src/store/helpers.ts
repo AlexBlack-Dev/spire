@@ -1,17 +1,24 @@
 import { readFile } from '@tauri-apps/plugin-fs';
-import { translations, type Language } from '../i18n/translations';
+import { translations, type Language, type Dict } from '../i18n/translations';
 import type { NoteColor } from '../types';
 
 export const HASH_PREFIX = 'v2$';
 
 export const COLORS: NoteColor[] = ['violet', 'blue', 'teal', 'green', 'amber', 'rose'];
 
-export function tKey(language: Language, key: string): string {
+export function tKey(language: Language, key: keyof Dict): string {
   return translations[language][key] || key;
 }
 
 export function getContentText(html: string): string {
-  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
+  return html
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
 }
 
 export function htmlToMarkdown(html: string): string {

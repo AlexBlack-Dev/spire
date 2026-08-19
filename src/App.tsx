@@ -15,10 +15,12 @@ import LockPrompt from './components/LockPrompt';
 import Toasts from './components/Toasts';
 import UpdateChecker from './components/UpdateChecker';
 import { useStore } from './store/useStore';
-import { translations } from './i18n/translations';
+import { useT } from './i18n/useT';
 import { isMobile } from './isMobile';
 import { COLOR_HEX } from './utils/format';
 import './index.css';
+
+const MIGRATION_FLAG = 'spire-migrated';
 
 function mixHex(a: string, b: string, t: number) {
   const pa = parseInt(a.slice(1), 16);
@@ -31,12 +33,20 @@ function mixHex(a: string, b: string, t: number) {
 }
 
 export default function App() {
-  const { viewMode, activeNoteId, openFileFromEvent, notes, migrateFromBlum, showToast, setSplashDone, theme, accentColor, language } = useStore();
+  const viewMode = useStore((s) => s.viewMode);
+  const activeNoteId = useStore((s) => s.activeNoteId);
+  const openFileFromEvent = useStore((s) => s.openFileFromEvent);
+  const notes = useStore((s) => s.notes);
+  const migrateFromBlum = useStore((s) => s.migrateFromBlum);
+  const showToast = useStore((s) => s.showToast);
+  const setSplashDone = useStore((s) => s.setSplashDone);
+  const theme = useStore((s) => s.theme);
+  const accentColor = useStore((s) => s.accentColor);
+  const t = useT();
   const lockedNoteExpiries = useStore((s) => s.lockedNoteExpiries);
   const lockedNoteOpens = useStore((s) => s.lockedNoteOpens);
   const lockPromptState = useStore((s) => s.lockPromptState);
   const [migrationDone, setMigrationDone] = useState(false);
-  const t = (key: string) => translations[language][key] || key;
 
   const showEditor  = viewMode === 'notes' || viewMode === 'private';
   const showWelcome = showEditor && !activeNoteId;
@@ -140,12 +150,16 @@ export default function App() {
     return () => { un.forEach(fn => fn()); };
   }, []);
 
-  // Auto-migrate from old BLUM/BLUNT data on first launch
+  // Auto-migrate from old BLUM/BLUNT data on first launch (runs at most once)
   useEffect(() => {
     if (migrationDone || notes.length > 0) return;
     setMigrationDone(true);
+    if (localStorage.getItem(MIGRATION_FLAG)) return;
     migrateFromBlum().then((ok: boolean) => {
-      if (ok) showToast(t('toast_migrated'));
+      if (ok) {
+        localStorage.setItem(MIGRATION_FLAG, '1');
+        showToast(t('toast_migrated'));
+      }
     });
   }, [notes, migrationDone]);
 

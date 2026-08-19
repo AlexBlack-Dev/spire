@@ -7,20 +7,13 @@ import {
   ExternalLink, ScrollText,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { translations } from '../i18n/translations';
-import { dim } from '../isMobile';
+import { useT } from '../i18n/useT';
+import { dim, useViewport } from '../isMobile';
 import { format } from 'date-fns';
 import { COLOR_HEX, COLOR_NAMES } from '../utils/format';
 import ChangelogView from './ChangelogView';
 
 type ToolsSubPage = 'hub' | 'statistics' | 'trash' | 'themes' | 'permissions' | 'changelog';
-
-const th = window.innerHeight;
-
-function useT() {
-  const language = useStore((s) => s.language);
-  return (key: string) => translations[language][key] || key;
-}
 
 function SubHeader({ title, onBack }: { title: string; onBack: () => void }) {
   return (
@@ -76,11 +69,11 @@ export default function ToolsView() {
     return <ChangelogView onBack={() => goTo('hub')} />;
   }
   const tools = [
-    { id: 'statistics' as ToolsSubPage, icon: <BarChart3 size={dim.iconLg} />, label: t('statistics'), color: '#4f8ef7' },
-    { id: 'trash' as ToolsSubPage, icon: <Trash2 size={dim.iconLg} />, label: t('trash'), color: '#f87171' },
-    { id: 'themes' as ToolsSubPage, icon: <Palette size={dim.iconLg} />, label: t('themes'), color: '#fbbf24' },
-    { id: 'permissions' as ToolsSubPage, icon: <Shield size={dim.iconLg} />, label: t('permissions'), color: '#f472b6' },
-    { id: 'changelog' as ToolsSubPage, icon: <ScrollText size={dim.iconLg} />, label: t('changelog'), color: '#a78bfa' },
+    { id: 'statistics' as ToolsSubPage, icon: <BarChart3 size={dim.iconLg} />, label: t('statistics'), color: 'var(--c-blue)' },
+    { id: 'trash' as ToolsSubPage, icon: <Trash2 size={dim.iconLg} />, label: t('trash'), color: 'var(--c-rose)' },
+    { id: 'themes' as ToolsSubPage, icon: <Palette size={dim.iconLg} />, label: t('themes'), color: 'var(--c-amber)' },
+    { id: 'permissions' as ToolsSubPage, icon: <Shield size={dim.iconLg} />, label: t('permissions'), color: 'var(--c-rose)' },
+    { id: 'changelog' as ToolsSubPage, icon: <ScrollText size={dim.iconLg} />, label: t('changelog'), color: 'var(--accent)' },
   ];
 
   return (
@@ -126,7 +119,7 @@ export default function ToolsView() {
               width: Math.round(dim.barH * 1.2), height: Math.round(dim.barH * 1.2),
               borderRadius: dim.radiusSm,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: `${tool.color}18`,
+              background: `color-mix(in srgb, ${tool.color} 9%, transparent)`,
               color: tool.color,
               flexShrink: 0,
             }}>
@@ -150,8 +143,10 @@ export default function ToolsView() {
 /* ---------- Statistics ---------- */
 
 function StatisticsView({ onBack }: { onBack: () => void }) {
-  const { notes, tasks } = useStore();
+  const notes = useStore((s) => s.notes);
+  const tasks = useStore((s) => s.tasks);
   const t = useT();
+  const ih = useViewport();
 
   const stats = useMemo(() => {
     const totalWords = notes.reduce((sum, n) => {
@@ -168,11 +163,11 @@ function StatisticsView({ onBack }: { onBack: () => void }) {
   }, [notes, tasks]);
 
   const statCards = [
-    { label: t('total_notes'), value: notes.length, color: '#4f8ef7', icon: <Star size={dim.iconMd} /> },
-    { label: t('total_tasks'), value: tasks.length, color: '#2dd4bf', icon: <CircleCheckBig size={dim.iconMd} /> },
-    { label: t('total_words'), value: stats.totalWords, color: '#fbbf24', icon: <BarChart3 size={dim.iconMd} /> },
-    { label: t('completed_tasks'), value: stats.completedTasks, color: '#4ade80', icon: <Check size={dim.iconMd} /> },
-    { label: t('incomplete_tasks'), value: stats.incompleteTasks, color: '#f87171', icon: <X size={dim.iconMd} /> },
+    { label: t('total_notes'), value: notes.length, color: 'var(--c-blue)', icon: <Star size={dim.iconMd} /> },
+    { label: t('total_tasks'), value: tasks.length, color: 'var(--c-green)', icon: <CircleCheckBig size={dim.iconMd} /> },
+    { label: t('total_words'), value: stats.totalWords, color: 'var(--c-amber)', icon: <BarChart3 size={dim.iconMd} /> },
+    { label: t('completed_tasks'), value: stats.completedTasks, color: 'var(--c-green)', icon: <Check size={dim.iconMd} /> },
+    { label: t('incomplete_tasks'), value: stats.incompleteTasks, color: 'var(--c-rose)', icon: <X size={dim.iconMd} /> },
   ];
 
   return (
@@ -247,7 +242,7 @@ function StatisticsView({ onBack }: { onBack: () => void }) {
                       opacity: count > 0 ? 1 : 0.2,
                     }} />
                     <div style={{
-                      width: '100%', height: Math.round(th * 0.06),
+                      width: '100%', height: Math.round(ih * 0.06),
                       borderRadius: dim.radiusSm,
                       background: COLOR_HEX[c],
                       opacity: 0.3 + pct * 0.7,
@@ -274,8 +269,12 @@ function StatisticsView({ onBack }: { onBack: () => void }) {
 /* ---------- Trash ---------- */
 
 function TrashView({ onBack }: { onBack: () => void }) {
-  const { trash, restoreFromTrash, permanentDelete, emptyTrash } = useStore();
+  const trash = useStore((s) => s.trash);
+  const restoreFromTrash = useStore((s) => s.restoreFromTrash);
+  const permanentDelete = useStore((s) => s.permanentDelete);
+  const emptyTrash = useStore((s) => s.emptyTrash);
   const t = useT();
+  const ih = useViewport();
 
   const handleRestore = (id: string) => {
     restoreFromTrash(id);
@@ -307,10 +306,10 @@ function TrashView({ onBack }: { onBack: () => void }) {
             style={{
               display: 'flex', alignItems: 'center', gap: dim.sp2,
               padding: `${dim.sp2}px ${dim.sp4}px`,
-              background: 'rgba(248,113,113,0.12)',
-              border: '1px solid rgba(248,113,113,0.2)',
+              background: 'color-mix(in srgb, var(--c-rose) 12%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--c-rose) 20%, transparent)',
               borderRadius: dim.radiusSm,
-              color: '#f87171', fontSize: dim.textSm, fontWeight: 700,
+              color: 'var(--c-rose)', fontSize: dim.textSm, fontWeight: 700,
               cursor: 'pointer',
             }}
           >
@@ -327,7 +326,7 @@ function TrashView({ onBack }: { onBack: () => void }) {
       }}>
         {trash.length === 0 && (
           <div style={{
-            padding: `${Math.round(th * 0.08)}px 0`,
+            padding: `${Math.round(ih * 0.08)}px 0`,
             textAlign: 'center', color: 'var(--text-disabled)', fontSize: dim.textMd, fontWeight: 700,
           }}>
             {t('trash_empty')}
@@ -369,8 +368,8 @@ function TrashView({ onBack }: { onBack: () => void }) {
               style={{
                 width: dim.barH, height: dim.barH,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(74,222,128,0.12)', border: 'none',
-                borderRadius: dim.radiusSm, cursor: 'pointer', color: '#4ade80',
+                background: 'color-mix(in srgb, var(--c-green) 12%, transparent)', border: 'none',
+                borderRadius: dim.radiusSm, cursor: 'pointer', color: 'var(--c-green)',
               }}
             >
               <RotateCcw size={dim.iconMd} />
@@ -381,8 +380,8 @@ function TrashView({ onBack }: { onBack: () => void }) {
               style={{
                 width: dim.barH, height: dim.barH,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(248,113,113,0.12)', border: 'none',
-                borderRadius: dim.radiusSm, cursor: 'pointer', color: '#f87171',
+                background: 'color-mix(in srgb, var(--c-rose) 12%, transparent)', border: 'none',
+                borderRadius: dim.radiusSm, cursor: 'pointer', color: 'var(--c-rose)',
               }}
             >
               <X size={dim.iconMd} />
@@ -397,7 +396,10 @@ function TrashView({ onBack }: { onBack: () => void }) {
 /* ---------- Themes ---------- */
 
 function ThemesView({ onBack }: { onBack: () => void }) {
-  const { theme, setTheme, accentColor, setAccentColor } = useStore();
+  const theme = useStore((s) => s.theme);
+  const setTheme = useStore((s) => s.setTheme);
+  const accentColor = useStore((s) => s.accentColor);
+  const setAccentColor = useStore((s) => s.setAccentColor);
   const t = useT();
 
   const handleTheme = (newTheme: 'dark' | 'light') => {
@@ -407,7 +409,7 @@ function ThemesView({ onBack }: { onBack: () => void }) {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', height: '100%',
-      background: theme === 'dark' ? 'var(--surface-0)' : '#f0f0f0',
+      background: 'var(--surface-0)',
       overflow: 'hidden',
     }}>
       <SubHeader title={t('themes')} onBack={onBack} />
@@ -487,7 +489,7 @@ function ThemesView({ onBack }: { onBack: () => void }) {
           <div style={{
             marginTop: dim.sp3,
             fontSize: dim.textSm, fontWeight: 600,
-            color: theme === 'dark' ? 'var(--text-tertiary)' : '#999', textAlign: 'center',
+            color: 'var(--text-disabled)', textAlign: 'center',
           }}>
             {t('only_notes')}
           </div>
@@ -536,7 +538,9 @@ function PermissionsView({ onBack }: { onBack: () => void }) {
       const { invoke } = await import('@tauri-apps/api/core');
       const ok = await invoke<boolean>('check_storage_permission');
       setStorageGranted(ok);
-    } catch {}
+    } catch (e) {
+      console.warn('check_storage_permission failed', e);
+    }
   };
 
   useEffect(() => {
@@ -571,8 +575,8 @@ function PermissionsView({ onBack }: { onBack: () => void }) {
             <div style={{
               width: Math.round(dim.barH * 1.1), height: Math.round(dim.barH * 1.1),
               borderRadius: dim.radiusSm, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: storageGranted ? 'rgba(74,222,128,0.15)' : 'rgba(248,113,113,0.15)',
-              color: storageGranted ? '#4ade80' : '#f87171',
+              background: storageGranted ? 'color-mix(in srgb, var(--c-green) 15%, transparent)' : 'color-mix(in srgb, var(--c-rose) 15%, transparent)',
+              color: storageGranted ? 'var(--c-green)' : 'var(--c-rose)',
               flexShrink: 0,
             }}>
               <Folder size={dim.iconLg} />
@@ -593,8 +597,8 @@ function PermissionsView({ onBack }: { onBack: () => void }) {
               padding: `${dim.sp3}px ${dim.sp5}px`,
               width: '100%',
               borderRadius: dim.radiusSm,
-              background: 'rgba(74,222,128,0.15)',
-              color: '#4ade80',
+              background: 'color-mix(in srgb, var(--c-green) 15%, transparent)',
+              color: 'var(--c-green)',
               fontSize: dim.textMd, fontWeight: 700,
             }}>
               <Check size={dim.iconMd} />
@@ -617,8 +621,8 @@ function PermissionsView({ onBack }: { onBack: () => void }) {
                 width: '100%',
                 borderRadius: dim.radiusSm,
                 border: 'none', cursor: 'pointer',
-                background: 'rgba(248,113,113,0.12)',
-                color: '#f87171',
+                background: 'color-mix(in srgb, var(--c-rose) 12%, transparent)',
+                color: 'var(--c-rose)',
                 fontSize: dim.textMd, fontWeight: 700,
                 transition: 'all 0.15s',
               }}

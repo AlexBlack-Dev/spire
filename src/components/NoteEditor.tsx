@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState, useRef, useMemo } from 'react';
+import { useEffect, useCallback, useState, useRef, useMemo, createElement } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -11,17 +11,19 @@ import TableRow from '@tiptap/extension-table-row';
 import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
 import {
-  Pin, Star, Trash2, Lock, Pencil, Eye,
+  Pin, Star, Trash2, Lock, Pencil, Eye, Play,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { format } from 'date-fns';
 import { ru, enUS } from 'date-fns/locale';
-import { translations } from '../i18n/translations';
+import { useT } from '../i18n/useT';
 import SpreadsheetEditor from './SpreadsheetEditor';
 import TagRow from './TagRow';
 import FormatToolbar from './FormatToolbar';
-import { COLOR_HEX, COLOR_NAMES, getFileInfo, hexToRgba } from '../utils/format';
+import { COLOR_HEX, COLOR_NAMES, getFileInfo, hexToRgba, sanitizeHtml } from '../utils/format';
 import { sliceToText } from '../utils/tiptapText';
+
+const SCRIPT_EXTS = ['bat', 'cmd', 'ps1', 'vbs', 'js', 'sh'];
 
 function parseCSV(text: string): string[][] {
   const lines = text.trim().split('\n');
@@ -138,14 +140,14 @@ function syntaxHighlightJSON(json: string) {
       parts.push(<span key={idx++} style={{ color: 'var(--text-tertiary)' }}>{escapeHtml(json.slice(last, match.index))}</span>);
     }
     if (match[1]) {
-      parts.push(<span key={idx++} style={{ color: '#4f8ef7' }}>{escapeHtml(match[1])}</span>);
+      parts.push(<span key={idx++} style={{ color: 'var(--c-blue)' }}>{escapeHtml(match[1])}</span>);
       parts.push(<span key={idx++} style={{ color: 'var(--text-tertiary)' }}>:</span>);
     } else if (match[2]) {
-      parts.push(<span key={idx++} style={{ color: '#4ade80' }}>{escapeHtml(match[2])}</span>);
+      parts.push(<span key={idx++} style={{ color: 'var(--c-green)' }}>{escapeHtml(match[2])}</span>);
     } else if (match[3]) {
-      parts.push(<span key={idx++} style={{ color: '#fbbf24' }}>{escapeHtml(match[3])}</span>);
+      parts.push(<span key={idx++} style={{ color: 'var(--c-amber)' }}>{escapeHtml(match[3])}</span>);
     } else if (match[4]) {
-      parts.push(<span key={idx++} style={{ color: '#f87171' }}>{escapeHtml(match[4])}</span>);
+      parts.push(<span key={idx++} style={{ color: 'var(--c-rose)' }}>{escapeHtml(match[4])}</span>);
     }
     last = re.lastIndex;
   }
@@ -155,22 +157,133 @@ function syntaxHighlightJSON(json: string) {
   return parts;
 }
 
-function renderMarkdown(text: string) {
-  const lines = text.split('\n');
-  const html = lines.map(line => {
-    if (/^#{1,6}\s/.test(line)) {
-      const level = line.match(/^#+/)![0].length;
-      const content = line.replace(/^#+\s*/, '');
-      return `<h${level}>${escapeHtml(content)}</h${level}>`;
+function renderInline(text: string, keyBase: string): React.ReactNode[] {
+  const nodes: React.ReactNode[] = [];
+  const re = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
+  let last = 0;
+  let idx = 0;
+  let m: RegExpExecArray | null;
+  const codeStyle: React.CSSProperties = {
+    background: 'var(--surface-2)', padding: '1px 5px', borderRadius: 4,
+    fontFamily: 'ui-monospace, monospace', fontSize: '0.9em',
+  };
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) {
+      nodes.push(<span key={`${keyBase}-${idx++}`}>{text.slice(last, m.index)}</span>);
     }
-    if (/^- /.test(line)) return `<li>${escapeHtml(line.replace(/^- /, ''))}</li>`;
-    if (/^\d+\. /.test(line)) return `<li>${escapeHtml(line.replace(/^\d+\. /, ''))}</li>`;
-    if (/^```/.test(line)) return `<pre><code>...</code></pre>`;
-    return `<p>${escapeHtml(line)}</p>`;
-  }).join('\n');
+    const tok = m[0];
+    if (tok.startsWith('**')) {
+      nodes.push(<strong key={`${keyBase}-${idx++}`}>{tok.slice(2, -2)}</strong>);
+    } else if (tok.startsWith('*')) {
+      nodes.push(<em key={`${keyBase}-${idx++}`}>{tok.slice(1, -1)}</em>);
+    } else if (tok.startsWith('`')) {
+      nodes.push(<code key={`${keyBase}-${idx++}`} style={codeStyle}>{tok.slice(1, -1)}</code>);
+    } else {
+      const linkMatch = tok.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+      const label = linkMatch?.[1] ?? tok;
+      const href = linkMatch?.[2] ?? '';
+      if (/^https?:\/\//i.test(href)) {
+        nodes.push(
+          <a key={`${keyBase}-${idx++}`} href={href}
+            onClick={(e) => { e.preventDefault(); openExternalLink(href); }}
+            style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
+            {label}
+          </a>
+        );
+      } else {
+        nodes.push(<span key={`${keyBase}-${idx++}`}>{label}</span>);
+      }
+    }
+    last = re.lastIndex;
+  }
+  if (last < text.length) {
+    nodes.push(<span key={`${keyBase}-${idx++}`}>{text.slice(last)}</span>);
+  }
+  return nodes;
+}
+
+async function openExternalLink(url: string) {
+  try {
+    const { openUrl } = await import('@tauri-apps/plugin-opener');
+    openUrl(url);
+  } catch {
+    window.open(url, '_blank', 'noopener');
+  }
+}
+
+function renderMarkdown(text: string) {
+  const blocks: React.ReactNode[] = [];
+  const lines = text.split('\n');
+  let i = 0;
+  let key = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (/^```/.test(line)) {
+      const buf: string[] = [];
+      i++;
+      while (i < lines.length && !/^```/.test(lines[i])) { buf.push(lines[i]); i++; }
+      i++;
+      blocks.push(
+        <pre key={key++} style={{
+          background: 'var(--surface-1)', border: '1px solid var(--border-subtle)',
+          borderRadius: 10, padding: '12px 16px', overflow: 'auto',
+          fontSize: 13, lineHeight: 1.6, whiteSpace: 'pre-wrap',
+        }}>
+          <code>{buf.join('\n')}</code>
+        </pre>
+      );
+      continue;
+    }
+    if (/^#{1,6}\s/.test(line)) {
+      const level = /^#+/.exec(line)![0].length;
+      const H = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'][level - 1] as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+      blocks.push(createElement(H, {
+        key: key++,
+        style: { fontSize: [24, 20, 18, 16, 15, 15][level - 1], fontWeight: 800, margin: '14px 0 8px', letterSpacing: '-0.02em' },
+      }, renderInline(line.replace(/^#+\s*/, ''), `h${key}`)));
+      i++;
+      continue;
+    }
+    if (/^\s*([-*])\s/.test(line) || /^\s*\d+\.\s/.test(line)) {
+      const ordered = /^\s*\d+\.\s/.test(line);
+      const items: React.ReactNode[] = [];
+      while (i < lines.length && (/^\s*([-*])\s/.test(lines[i]) || /^\s*\d+\.\s/.test(lines[i]))) {
+        items.push(
+          <li key={i} style={{ marginBottom: 4 }}>
+            {renderInline(lines[i].replace(/^\s*([-*]|\d+\.)\s/, ''), `li${i}`)}
+          </li>
+        );
+        i++;
+      }
+      blocks.push(ordered
+        ? <ol key={key++} style={{ paddingLeft: 22, margin: '8px 0' }}>{items}</ol>
+        : <ul key={key++} style={{ paddingLeft: 22, margin: '8px 0' }}>{items}</ul>);
+      continue;
+    }
+    if (/^\s*>\s?/.test(line)) {
+      const buf: string[] = [];
+      while (i < lines.length && /^\s*>\s?/.test(lines[i])) { buf.push(lines[i].replace(/^\s*>\s?/, '')); i++; }
+      blocks.push(
+        <blockquote key={key++} style={{
+          borderLeft: '3px solid var(--accent)', padding: '4px 12px', margin: '8px 0',
+          color: 'var(--text-secondary)',
+        }}>
+          {buf.map((l, j) => <div key={j}>{renderInline(l, `q${j}`)}</div>)}
+        </blockquote>
+      );
+      continue;
+    }
+    if (/^\s*(---|\*\*\*|___)\s*$/.test(line)) {
+      blocks.push(<hr key={key++} style={{ border: 'none', borderTop: '1px solid var(--border-subtle)', margin: '12px 0' }} />);
+      i++;
+      continue;
+    }
+    if (line.trim() === '') { i++; continue; }
+    blocks.push(<p key={key++} style={{ margin: '0 0 8px' }}>{renderInline(line, `p${key}`)}</p>);
+    i++;
+  }
   return (
-    <div style={{ fontSize: 15, color: 'var(--text-primary)', lineHeight: 1.7 }}
-      dangerouslySetInnerHTML={{ __html: html }} />
+    <div style={{ fontSize: 15, color: 'var(--text-primary)', lineHeight: 1.7 }}>{blocks}</div>
   );
 }
 
@@ -193,12 +306,54 @@ function isJSON(text: string) {
 }
 
 export default function NoteEditor() {
-  const { notes, activeNoteId, updateNote, deleteNote, togglePin, toggleFavorite, language, antiPaste, showLockPrompt } = useStore();
-  const t = (key: string) => translations[language][key] || key;
+  const notes = useStore((s) => s.notes);
+  const activeNoteId = useStore((s) => s.activeNoteId);
+  const updateNote = useStore((s) => s.updateNote);
+  const deleteNote = useStore((s) => s.deleteNote);
+  const togglePin = useStore((s) => s.togglePin);
+  const toggleFavorite = useStore((s) => s.toggleFavorite);
+  const antiPaste = useStore((s) => s.antiPaste);
+  const showLockPrompt = useStore((s) => s.showLockPrompt);
+  const showToast = useStore((s) => s.showToast);
+  const addLog = useStore((s) => s.addLog);
+  const language = useStore((s) => s.language);
+  const t = useT();
   const note = notes.find((n) => n.id === activeNoteId);
   const [wordCount, setWordCount] = useState(0);
   const loadedNoteId = useRef<string | null>(null);
   const isUserEditing = useRef(false);
+  const [running, setRunning] = useState(false);
+  const pendingSaveRef = useRef<{ id: string; content: string } | null>(null);
+  const saveTimerRef = useRef<number | null>(null);
+
+  const flushSave = useCallback(() => {
+    if (saveTimerRef.current !== null) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    if (pendingSaveRef.current) {
+      updateNote(pendingSaveRef.current.id, { content: pendingSaveRef.current.content });
+      pendingSaveRef.current = null;
+    }
+  }, [updateNote]);
+
+  useEffect(() => () => { flushSave(); }, [flushSave]);
+
+  const runScript = useCallback(async () => {
+    if (!note?.filePath || running) return;
+    setRunning(true);
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      await invoke('run_script', { path: note.filePath });
+      showToast(t('toast_run_ok'));
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : String(e);
+      addLog('runScript: ' + msg);
+      showToast(t('toast_run_failed') + msg, 'error');
+    } finally {
+      setRunning(false);
+    }
+  }, [note?.filePath, running, showToast, addLog, t]);
 
   const { ext, isSpreadsheet, isPlainFile } = getFileInfo(note?.filePath);
 
@@ -261,14 +416,18 @@ export default function NoteEditor() {
       handleDOMEvents: {
         copy: () => antiPaste ? true : undefined,
         cut: () => antiPaste ? true : undefined,
+        blur: () => { flushSave(); return undefined; },
       },
     },
     onUpdate: ({ editor }) => {
       if (note && loadedNoteId.current === note.id) {
         isUserEditing.current = true;
-        updateNote(note.id, { content: editor.getHTML() });
-        const t = editor.getText().trim();
-        setWordCount(t ? t.split(/\s+/).length : 0);
+        const html = editor.getHTML();
+        const text = editor.getText().trim();
+        setWordCount(text ? text.split(/\s+/).length : 0);
+        pendingSaveRef.current = { id: note.id, content: html };
+        if (saveTimerRef.current !== null) clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = window.setTimeout(flushSave, 400);
         setTimeout(() => { isUserEditing.current = false; }, 0);
       }
     },
@@ -277,6 +436,7 @@ export default function NoteEditor() {
   useEffect(() => {
     if (!editor || !note) return;
     if (loadedNoteId.current !== note.id) {
+      flushSave();
       loadedNoteId.current = note.id;
       if (!renderedContent && !isPlainFile) {
         editor.commands.setContent(note.content || '');
@@ -284,7 +444,7 @@ export default function NoteEditor() {
         setWordCount(t ? t.split(/\s+/).length : 0);
       }
     }
-  }, [activeNoteId, editor, renderedContent, isPlainFile]);
+  }, [activeNoteId, editor, renderedContent, isPlainFile, flushSave]);
 
   const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (note) updateNote(note.id, { title: e.target.value });
@@ -318,6 +478,7 @@ export default function NoteEditor() {
 
   const accentColor = COLOR_HEX[note.color] || COLOR_HEX.violet;
   const editMode = note.editMode !== false;
+  const isScript = !!note.filePath && !isSpreadsheet && SCRIPT_EXTS.includes(ext);
   const previewCard: React.CSSProperties = {
     background: `linear-gradient(180deg, ${hexToRgba(accentColor, 0.14)} 0%, transparent 38%), var(--surface-1)`,
     borderRadius: 12,
@@ -364,9 +525,13 @@ export default function NoteEditor() {
                 onClick={() => { if (editMode) updateNote(note.id, { editMode: false }); }} />
             </div>
             <ActionBtn icon={<Pin size={14}/>}   active={note.isPinned}   activeColor={accentColor} onClick={() => togglePin(note.id)} />
-            <ActionBtn icon={<Star size={14}/>}  active={note.isFavorite} activeColor="#fbbf24"     onClick={() => toggleFavorite(note.id)} />
+            <ActionBtn icon={<Star size={14}/>}  active={note.isFavorite} activeColor="var(--c-amber)" onClick={() => toggleFavorite(note.id)} />
+            {isScript && (
+              <ActionBtn icon={<Play size={14}/>} active={false} activeColor={accentColor}
+                title={t('run_script')} onClick={() => runScript()} />
+            )}
             <ActionBtn icon={<Lock size={14}/>}  active={!!note.password} activeColor={accentColor} onClick={() => showLockPrompt(note.id, 'note', note.password ? 'remove' : 'set')} />
-            <ActionBtn icon={<Trash2 size={14}/>} active={false}          activeColor="#f87171"     onClick={() => deleteNote(note.id)} danger />
+            <ActionBtn icon={<Trash2 size={14}/>} active={false}          activeColor="var(--c-rose)" onClick={() => deleteNote(note.id)} danger />
           </div>
         </div>
 
@@ -479,7 +644,7 @@ export default function NoteEditor() {
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 48px', userSelect: 'text', minWidth: 0 }}>
           {!editMode ? (
             <div style={{ ...previewCard, padding: '24px 26px' }}>
-              <div className="tiptap-editor" dangerouslySetInnerHTML={{ __html: note.content }} />
+              <div className="tiptap-editor" dangerouslySetInnerHTML={{ __html: sanitizeHtml(note.content) }} />
             </div>
           ) : renderedContent ? (
             <div>
@@ -536,13 +701,13 @@ function ActionBtn({ icon, active, activeColor, onClick, danger, title }: {
       style={{
         width: 32, height: 32,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: active ? (danger ? 'color-mix(in srgb, #f87171 18%, transparent)' : 'var(--accent-dim)') : 'transparent',
+        background: active ? (danger ? 'color-mix(in srgb, var(--c-rose) 18%, transparent)' : 'var(--accent-dim)') : 'transparent',
         border: 'none', borderRadius: 7,
-        color: active ? activeColor : danger ? '#7a4a4a' : 'var(--text-disabled)',
+        color: active ? activeColor : danger ? 'color-mix(in srgb, var(--c-rose) 55%, var(--surface-1))' : 'var(--text-disabled)',
         cursor: 'pointer', transition: 'all 0.15s',
       }}
-      onMouseEnter={e => { e.currentTarget.style.background = danger ? 'color-mix(in srgb, #f87171 18%, transparent)' : 'var(--surface-2)'; e.currentTarget.style.color = activeColor; }}
-      onMouseLeave={e => { e.currentTarget.style.background = active ? (danger ? 'color-mix(in srgb, #f87171 18%, transparent)' : 'var(--accent-dim)') : 'transparent'; e.currentTarget.style.color = active ? activeColor : danger ? '#7a4a4a' : 'var(--text-disabled)'; }}
+      onMouseEnter={e => { e.currentTarget.style.background = danger ? 'color-mix(in srgb, var(--c-rose) 18%, transparent)' : 'var(--surface-2)'; e.currentTarget.style.color = activeColor; }}
+      onMouseLeave={e => { e.currentTarget.style.background = active ? (danger ? 'color-mix(in srgb, var(--c-rose) 18%, transparent)' : 'var(--accent-dim)') : 'transparent'; e.currentTarget.style.color = active ? activeColor : danger ? 'color-mix(in srgb, var(--c-rose) 55%, var(--surface-1))' : 'var(--text-disabled)'; }}
     >
       {icon}
     </button>

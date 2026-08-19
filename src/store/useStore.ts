@@ -37,6 +37,7 @@ export const useStore = create<SpireStore>()(
         permBannerDismissed: s.permBannerDismissed,
         antiPaste: s.antiPaste,
         showFileExtensions: s.showFileExtensions,
+        errorLogs: s.errorLogs,
       }),
     }
   )

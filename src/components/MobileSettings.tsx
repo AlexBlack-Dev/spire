@@ -1,17 +1,33 @@
 import { motion } from 'framer-motion';
-import { openUrl } from '@tauri-apps/plugin-opener';
 import { ChevronLeft, Download, Upload, Github, RefreshCw } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { translations, type Language } from '../i18n/translations';
+import { useT } from '../i18n/useT';
+import type { Language } from '../i18n/translations';
 import { dim } from '../isMobile';
 import { COLOR_HEX, hexToRgba } from '../utils/format';
 import { APP_VERSION } from '../version';
 
 export default function MobileSettings({ onBack }: { onBack?: () => void }) {
-  const { language, setLanguage, exportData, importData, accentColor, showFileExtensions, setShowFileExtensions, checkForUpdates } = useStore();
-  const t = (key: string) => translations[language][key] || key;
+  const language = useStore((s) => s.language);
+  const setLanguage = useStore((s) => s.setLanguage);
+  const exportData = useStore((s) => s.exportData);
+  const importData = useStore((s) => s.importData);
+  const accentColor = useStore((s) => s.accentColor);
+  const showFileExtensions = useStore((s) => s.showFileExtensions);
+  const setShowFileExtensions = useStore((s) => s.setShowFileExtensions);
+  const checkForUpdates = useStore((s) => s.checkForUpdates);
+  const t = useT();
   const accent = COLOR_HEX[accentColor];
   const accentRgba = (a: number) => hexToRgba(accent, a);
+
+  const openGitHub = async () => {
+    try {
+      const { openUrl } = await import('@tauri-apps/plugin-opener');
+      await openUrl('https://github.com/AlexBlack-Dev');
+    } catch (e) {
+      console.error('openUrl failed', e);
+    }
+  };
 
   return (
     <div style={{
@@ -113,7 +129,7 @@ export default function MobileSettings({ onBack }: { onBack?: () => void }) {
                 alex black
               </span>
               <button
-                onClick={() => openUrl('https://github.com/AlexBlack-Dev')}
+                onClick={() => openGitHub()}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   width: dim.barH, height: dim.barH, borderRadius: dim.radiusSm,

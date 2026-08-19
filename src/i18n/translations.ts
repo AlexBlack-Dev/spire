@@ -1,8 +1,6 @@
 export type Language = 'en' | 'ru';
 
-type Dict = Record<string, string>;
-
-const en: Dict = {
+export const en = {
   // Sidebar nav
   'notes': 'Notes',
   'tasks': 'Tasks',
@@ -253,7 +251,12 @@ const en: Dict = {
   'settings_data': 'Data',
   'settings_export': 'Export',
   'settings_import': 'Import',
+  'run_script': 'Run script',
+  'toast_run_ok': 'Script launched',
+  'toast_run_failed': 'Failed to run: ',
 };
+
+export type Dict = typeof en;
 
 const ru: Dict = {
   'notes': 'Заметки',
@@ -500,6 +503,9 @@ const ru: Dict = {
   'settings_data': 'Данные',
   'settings_export': 'Экспорт',
   'settings_import': 'Импорт',
+  'run_script': 'Запустить скрипт',
+  'toast_run_ok': 'Скрипт запущен',
+  'toast_run_failed': 'Ошибка запуска: ',
 };
 
 export const translations: Record<Language, Dict> = { en, ru };

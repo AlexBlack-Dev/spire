@@ -4,7 +4,9 @@ import { useStore } from '../store/useStore';
 import { COLOR_HEX, hexToRgba } from '../utils/format';
 
 export default function SplashScreen() {
-  const { splashDone, setSplashDone, accentColor } = useStore();
+  const splashDone = useStore((s) => s.splashDone);
+  const setSplashDone = useStore((s) => s.setSplashDone);
+  const accentColor = useStore((s) => s.accentColor);
   const accent = COLOR_HEX[accentColor];
   const accentRgba = (a: number) => hexToRgba(accent, a);
 

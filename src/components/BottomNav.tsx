@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { BookMarked, CircleCheckBig, Lock, Wrench, Plus } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { translations } from '../i18n/translations';
+import { useT } from '../i18n/useT';
 import { dim } from '../isMobile';
 import { COLOR_HEX, hexToRgba } from '../utils/format';
 
@@ -11,8 +11,9 @@ export default function BottomNav({ activeTab, onTabChange }: {
   activeTab: MobileTab;
   onTabChange: (tab: MobileTab) => void;
 }) {
-  const { language, createNote, accentColor } = useStore();
-  const t = (key: string) => translations[language][key] || key;
+  const createNote = useStore((s) => s.createNote);
+  const accentColor = useStore((s) => s.accentColor);
+  const t = useT();
   const reduced = useReducedMotion();
   const accent = COLOR_HEX[accentColor];
   const accentRgba = (a: number) => hexToRgba(accent, a);

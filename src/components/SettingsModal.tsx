@@ -1,16 +1,35 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Download, Upload, Github, Moon, Sun, Check, RefreshCw } from 'lucide-react';
-import { openUrl } from '@tauri-apps/plugin-opener';
 import { useStore } from '../store/useStore';
-import { translations, type Language } from '../i18n/translations';
+import { useT } from '../i18n/useT';
+import type { Language } from '../i18n/translations';
 import { COLOR_HEX, COLOR_NAMES } from '../utils/format';
 import { APP_VERSION } from '../version';
 
 export default function SettingsModal() {
-  const { settingsOpen, setSettingsOpen, language, setLanguage, exportData, importData, theme, setTheme, accentColor, setAccentColor, showFileExtensions, setShowFileExtensions, checkForUpdates } = useStore();
-  const t = (key: string) => translations[language][key] || key;
+  const settingsOpen = useStore((s) => s.settingsOpen);
+  const setSettingsOpen = useStore((s) => s.setSettingsOpen);
+  const language = useStore((s) => s.language);
+  const setLanguage = useStore((s) => s.setLanguage);
+  const exportData = useStore((s) => s.exportData);
+  const importData = useStore((s) => s.importData);
+  const theme = useStore((s) => s.theme);
+  const setTheme = useStore((s) => s.setTheme);
+  const accentColor = useStore((s) => s.accentColor);
+  const setAccentColor = useStore((s) => s.setAccentColor);
+  const showFileExtensions = useStore((s) => s.showFileExtensions);
+  const setShowFileExtensions = useStore((s) => s.setShowFileExtensions);
+  const checkForUpdates = useStore((s) => s.checkForUpdates);
+  const t = useT();
 
-  const openGitHub = () => openUrl('https://github.com/AlexBlack-Dev');
+  const openGitHub = async () => {
+    try {
+      const { openUrl } = await import('@tauri-apps/plugin-opener');
+      await openUrl('https://github.com/AlexBlack-Dev');
+    } catch (e) {
+      console.error('openUrl failed', e);
+    }
+  };
 
   return (
     <AnimatePresence>

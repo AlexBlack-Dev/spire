@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
 import { motion } from 'framer-motion';
 import { ChevronLeft, Folder, Save } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { translations } from '../i18n/translations';
+import { translations, type Dict } from '../i18n/translations';
 import { dim } from '../isMobile';
 
 interface DirEntry {
@@ -18,8 +17,8 @@ export default function FileBrowser({ noteTitle, onSave, onBack }: {
   onBack: () => void;
 }) {
   const language = useStore((s) => s.language);
-  const t = (key: string, vars?: Record<string, string>) => {
-    const s = translations[language][key] || key;
+  const t = (key: keyof Dict, vars?: Record<string, string>) => {
+    const s = translations[language][key];
     return vars ? s.replace(/\{(\w+)\}/g, (_, k: string) => vars[k] ?? `{${k}}`) : s;
   };
   const [currentPath, setCurrentPath] = useState('');
@@ -27,17 +26,23 @@ export default function FileBrowser({ noteTitle, onSave, onBack }: {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    invoke<string>('get_storage_root').then((root) => {
-      setCurrentPath(root);
-      loadDir(root);
-    }).catch(() => {
-      setLoading(false);
-    });
+    (async () => {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const root = await invoke<string>('get_storage_root');
+        setCurrentPath(root);
+        loadDir(root);
+      } catch (e) {
+        console.warn('get_storage_root failed', e);
+        setLoading(false);
+      }
+    })();
   }, []);
 
   async function loadDir(path: string) {
     setLoading(true);
     try {
+      const { invoke } = await import('@tauri-apps/api/core');
       const list = await invoke<DirEntry[]>('list_directory', { path });
       setEntries(list.filter((e) => e.is_dir));
     } catch (e) {
@@ -110,7 +115,7 @@ export default function FileBrowser({ noteTitle, onSave, onBack }: {
               background: 'none', border: 'none', borderRadius: dim.radiusSm, cursor: 'pointer',
               color: 'var(--text-secondary)', fontSize: dim.textSm, fontWeight: 600,
             }}>
-              <Folder size={dim.iconMd} color={e.is_dir ? '#4f8ef7' : '#888'} />
+              <Folder size={dim.iconMd} color={e.is_dir ? 'var(--c-blue)' : 'var(--text-disabled)'} />
               <span style={{ flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.name}</span>
             </motion.button>
           ))
