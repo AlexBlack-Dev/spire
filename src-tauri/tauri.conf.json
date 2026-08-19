@@ -86,7 +86,6 @@
           "cmd",
           "ps1",
           "vbs",
-          "js",
           "sh"
         ],
         "name": "Script Files"
