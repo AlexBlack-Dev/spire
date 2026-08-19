@@ -499,6 +499,26 @@ fn take_persistable_uri(uri: String) -> Result<(), String> {
 
 #[tauri::command]
 async fn download_release(app: tauri::AppHandle, url: String, dest: String) -> Result<(), String> {
+    if !url.starts_with("https://github.com/AlexBlack-Dev/spire/releases/download/") {
+        return Err(format!("Blocked download URL: {}", url));
+    }
+    let downloads_dir = app
+        .path()
+        .download_dir()
+        .map_err(|e| format!("resolve downloads dir: {}", e))?;
+    let dest_path = std::path::Path::new(&dest);
+    if !dest_path.starts_with(&downloads_dir) {
+        return Err(format!("Blocked destination outside downloads: {}", dest));
+    }
+    let ext = dest_path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+    if ext != "exe" && ext != "msi" && ext != "apk" {
+        return Err(format!("Blocked destination extension: {}", ext));
+    }
+
     let client = reqwest::Client::builder()
         .user_agent("Spire-Updater")
         .build()
@@ -510,18 +530,57 @@ async fn download_release(app: tauri::AppHandle, url: String, dest: String) -> R
     }
 
     let total = res.content_length().unwrap_or(0);
+    if total > 512 * 1024 * 1024 {
+        return Err("Download too large".to_string());
+    }
     let mut out = std::fs::File::create(&dest).map_err(|e| format!("create {}: {}", dest, e))?;
     let mut downloaded: u64 = 0;
 
     while let Some(chunk) = res.chunk().await.map_err(|e| e.to_string())? {
-        std::io::Write::write_all(&mut out, &chunk).map_err(|e| e.to_string())?;
         downloaded += chunk.len() as u64;
+        if downloaded > 512 * 1024 * 1024 {
+            return Err("Download too large".to_string());
+        }
+        std::io::Write::write_all(&mut out, &chunk).map_err(|e| e.to_string())?;
         if total > 0 {
             let percent = ((downloaded as f64 / total as f64) * 100.0) as u32;
             let _ = app.emit("update-progress", serde_json::json!({ "percent": percent }));
         }
     }
     Ok(())
+}
+
+const SCRIPT_EXTS: &[&str] = &["bat", "cmd", "ps1", "vbs", "js", "sh"];
+
+#[tauri::command]
+fn run_script(path: String) -> Result<(), String> {
+    let ext = path.rsplit('.').next().unwrap_or("").to_lowercase();
+    if !SCRIPT_EXTS.contains(&ext.as_str()) {
+        return Err(format!("Unsupported script type: {}", ext));
+    }
+    if !std::path::Path::new(&path).exists() {
+        return Err(format!("Script not found: {}", path));
+    }
+    let child = match ext.as_str() {
+        "bat" | "cmd" => std::process::Command::new("cmd")
+            .arg("/c")
+            .arg(&path)
+            .spawn(),
+        "ps1" => std::process::Command::new("powershell")
+            .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
+            .arg(&path)
+            .spawn(),
+        "vbs" | "js" => std::process::Command::new("cscript")
+            .args(["/nologo"])
+            .arg(&path)
+            .spawn(),
+        "sh" => std::process::Command::new("bash").arg(&path).spawn(),
+        _ => return Err(format!("Unsupported script type: {}", ext)),
+    };
+    match child {
+        Ok(_) => Ok(()),
+        Err(e) => Err(format!("Failed to start {}: {}", path, e)),
+    }
 }
 
 #[tauri::command]
@@ -632,7 +691,7 @@ pub fn run() {
             open_app_settings, check_storage_permission, restart_app,
             save_file_dialog, write_content_to_uri, take_persistable_uri,
             list_directory, get_storage_root, save_to_path,
-            download_release
+            download_release, run_script
         ])
         .run(tauri::generate_context!())
     {

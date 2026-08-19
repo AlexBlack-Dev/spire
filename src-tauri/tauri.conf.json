@@ -24,7 +24,8 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; img-src 'self' data:; media-src 'self' data:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src ipc: http://ipc.localhost https://api.github.com",
+      "devCsp": null
     }
   },
   "bundle": {
@@ -78,6 +79,17 @@
           "ods"
         ],
         "name": "Spreadsheet Files"
+      },
+      {
+        "ext": [
+          "bat",
+          "cmd",
+          "ps1",
+          "vbs",
+          "js",
+          "sh"
+        ],
+        "name": "Script Files"
       }
     ]
   }
