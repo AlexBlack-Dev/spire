@@ -20,6 +20,15 @@ const tauri = JSON.parse(readFileSync(tauriPath, 'utf8'));
 tauri.version = version;
 writeFileSync(tauriPath, JSON.stringify(tauri, null, 2) + '\n');
 
+const cargoPath = join(root, 'src-tauri', 'Cargo.toml');
+const cargo = readFileSync(cargoPath, 'utf8');
+const cargoNext = cargo.replace(/^version\s*=\s*"[^"]+"/m, `version = "${version}"`);
+if (cargoNext === cargo) {
+  console.error('Cargo.toml: no "version" field found to replace');
+  process.exit(1);
+}
+writeFileSync(cargoPath, cargoNext);
+
 const lockPath = join(root, 'package-lock.json');
 const lock = JSON.parse(readFileSync(lockPath, 'utf8'));
 lock.version = version;
@@ -28,4 +37,4 @@ if (lock.packages && lock.packages['']) {
 }
 writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n');
 
-console.log(`Version synced to ${version}`);
+console.log(`Version synced to ${version} (package.json, package-lock.json, tauri.conf.json, Cargo.toml)`);

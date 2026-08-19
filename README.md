@@ -1,6 +1,6 @@
 # Spire
 
-[![Release](https://img.shields.io/badge/release-v1.0.3-blue)](https://github.com/AlexBlack-Dev/spire/releases/latest)
+[![Release](https://img.shields.io/github/v/release/AlexBlack-Dev/spire?color=blue)](https://github.com/AlexBlack-Dev/spire/releases/latest)
 [![CI](https://github.com/AlexBlack-Dev/spire/actions/workflows/release.yml/badge.svg)](https://github.com/AlexBlack-Dev/spire/actions)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -20,6 +20,7 @@ Multifunctional note-taking app built with **Tauri v2 + React + TypeScript**.
 - **Tasks** — task list with priorities
 - **File Browser** — directory navigation, file saving
 - **File Notes** — open any file as a note: raw text editing, spreadsheets (XLSX/XLS/ODS), CSV/JSON/MD preview
+- **Run Scripts** — execute .bat/.cmd/.ps1/.vbs/.js/.sh files directly from the note editor (Windows)
 - **Converter** — convert between text and image formats
 - **Note Lock** — password protection with lock timer and open-count limits
 - **Backup** — export/import all data as JSON
