@@ -7,6 +7,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Trash view on desktop and mobile with restore, permanent delete and empty-trash confirmation
+- Dedicated locked-note screen for protected notes on desktop and mobile (unlock CTA instead of an empty editor)
+- PBKDF2 password hashing (210 000 iterations, per-note salt) with automatic rehash of legacy hashes on successful unlock
+- Backup validation before import and BLUM migration; a pre-import snapshot is kept in the settings with a one-click restore
+- Source/Preview toggle for CSV/JSON/MD file notes on mobile, plus word count and tag row in the mobile editor
+- SHA-256 digest is now mandatory for update installers and verified after download
+- `fs:allow-exists` capability for converter output checks
+- CI workflow running lint, tests and production build on pull requests and `master`
+- OFL license files for the bundled Inter and JetBrains Mono fonts
+- Rust unit tests for path normalization, atomic writes and script validation (10 tests)
+- Frontend tests for backup validation, raw file-note saving, password rehashing and en/ru translation parity (54 tests)
+- `useFileNoteContent` hook shared by the desktop and mobile editors
+- Spreadsheet guard: 25 MB cap, hardened `XLSX.read` options and a localized parse-error screen
+- Keyboard focus rings, `prefers-reduced-motion`, `prefers-contrast` and native `color-scheme` support
+- Bottom sheet component used for mobile menus and note actions
+- Date-grouped mobile note list (Pinned, Today, Yesterday, date) with sticky section headers, two-line previews and swipe/long-press actions
+- Compact mobile editor header with an overflow sheet (save, pin, favorite, lock, delete) that collapses while the keyboard is open
+- Empty states with icons and hints for notes, private notes, tasks, trash and the desktop sidebar
+- `interactive-widget=resizes-content` viewport hint and `viewport-fit=cover` for Android keyboards and safe areas
+
+### Changed
+
+- Persisted store schema bumped to version 3 with `validateBackup` applied on migration
+- Tauri opener permissions narrowed from `opener:default` to `allow-open-url` + `allow-open-path`
+- Rust commands split into `paths`, `fs_ops`, `scripts` and `update` modules
+- Text, binary and image writes are atomic (temp file + `sync_all` + rename)
+- `run_script` runs the canonical path and rejects symlinks and Windows `%`/`!` characters
+- Update downloads stream into a `.part` file and are renamed only after SHA-256 verification
+- `save_file_dialog` and `write_content_to_uri` share the validated `fs_ops::write_text_file` path
+- Content Security Policy restored for production builds and extended with `raw.githubusercontent.com` for the changelog
+- Google Fonts removed from `index.html`; Inter and JetBrains Mono are self-hosted
+- HTML sanitization moved to DOMPurify; `hexToRgba` validates its input and `escapeHtml` lives in `utils/format.ts`
+- Lock prompt throttles input after five failed attempts (30 s), handles `lock_error` and supports the Escape key
+- Update checker validates the release URL and asset name, requires a digest, and reports failures to the in-app error log
+- Rust file commands hardened: path normalization, sensitive-path checks, size limits (25 MB text / 512 MB downloads), HTTP timeouts, redirect limits, whitelisted script extensions and safe `run_script` arguments
+- Android release signing reads keystore data from GitHub Secrets; version code and name are derived from the release tag
+- Release workflow pins actions to commit SHAs and runs a quality gate before building artifacts
+- Desktop window controls and settings actions log failures through `addLog` instead of `console`
+- Spreadsheet save failures now show an error toast and keep the note content untouched
+- `scripts/sync-version.mjs` also updates `Cargo.toml` and `Cargo.lock`
+- Desktop UI polish: unified title-bar control sizing, accent-tinted active rows in the sidebar, grouped formatting toolbar with tooltips and shortcuts, and a centered 760 px editor column
+- Mobile UI polish: pill-shaped active state in the bottom nav, card-based settings with a sticky header and Close button, larger tap targets for tasks and list rows, sticky search and blurred headers
+- Secondary and tertiary text colors in the light theme darkened for WCAG-friendly contrast
+
+### Fixed
+
+- File notes keep raw content byte-for-byte in list previews, sharing and saving; content is written before a rename and rename failures are reported
+- Interrupted writes no longer truncate an existing file (temp file + atomic rename)
+- Unreadable or oversized spreadsheets show a localized error screen instead of a blank editor
+- Invalid persisted state is sanitized by `validateBackup` on load instead of breaking the app
+- Trash no longer leaves dangling note references inside folders
+- Toast timers are cleaned up and the changelog defaults to the newest version
+- Mobile editor reloads content when switching notes and debounces raw file writes
+- All color values use CSS variables (`--on-accent` added), keeping light theme and accent switching intact
+
+### Removed
+
+- Unused images from `src-tauri/icons/new/`
+- Debug keystore and release keystore from the repository
+- Residual anti-paste logic and console-only error handling
+
 ## [1.1.1] - 2026-08-19
 
 ### Fixed
