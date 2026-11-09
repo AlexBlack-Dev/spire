@@ -26,10 +26,29 @@ android {
     }
     signingConfigs {
         create("release") {
-            storeFile = file("debug.keystore")
-            storePassword = if (System.getenv("SPIRE_KEYSTORE_PASSWORD").isNullOrEmpty()) "android" else System.getenv("SPIRE_KEYSTORE_PASSWORD")
-            keyAlias = if (System.getenv("SPIRE_KEY_ALIAS").isNullOrEmpty()) "androiddebugkey" else System.getenv("SPIRE_KEY_ALIAS")
-            keyPassword = if (System.getenv("SPIRE_KEY_PASSWORD").isNullOrEmpty()) "android" else System.getenv("SPIRE_KEY_PASSWORD")
+            val keystorePath = System.getenv("SPIRE_KEYSTORE_PATH")
+                ?: file("release.keystore").absolutePath
+            val keystoreFile = file(keystorePath)
+            val storePassword = System.getenv("SPIRE_KEYSTORE_PASSWORD")
+            val keyAlias = System.getenv("SPIRE_KEY_ALIAS")
+            val keyPassword = System.getenv("SPIRE_KEY_PASSWORD")
+            val isReleaseBuild = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
+            if (keystoreFile.exists()) {
+                if (storePassword.isNullOrEmpty() || keyAlias.isNullOrEmpty() || keyPassword.isNullOrEmpty()) {
+                    throw GradleException(
+                        "Missing signing secrets: SPIRE_KEYSTORE_PASSWORD, SPIRE_KEY_ALIAS and SPIRE_KEY_PASSWORD must all be set."
+                    )
+                }
+                storeFile = keystoreFile
+                this.storePassword = storePassword
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+            } else if (isReleaseBuild) {
+                throw GradleException(
+                    "Release keystore not found at $keystorePath. " +
+                        "Set SPIRE_KEYSTORE_PATH or place release.keystore next to build.gradle.kts (see README > Building Releases)."
+                )
+            }
         }
     }
     buildTypes {

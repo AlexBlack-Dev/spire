@@ -15,9 +15,15 @@ dist-ssr
 # Rust / Tauri build artifacts
 src-tauri/target/
 
-# Android signing (stable debug keystore is committed for consistent signatures)
-src-tauri/gen/android/app/*.jks
-src-tauri/gen/android/app/*.p12
+# Android signing (never commit real keystores; use SPIRE_KEYSTORE_* secrets)
+*.keystore
+src-tauri/gen/android/app/release.keystore
+src-tauri/gen/android/app/tauri.properties
+release.keystore
+release.keystore.pass
+release.keystore.b64
+*.jks
+*.p12
 
 # Editor directories and files
 .vscode/*
@@ -32,4 +38,3 @@ src-tauri/gen/android/app/*.p12
 
 # Local config
 opencode.json
-AGENTS.md
