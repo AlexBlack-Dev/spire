@@ -40,7 +40,6 @@ export interface SpireStore {
   fileBrowserOpen: boolean;
   fileBrowserNoteId: string | null;
   needsPermissionRedirect: boolean;
-  antiPaste: boolean;
   changelogRequest: number;
   updateCheckRequest: number;
   changelogEntries: ChangelogEntry[];
@@ -110,7 +109,7 @@ export interface SpireStore {
   setSortMode: (mode: SortMode) => void;
   setSearchQuery: (q: string) => void;
   toggleSidebar: () => void;
-  showToast: (message: string, type?: 'success' | 'error') => void;
+  showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   dismissToast: (id: string) => void;
 
   // Settings
@@ -118,7 +117,6 @@ export interface SpireStore {
   setTheme: (theme: ThemeMode) => void;
   setAccentColor: (color: NoteColor) => void;
   setSettingsOpen: (open: boolean) => void;
-  toggleAntiPaste: () => void;
   setShowFileExtensions: (show: boolean) => void;
   setSplashDone: () => void;
   setToolsSubPage: (page: string | null) => void;
@@ -130,6 +128,7 @@ export interface SpireStore {
   addLog: (msg: string) => void;
   exportData: () => Promise<void>;
   importData: () => Promise<void>;
+  restorePreImportBackup: () => void;
   migrateFromBlum: () => Promise<boolean>;
 
   // Folders

@@ -5,7 +5,9 @@ import { parseChangelog } from '../../utils/changelog';
 
 const CHANGELOG_URL = 'https://raw.githubusercontent.com/AlexBlack-Dev/spire/master/CHANGELOG.md';
 
-export const uiSlice: SpireSlice = (set) => ({
+const toastTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+export const uiSlice: SpireSlice = (set, get) => ({
   theme: 'dark',
   accentColor: 'violet',
   viewMode: 'notes',
@@ -18,7 +20,6 @@ export const uiSlice: SpireSlice = (set) => ({
   toolsSubPage: null,
   permBannerDismissed: false,
   errorLogs: [],
-  antiPaste: false,
   changelogRequest: 0,
   updateCheckRequest: 0,
   changelogEntries: [] as ChangelogEntry[],
@@ -36,12 +37,19 @@ export const uiSlice: SpireSlice = (set) => ({
   showToast: (message, type = 'success') => {
     const id = uuidv4();
     set((s) => ({ toasts: [...s.toasts.slice(-2), { id, message, type }] }));
-    setTimeout(() => {
+    const timer = setTimeout(() => {
+      toastTimers.delete(id);
       set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
     }, 3500);
+    toastTimers.set(id, timer);
   },
 
   dismissToast: (id) => {
+    const timer = toastTimers.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      toastTimers.delete(id);
+    }
     set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
   },
 
@@ -49,7 +57,6 @@ export const uiSlice: SpireSlice = (set) => ({
   setTheme: (theme) => set({ theme }),
   setAccentColor: (accentColor) => set({ accentColor }),
   setSettingsOpen: (open) => set({ settingsOpen: open }),
-  toggleAntiPaste: () => set((s) => ({ antiPaste: !s.antiPaste })),
   setShowFileExtensions: (show) => set({ showFileExtensions: show }),
   setSplashDone: () => set({ splashDone: true }),
   setToolsSubPage: (page) => set({ toolsSubPage: page }),
@@ -63,9 +70,17 @@ export const uiSlice: SpireSlice = (set) => ({
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.text();
       })
-      .then((body) => set({ changelogEntries: parseChangelog(body), changelogLoading: false }))
+      .then((body) => {
+        const entries = parseChangelog(body);
+        set((s) => ({
+          changelogEntries: entries,
+          changelogLoading: false,
+          changelogVersion: s.changelogVersion ?? entries[0]?.version ?? null,
+        }));
+      })
       .catch((e) => {
-        console.warn('changelog fetch failed', e);
+        const msg = e instanceof Error ? e.message : String(e);
+        get().addLog('changelog fetch: ' + msg);
         set({ changelogFailed: true, changelogLoading: false });
       });
   },

@@ -1,7 +1,4 @@
 import { v4 as uuidv4 } from 'uuid';
-import { open } from '@tauri-apps/plugin-dialog';
-import { readTextFile } from '@tauri-apps/plugin-fs';
-import { invoke } from '@tauri-apps/api/core';
 import type { Note } from '../../types';
 import { isMobile, pathSep } from '../../isMobile';
 import {
@@ -11,6 +8,16 @@ import {
 import type { SpireSlice, SaveFormat } from '../types';
 
 const binaryExts = ['xlsx', 'xls', 'ods'];
+
+function filenameSafe(title: string, fallback = 'untitled'): string {
+  const clean = title
+    .replace(/[<>:"/\\|?*]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/[. ]+$/g, '')
+    .trim()
+    .slice(0, 80);
+  return clean || fallback;
+}
 
 export const notesSlice: SpireSlice = (set, get) => ({
   notes: [],
@@ -61,6 +68,7 @@ export const notesSlice: SpireSlice = (set, get) => ({
         notes: s.notes.filter((n) => n.id !== id),
         trash: [{ ...note, updatedAt: new Date().toISOString() }, ...s.trash],
         activeNoteId: s.activeNoteId === id ? null : s.activeNoteId,
+        noteFolders: s.noteFolders.map((f) => ({ ...f, noteIds: f.noteIds.filter((nid) => nid !== id) })),
       };
     });
   },
@@ -77,10 +85,19 @@ export const notesSlice: SpireSlice = (set, get) => ({
   },
 
   permanentDelete: (id) => {
-    set((s) => ({ trash: s.trash.filter((n) => n.id !== id) }));
+    set((s) => ({
+      trash: s.trash.filter((n) => n.id !== id),
+      noteFolders: s.noteFolders.map((f) => ({ ...f, noteIds: f.noteIds.filter((nid) => nid !== id) })),
+    }));
   },
 
-  emptyTrash: () => set({ trash: [] }),
+  emptyTrash: () => set((s) => {
+    const trashIds = new Set(s.trash.map((n) => n.id));
+    return {
+      trash: [],
+      noteFolders: s.noteFolders.map((f) => ({ ...f, noteIds: f.noteIds.filter((nid) => !trashIds.has(nid)) })),
+    };
+  }),
 
   moveNoteUp: (id) => set((s) => {
     const idx = s.notes.findIndex((n) => n.id === id);
@@ -122,6 +139,8 @@ export const notesSlice: SpireSlice = (set, get) => ({
   },
 
   openFile: async () => {
+    const { open } = await import('@tauri-apps/plugin-dialog');
+    const { readTextFile } = await import('@tauri-apps/plugin-fs');
     const path = await open({
       multiple: false,
       filters: [],
@@ -129,9 +148,17 @@ export const notesSlice: SpireSlice = (set, get) => ({
     if (!path || typeof path !== 'string') return false;
     const ext = fileExt(path);
     const isBinary = binaryExts.includes(ext);
-    const content: string = isBinary
-      ? await readFileAsBase64(path)
-      : await readTextFile(path);
+    let content: string;
+    try {
+      content = isBinary
+        ? await readFileAsBase64(path)
+        : await readTextFile(path);
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : String(e);
+      get().addLog('openFile(read): ' + msg);
+      get().showToast(tKey(get().language, 'toast_open_failed') + msg, 'error');
+      return false;
+    }
     const fileName = path.split(/[\\/]/).pop() ?? path;
     const title = fileName.replace(/\.[^.]+$/, '');
     const existing = get().notes.find((n) => n.filePath === path);
@@ -155,6 +182,7 @@ export const notesSlice: SpireSlice = (set, get) => ({
   },
 
   saveFile: async (id) => {
+    const { invoke } = await import('@tauri-apps/api/core');
     const note = get().notes.find((n) => n.id === id);
     if (!note) { get().showToast(tKey(get().language, 'toast_note_not_found')); return false; }
     if (isMobile) {
@@ -182,7 +210,7 @@ export const notesSlice: SpireSlice = (set, get) => ({
       get().showToast(tKey(get().language, 'toast_opening_save_dialog'));
       try {
         const uri = await invoke<string | null>('save_file_dialog', {
-          fileName: `${note.title || 'untitled'}.txt`,
+          fileName: `${filenameSafe(note.title || 'untitled')}.txt`,
           content: text,
         });
         if (!uri) { get().showToast(tKey(get().language, 'toast_save_cancelled')); return false; }
@@ -216,35 +244,37 @@ export const notesSlice: SpireSlice = (set, get) => ({
     }
     const dir = note.filePath.replace(/[\\/][^\\/]+$/, '');
     const fileExtOf = note.filePath.match(/\.[^.]+$/)?.[0] ?? (isBinary ? '.xlsx' : '.txt');
-    const newPath = `${dir}${pathSep}${note.title || 'untitled'}${fileExtOf}`;
-    if (newPath !== note.filePath) {
-      try {
-        await invoke('rename_file', { oldPath: note.filePath, newPath });
-      } catch (e) {
-        const msg = typeof e === 'string' ? e : String(e);
-        get().addLog('saveFile(rename_file): ' + msg);
-        get().showToast(tKey(get().language, 'toast_rename_failed') + msg, 'error');
-        return false;
-      }
-      get().updateNote(id, { filePath: newPath });
-    }
+    const safeTitle = filenameSafe(note.title || 'untitled');
+    const newPath = `${dir}${pathSep}${safeTitle}${fileExtOf}`;
     try {
       if (isBinary) {
-        await invoke('save_binary', { path: newPath, content: note.content });
+        await invoke('save_binary', { path: note.filePath, content: note.content });
       } else {
-        await invoke('save_to_path', { filePath: newPath, content: text });
+        await invoke('save_to_path', { filePath: note.filePath, content: text });
       }
-      get().showToast(tKey(get().language, 'toast_saved'));
-      return true;
     } catch (e) {
       const msg = typeof e === 'string' ? e : String(e);
       get().addLog('saveFile(write): ' + msg);
       get().showToast(tKey(get().language, 'toast_save_failed') + msg, 'error');
       return false;
     }
+    if (newPath !== note.filePath) {
+      try {
+        await invoke('rename_file', { oldPath: note.filePath, newPath });
+        get().updateNote(id, { filePath: newPath });
+      } catch (e) {
+        const msg = typeof e === 'string' ? e : String(e);
+        get().addLog('saveFile(rename_file): ' + msg);
+        get().showToast(tKey(get().language, 'toast_rename_failed') + msg, 'error');
+        return false;
+      }
+    }
+    get().showToast(tKey(get().language, 'toast_saved'));
+    return true;
   },
 
   finishFileBrowserSave: async (id, path) => {
+    const { invoke } = await import('@tauri-apps/api/core');
     const note = get().notes.find((n) => n.id === id);
     if (!note) { set({ fileBrowserOpen: false, fileBrowserNoteId: null }); return false; }
     const ext = fileExt(path);
@@ -267,13 +297,14 @@ export const notesSlice: SpireSlice = (set, get) => ({
     } catch (e) {
       const msg = typeof e === 'string' ? e : String(e);
       get().addLog('finishFileBrowserSave: ' + msg);
-      get().showToast(tKey(get().language, 'toast_save_failed') + msg);
+      get().showToast(tKey(get().language, 'toast_save_failed') + msg, 'error');
       set({ fileBrowserOpen: false, fileBrowserNoteId: null });
       return false;
     }
   },
 
   saveFileAs: async (id, ext) => {
+    const { invoke } = await import('@tauri-apps/api/core');
     const note = get().notes.find((n) => n.id === id);
     if (!note) return false;
     let content = note.content;
@@ -290,11 +321,11 @@ export const notesSlice: SpireSlice = (set, get) => ({
     }
     try {
       const uri = await invoke<string | null>('save_file_dialog', {
-        fileName: `${note.title || 'untitled'}.${ext}`,
+        fileName: `${filenameSafe(note.title || 'untitled')}.${ext}`,
         content,
       });
       if (!uri) return false;
-      get().updateNote(id, { filePath: uri });
+      get().updateNote(id, { filePath: uri, content });
       return true;
     } catch (e) {
       const msg = typeof e === 'string' ? e : String(e);
@@ -305,16 +336,17 @@ export const notesSlice: SpireSlice = (set, get) => ({
   },
 
   saveAsAny: async (id) => {
+    const { invoke } = await import('@tauri-apps/api/core');
     const note = get().notes.find((n) => n.id === id);
     if (!note) return false;
-    const text = getContentText(note.content);
+    const text = note.filePath ? note.content : getContentText(note.content);
     try {
       const uri = await invoke<string | null>('save_file_dialog', {
-        fileName: `${note.title || 'untitled'}.txt`,
+        fileName: `${filenameSafe(note.title || 'untitled')}.txt`,
         content: text,
       });
       if (!uri) return false;
-      get().updateNote(id, { filePath: uri });
+      get().updateNote(id, { filePath: uri, content: text });
       return true;
     } catch (e) {
       const msg = typeof e === 'string' ? e : String(e);
