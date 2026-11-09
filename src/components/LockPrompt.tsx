@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, Unlock, ChevronLeft } from 'lucide-react';
 import { useStore } from '../store/useStore';
@@ -33,7 +33,36 @@ export default function LockPrompt({ id, kind, mode, onSuccess, onClose }: {
   const [confirmPw, setConfirmPw] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [fails, setFails] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
   const [selected, setSelected] = useState<{ type: 'time' | 'opens'; value: number }>({ type: 'time', value: 5 * 60 * 1000 });
+
+  useEffect(() => {
+    if (lockedUntil <= Date.now()) return;
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [lockedUntil]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
+  const throttleRemaining = Math.max(0, Math.ceil((lockedUntil - now) / 1000));
+  const isThrottled = lockedUntil > now;
+
+  function registerFailure() {
+    const next = fails + 1;
+    setFails(next);
+    if (next >= 5) {
+      setLockedUntil(Date.now() + 30_000);
+      setFails(0);
+    }
+  }
 
   const DURATIONS = [
     { label: t('lock_5min'), value: 5 * 60 * 1000 },
@@ -61,6 +90,10 @@ export default function LockPrompt({ id, kind, mode, onSuccess, onClose }: {
 
   async function handleSubmit() {
     setError('');
+    if (isThrottled) {
+      setError(t('lock_too_many_attempts'));
+      return;
+    }
     setBusy(true);
     try {
       if (mode === 'set') {
@@ -70,29 +103,35 @@ export default function LockPrompt({ id, kind, mode, onSuccess, onClose }: {
         if (kind === 'note') await setNotePassword(id, pw);
         else await setFolderPassword(id, pw);
         onSuccess();
-      } else if (mode === 'remove') {
+        return;
+      }
+      if (mode === 'remove') {
         if (!pw) { setError(t('lock_enter_current')); return; }
         const ok = kind === 'note'
           ? await verifyNotePassword(id, pw)
           : await verifyFolderPassword(id, pw);
-        if (!ok) { setError(t('lock_wrong_password')); return; }
+        if (!ok) { setError(t('lock_wrong_password')); registerFailure(); return; }
         if (kind === 'note') clearNotePassword(id);
         else clearFolderPassword(id);
         onSuccess();
-      } else {
-        if (!pw) { setError(t('lock_password')); return; }
-        const ok = kind === 'note'
-          ? await verifyNotePassword(id, pw)
-          : await verifyFolderPassword(id, pw);
-        if (!ok) { setError(t('lock_wrong_password')); return; }
-        if (kind === 'note') {
-          if (selected.type === 'opens') unlockNoteOpens(id, selected.value);
-          else unlockNote(id, selected.value);
-        } else {
-          unlockFolder(id, selected.value);
-        }
-        onSuccess();
+        return;
       }
+      if (!pw) { setError(t('lock_password')); return; }
+      const ok = kind === 'note'
+        ? await verifyNotePassword(id, pw)
+        : await verifyFolderPassword(id, pw);
+      if (!ok) { setError(t('lock_wrong_password')); registerFailure(); return; }
+      if (kind === 'note') {
+        if (selected.type === 'opens') unlockNoteOpens(id, selected.value);
+        else unlockNote(id, selected.value);
+      } else {
+        unlockFolder(id, selected.type === 'time' ? selected.value : 5 * 60 * 1000);
+      }
+      onSuccess();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      useStore.getState().addLog('lockPrompt: ' + msg);
+      setError(t('lock_error'));
     } finally {
       setBusy(false);
     }
@@ -135,6 +174,7 @@ export default function LockPrompt({ id, kind, mode, onSuccess, onClose }: {
         <div style={{ width: '100%', maxWidth: 320, display: 'flex', flexDirection: 'column', gap: dim.sp3 }}>
           <input
             type="password"
+            autoFocus
             placeholder={mode === 'set' ? t('lock_new_password') : t('lock_password')}
             value={pw}
             onChange={(e) => setPw(e.target.value)}
@@ -182,7 +222,7 @@ export default function LockPrompt({ id, kind, mode, onSuccess, onClose }: {
                       fontSize: dim.textXs, fontWeight: 700, cursor: 'pointer',
                       background: selected.type === 'time' && selected.value === d.value ? 'var(--accent)' : 'var(--surface-2)',
                       border: 'none', borderRadius: dim.radiusSm,
-                      color: selected.type === 'time' && selected.value === d.value ? '#fff' : 'var(--text-secondary)',
+                      color: selected.type === 'time' && selected.value === d.value ? 'var(--on-accent)' : 'var(--text-secondary)',
                     }}
                   >
                     {d.label}
@@ -204,7 +244,7 @@ export default function LockPrompt({ id, kind, mode, onSuccess, onClose }: {
                         fontSize: dim.textXs, fontWeight: 700, cursor: 'pointer',
                         background: selected.type === 'opens' && selected.value === o.value ? 'var(--accent)' : 'var(--surface-2)',
                         border: 'none', borderRadius: dim.radiusSm,
-                        color: selected.type === 'opens' && selected.value === o.value ? '#fff' : 'var(--text-secondary)',
+                        color: selected.type === 'opens' && selected.value === o.value ? 'var(--on-accent)' : 'var(--text-secondary)',
                       }}
                     >
                       {o.label}
@@ -222,7 +262,7 @@ export default function LockPrompt({ id, kind, mode, onSuccess, onClose }: {
                       fontSize: dim.textXs, fontWeight: 700,
                       background: selected.type === 'opens' && !OPENS.some((o) => o.value === selected.value)
                         ? 'var(--accent)' : 'var(--surface-2)',
-                      color: selected.type === 'opens' && selected.value === customOpensValue ? '#fff' : 'var(--text-secondary)',
+                      color: selected.type === 'opens' && selected.value === customOpensValue ? 'var(--on-accent)' : 'var(--text-secondary)',
                       border: 'none', borderRadius: dim.radiusSm, outline: 'none', textAlign: 'center',
                     }}
                   />
@@ -233,11 +273,12 @@ export default function LockPrompt({ id, kind, mode, onSuccess, onClose }: {
         </div>
 
         {error && <div style={{ fontSize: dim.textSm, fontWeight: 600, color: 'var(--c-rose)' }}>{error}</div>}
+        {isThrottled && <div style={{ fontSize: dim.textXs, fontWeight: 600, color: 'var(--text-tertiary)' }}>{t('lock_unlock_in')} {throttleRemaining}s</div>}
 
         <motion.button whileTap={{ scale: 0.95 }} onClick={handleSubmit} disabled={busy} style={{
           width: '100%', maxWidth: 320, padding: `${dim.sp3}px 0`,
           background: 'var(--accent)', border: 'none', borderRadius: dim.radiusSm, cursor: busy ? 'default' : 'pointer',
-          color: '#fff', fontSize: dim.textMd, fontWeight: 700, opacity: busy ? 0.6 : 1,
+          color: 'var(--on-accent)', fontSize: dim.textMd, fontWeight: 700, opacity: busy ? 0.6 : 1,
         }}>
           {mode === 'set' ? t('lock_set_password') : mode === 'remove' ? t('lock_remove') : t('lock_unlock')}
         </motion.button>
@@ -245,3 +286,5 @@ export default function LockPrompt({ id, kind, mode, onSuccess, onClose }: {
     </div>
   );
 }
+
+

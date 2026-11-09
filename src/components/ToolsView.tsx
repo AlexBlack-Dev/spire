@@ -1,17 +1,17 @@
-﻿import { useState, useEffect, useMemo, type ReactNode } from 'react';
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import {
   BarChart3, Folder, Trash2, Palette, Shield,
-  ChevronRight, ChevronLeft, X, RotateCcw,
+  ChevronRight, ChevronLeft, X,
   Sun, Moon, Check, Star, CircleCheckBig,
   ExternalLink, ScrollText,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useT } from '../i18n/useT';
 import { dim, useViewport } from '../isMobile';
-import { format } from 'date-fns';
 import { COLOR_HEX, COLOR_NAMES } from '../utils/format';
 import ChangelogView from './ChangelogView';
+import TrashView from './TrashView';
 
 type ToolsSubPage = 'hub' | 'statistics' | 'trash' | 'themes' | 'permissions' | 'changelog';
 
@@ -110,8 +110,8 @@ export default function ToolsView() {
               display: 'flex', alignItems: 'center', gap: dim.sp4,
               padding: dim.sp5,
               borderRadius: dim.radius,
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
-              border: '1px solid rgba(255,255,255,0.04)',
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border-subtle)',
               cursor: 'pointer',
             }}
           >
@@ -193,8 +193,8 @@ function StatisticsView({ onBack }: { onBack: () => void }) {
               style={{
                 padding: dim.sp5,
                 borderRadius: dim.radius,
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
-                border: '1px solid rgba(255,255,255,0.04)',
+                background: 'var(--surface-2)',
+                border: '1px solid var(--border-subtle)',
                 gridColumn: i === statCards.length - 1 ? '1 / -1' : undefined,
               }}
             >
@@ -219,8 +219,8 @@ function StatisticsView({ onBack }: { onBack: () => void }) {
           <div style={{
             padding: dim.sp5,
             borderRadius: dim.radius,
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
-            border: '1px solid rgba(255,255,255,0.04)',
+            background: 'var(--surface-2)',
+            border: '1px solid var(--border-subtle)',
           }}>
             <div style={{
               fontSize: dim.textSm, fontWeight: 700, color: 'var(--text-disabled)',
@@ -266,133 +266,6 @@ function StatisticsView({ onBack }: { onBack: () => void }) {
   );
 }
 
-/* ---------- Trash ---------- */
-
-function TrashView({ onBack }: { onBack: () => void }) {
-  const trash = useStore((s) => s.trash);
-  const restoreFromTrash = useStore((s) => s.restoreFromTrash);
-  const permanentDelete = useStore((s) => s.permanentDelete);
-  const emptyTrash = useStore((s) => s.emptyTrash);
-  const t = useT();
-  const ih = useViewport();
-
-  const handleRestore = (id: string) => {
-    restoreFromTrash(id);
-  };
-
-  const handleDelete = (id: string) => {
-    permanentDelete(id);
-  };
-
-  const handleEmpty = () => {
-    emptyTrash();
-  };
-
-  return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', height: '100%',
-      background: 'var(--surface-0)', overflow: 'hidden',
-    }}>
-      <SubHeader title={t('trash')} onBack={onBack} />
-
-      {trash.length > 0 && (
-        <div style={{
-          padding: `0 ${dim.sp6}px ${dim.sp3}px`,
-          flexShrink: 0,
-        }}>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={handleEmpty}
-            style={{
-              display: 'flex', alignItems: 'center', gap: dim.sp2,
-              padding: `${dim.sp2}px ${dim.sp4}px`,
-              background: 'color-mix(in srgb, var(--c-rose) 12%, transparent)',
-              border: '1px solid color-mix(in srgb, var(--c-rose) 20%, transparent)',
-              borderRadius: dim.radiusSm,
-              color: 'var(--c-rose)', fontSize: dim.textSm, fontWeight: 700,
-              cursor: 'pointer',
-            }}
-          >
-            <Trash2 size={dim.iconSm} />
-            {t('empty_trash')}
-          </motion.button>
-        </div>
-      )}
-
-      <div style={{
-        flex: 1, overflowY: 'auto',
-        padding: `0 ${dim.sp6}px ${dim.sp7}px`,
-        display: 'flex', flexDirection: 'column', gap: dim.sp2,
-      }}>
-        {trash.length === 0 && (
-          <div style={{
-            padding: `${Math.round(ih * 0.08)}px 0`,
-            textAlign: 'center', color: 'var(--text-disabled)', fontSize: dim.textMd, fontWeight: 700,
-          }}>
-            {t('trash_empty')}
-          </div>
-        )}
-        {trash.map((note) => (
-          <motion.div
-            key={note.id}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: dim.sp3,
-              padding: dim.sp4,
-              borderRadius: dim.radiusSm,
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
-              border: '1px solid rgba(255,255,255,0.04)',
-            }}
-          >
-            <div style={{
-              width: dim.dot, height: dim.dot, borderRadius: '50%',
-              background: COLOR_HEX[note.color] || 'var(--accent)', flexShrink: 0,
-            }} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{
-                fontSize: dim.textMd, fontWeight: 700, color: 'var(--text-secondary)',
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {note.title || 'Untitled'}
-              </div>
-              <div style={{
-                fontSize: dim.textXs, fontWeight: 600, color: 'var(--text-disabled)',
-              }}>
-                {format(new Date(note.updatedAt), 'd MMM yyyy, HH:mm')}
-              </div>
-            </div>
-            <motion.button
-              whileTap={{ scale: 0.82 }}
-              onClick={() => handleRestore(note.id)}
-              style={{
-                width: dim.barH, height: dim.barH,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'color-mix(in srgb, var(--c-green) 12%, transparent)', border: 'none',
-                borderRadius: dim.radiusSm, cursor: 'pointer', color: 'var(--c-green)',
-              }}
-            >
-              <RotateCcw size={dim.iconMd} />
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.82 }}
-              onClick={() => handleDelete(note.id)}
-              style={{
-                width: dim.barH, height: dim.barH,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'color-mix(in srgb, var(--c-rose) 12%, transparent)', border: 'none',
-                borderRadius: dim.radiusSm, cursor: 'pointer', color: 'var(--c-rose)',
-              }}
-            >
-              <X size={dim.iconMd} />
-            </motion.button>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 /* ---------- Themes ---------- */
 
 function ThemesView({ onBack }: { onBack: () => void }) {
@@ -422,10 +295,8 @@ function ThemesView({ onBack }: { onBack: () => void }) {
         <div style={{
           padding: dim.sp5,
           borderRadius: dim.radius,
-          background: theme === 'dark'
-            ? 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)'
-            : 'rgba(0,0,0,0.03)',
-          border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)'}`,
+          background: 'var(--surface-2)',
+          border: `1px solid ${'var(--border-subtle)'}`,
         }}>
           <div style={{
             fontSize: dim.textSm, fontWeight: 700,
@@ -453,10 +324,8 @@ function ThemesView({ onBack }: { onBack: () => void }) {
         <div style={{
           padding: dim.sp5,
           borderRadius: dim.radius,
-          background: theme === 'dark'
-            ? 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)'
-            : 'rgba(0,0,0,0.03)',
-          border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)'}`,
+          background: 'var(--surface-2)',
+          border: `1px solid ${'var(--border-subtle)'}`,
         }}>
           <div style={{
             fontSize: dim.textSm, fontWeight: 700,
@@ -479,7 +348,7 @@ function ThemesView({ onBack }: { onBack: () => void }) {
                   cursor: 'pointer',
                   border: accentColor === c
                     ? '2px solid var(--text-primary)'
-                    : (theme === 'dark' ? '2px solid rgba(255,255,255,0.08)' : '2px solid rgba(0,0,0,0.08)'),
+                    : ('2px solid var(--border-default)'),
                 }}
               >
                 {accentColor === c && <Check size={dim.iconSm} color="white" strokeWidth={3} />}
@@ -539,7 +408,8 @@ function PermissionsView({ onBack }: { onBack: () => void }) {
       const ok = await invoke<boolean>('check_storage_permission');
       setStorageGranted(ok);
     } catch (e) {
-      console.warn('check_storage_permission failed', e);
+      const msg = e instanceof Error ? e.message : String(e);
+      useStore.getState().addLog('check_storage_permission: ' + msg);
     }
   };
 
@@ -566,8 +436,8 @@ function PermissionsView({ onBack }: { onBack: () => void }) {
         <div style={{
           padding: dim.sp5,
           borderRadius: dim.radius,
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
-          border: '1px solid rgba(255,255,255,0.04)',
+          background: 'var(--surface-2)',
+          border: '1px solid var(--border-subtle)',
         }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: dim.sp3, marginBottom: dim.sp3,
@@ -612,7 +482,8 @@ function PermissionsView({ onBack }: { onBack: () => void }) {
                   const { invoke } = await import('@tauri-apps/api/core');
                   await invoke('open_app_settings');
                 } catch (e) {
-                  console.warn('open_app_settings failed', e);
+                  const msg = e instanceof Error ? e.message : String(e);
+                  useStore.getState().addLog('open_app_settings: ' + msg);
                 }
               }}
               style={{

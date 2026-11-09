@@ -41,7 +41,9 @@ export default function BottomNav({ activeTab, onTabChange }: {
       <div style={{
         display: 'flex', alignItems: 'stretch',
         width: '100%', height: barH, position: 'relative',
-        background: 'var(--surface-1)',
+        background: 'color-mix(in srgb, var(--surface-1) 94%, transparent)',
+        backdropFilter: 'blur(12px)',
+        border: '1px solid var(--border-subtle)',
         borderRadius: barH / 2,
         boxShadow: `0 4px 24px rgba(0,0,0,0.3), 0 0 40px ${accentRgba(0.05)}`,
       }}>
@@ -60,6 +62,7 @@ export default function BottomNav({ activeTab, onTabChange }: {
             whileHover={reduced ? {} : { scale: 1.06 }}
             transition={{ type: 'spring', stiffness: 400, damping: 14 }}
             onClick={() => { createNote(); }}
+            aria-label={t('new_note')}
             style={{
               position: 'absolute', top: Math.round((barH - plusSz) / 2),
               width: plusSz, height: plusSz, borderRadius: '50%',
@@ -70,7 +73,7 @@ export default function BottomNav({ activeTab, onTabChange }: {
               cursor: 'pointer',
             }}
           >
-            <Plus size={dim.iconMd} color="white" strokeWidth={2.5} />
+            <Plus size={dim.iconMd} color="var(--on-accent)" strokeWidth={2.5} />
           </motion.button>
         </div>
 
@@ -88,24 +91,36 @@ export default function BottomNav({ activeTab, onTabChange }: {
         whileTap={reduced ? {} : { scale: 0.92 }}
         transition={{ type: 'spring', stiffness: 500, damping: 12 }}
         onClick={() => onTabChange(tab.id)}
+        aria-label={tab.label}
+        aria-current={active ? 'page' : undefined}
         style={{
-          flex: 1, display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', gap: 1,
+          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: 'none', border: 'none', cursor: 'pointer',
-          outline: 'none', padding: 0,
+          padding: `0 ${Math.round(dim.sp1)}px`, minWidth: 44, minHeight: 44,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: Math.round(barH * 0.48), color: active ? 'var(--accent)' : 'var(--text-tertiary)' }}>
-          {active ? tab.iconActive : tab.icon}
-        </div>
-        <span style={{
-          fontSize: dim.textXs, fontWeight: active ? 800 : 600,
+        <div style={{
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: 1,
+          padding: `${Math.round(barH * 0.06)}px ${Math.round(barH * 0.14)}px`,
+          minWidth: 54,
+          borderRadius: 999,
+          background: active ? 'var(--accent-dim)' : 'transparent',
           color: active ? 'var(--accent)' : 'var(--text-tertiary)',
-          lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap', maxWidth: '100%',
+          transition: 'background 0.15s, color 0.15s',
         }}>
-          {tab.label}
-        </span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: Math.round(barH * 0.4) }}>
+            {active ? tab.iconActive : tab.icon}
+          </div>
+          <span style={{
+            fontSize: dim.textXs, fontWeight: active ? 800 : 600,
+            color: 'inherit',
+            lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap', maxWidth: '100%',
+          }}>
+            {tab.label}
+          </span>
+        </div>
       </motion.button>
     );
   }

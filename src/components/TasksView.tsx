@@ -144,25 +144,27 @@ export default function TasksView() {
                 userSelect: 'text', minWidth: 0,
               }}
             />
-            <div style={{ display: 'flex', gap: dim.sp1, flexShrink: 0 }}>
+            <div style={{ flex: 1, display: 'flex', gap: dim.sp1, flexShrink: 0 }}>
               {(['low', 'medium', 'high'] as TaskPriority[]).map((p) => (
                 <motion.button
                   key={p}
                   whileTap={{ scale: 0.88 }}
                   onClick={() => setPriority(p)}
-                  title=""
+                  aria-label={PRIORITY[p].label}
+                  aria-pressed={priority === p}
+                  title={PRIORITY[p].label}
                   style={{
-                    height: 28, width: 28,
+                    width: 40, height: 40,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0,
-                    background: 'transparent',
+                    background: priority === p ? 'var(--accent-dim)' : 'transparent',
                     border: 'none',
                     borderRadius: dim.radiusSm,
                     color: priority === p ? PRIORITY[p].color : 'var(--text-disabled)',
-                    cursor: 'pointer', transition: 'all 0.12s',
+                    cursor: 'pointer', transition: 'background 0.12s, color 0.12s',
                   }}
                 >
-                  <Flag size={14} fill={priority === p ? PRIORITY[p].color : 'none'} />
+                  <Flag size={16} fill={priority === p ? PRIORITY[p].color : 'none'} />
                 </motion.button>
               ))}
             </div>
@@ -172,11 +174,12 @@ export default function TasksView() {
             whileHover={{ background: 'var(--accent-hover)' }}
             whileTap={{ scale: 0.95 }}
             onClick={handleCreate}
+            aria-label={t('add')}
             style={{
-              width: 34, height: 34,
+              width: 44, height: 44,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: 'var(--accent)', border: 'none',
-              borderRadius: dim.radius, color: 'white',
+              borderRadius: dim.radius, color: 'var(--on-accent)',
               cursor: 'pointer', transition: 'background 0.15s',
               flexShrink: 0,
             }}
@@ -195,13 +198,15 @@ export default function TasksView() {
             <button
               key={tab.id}
               onClick={() => setFilter(tab.id)}
+              aria-pressed={filter === tab.id}
               style={{
+                minHeight: 44,
                 padding: `${dim.sp3}px ${dim.sp5}px`,
                 background: 'none', border: 'none',
                 borderBottom: filter === tab.id ? '2px solid var(--accent)' : '2px solid transparent',
                 color: filter === tab.id ? 'var(--text-primary)' : 'var(--text-tertiary)',
                 fontSize: dim.textSm, fontWeight: filter === tab.id ? 800 : 600,
-                cursor: 'pointer', transition: 'all 0.15s',
+                cursor: 'pointer', transition: 'border-color 0.15s, color 0.15s',
               }}
             >
               {tab.label}
@@ -220,10 +225,26 @@ export default function TasksView() {
               animate={{ opacity: 1 }}
               style={{
                 padding: '56px 0', textAlign: 'center',
-                color: 'var(--text-disabled)', fontSize: 14, fontWeight: 600,
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
               }}
             >
-              {filter === 'done' ? t('no_tasks_done') : t('no_tasks')}
+              <div style={{
+                width: 56, height: 56, borderRadius: dim.radiusLg,
+                background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--text-disabled)', marginBottom: dim.sp3,
+              }}>
+                {filter === 'done' ? <Check size={26} /> : <Circle size={26} />}
+              </div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: dim.textMd, fontWeight: 800 }}>
+                {filter === 'done' ? t('no_tasks_done') : t('no_tasks')}
+              </div>
+              <div style={{
+                color: 'var(--text-disabled)', fontSize: dim.textSm, fontWeight: 600,
+                marginTop: dim.sp2, maxWidth: 280, lineHeight: 1.5, padding: `0 ${dim.sp4}px`,
+              }}>
+                {filter === 'done' ? t('no_tasks_done_desc') : t('no_tasks_desc')}
+              </div>
             </motion.div>
           ) : (
             filtered.map((task) => (
@@ -247,13 +268,15 @@ export default function TasksView() {
                 <motion.button
                   whileTap={{ scale: 0.85 }}
                   onClick={() => toggleTask(task.id)}
-                  title=""
+                  aria-label={task.completed ? t('filter_active') : t('completed')}
+                  aria-pressed={task.completed}
                   style={{
-                    width: dim.iconMd, height: dim.iconMd,
+                    width: 40, height: 40,
                     flexShrink: 0, cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     background: 'none', border: 'none', padding: 0,
-                    transition: 'all 0.15s',
+                    borderRadius: dim.radiusSm,
+                    transition: 'background 0.15s',
                   }}
                 >
                   {task.completed ? (
@@ -308,11 +331,13 @@ export default function TasksView() {
                 <motion.button
                   whileTap={{ scale: 0.85 }}
                   onClick={() => startEdit(task)}
+                  aria-label={t('edit_mode')}
+                  title={t('edit_mode')}
                   style={{
                     background: 'none', border: 'none', cursor: 'pointer',
-                    color: editingId === task.id ? 'var(--accent)' : 'var(--text-disabled)',
-                    display: 'flex', alignItems: 'center',
-                    padding: dim.sp1, flexShrink: 0, borderRadius: dim.radiusSm,
+                    color: editingId === task.id ? 'var(--accent)' : 'var(--text-tertiary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 40, height: 40, flexShrink: 0, borderRadius: dim.radiusSm,
                   }}
                 >
                   <Pencil size={dim.iconSm} />
@@ -321,10 +346,12 @@ export default function TasksView() {
                 <motion.button
                   whileTap={{ scale: 0.85 }}
                   onClick={() => deleteTask(task.id)}
+                  aria-label={t('delete_task')}
+                  title={t('delete_task')}
                   style={{
                     background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'var(--c-rose)', display: 'flex', alignItems: 'center',
-                    padding: dim.sp1, flexShrink: 0, borderRadius: dim.radiusSm,
+                    color: 'var(--c-rose)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 40, height: 40, flexShrink: 0, borderRadius: dim.radiusSm,
                   }}
                 >
                   <Trash2 size={dim.iconMd} />

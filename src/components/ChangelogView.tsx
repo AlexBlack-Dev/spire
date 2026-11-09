@@ -37,7 +37,7 @@ export default function ChangelogView({ onBack }: { onBack?: () => void }) {
   }, [entries.length, changelogLoading, fetchChangelog]);
 
   const selectedVersion = changelogVersion ?? entries[0]?.version ?? null;
-  const selected: ChangelogEntry | null = entries.find((e) => e.version === selectedVersion) ?? entries[0] ?? null;
+  const selected: ChangelogEntry | null = entries.find((e) => e.version === selectedVersion) ?? null;
   const accent = COLOR_HEX[accentColor] || 'var(--accent)';
 
   const header = onBack ? (

@@ -13,12 +13,15 @@ interface Props {
 
 const DEFAULT_COL_WIDTH = 90;
 const MIN_COL_WIDTH = 40;
+const MAX_SPREADSHEET_BYTES = 25 * 1024 * 1024;
 const ZEBRA_BG = 'color-mix(in srgb, var(--surface-3) 30%, transparent)';
 
 type CellValue = string | number | boolean | null;
 
 export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Props) {
   const updateNote = useStore((s) => s.updateNote);
+  const showToast = useStore((s) => s.showToast);
+  const addLog = useStore((s) => s.addLog);
   const language = useStore((s) => s.language);
   const t = (key: keyof Dict, vars?: Record<string, string | number>) => {
     const s = translations[language][key];
@@ -35,6 +38,7 @@ export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Pro
   const [colWidths, setColWidths] = useState<number[]>([]);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; type: 'header' | 'cell'; col?: number; row?: number } | null>(null);
   const [formulaValue, setFormulaValue] = useState('');
+  const [parseError, setParseError] = useState('');
   const workbookRef = useRef<XLSX.WorkBook | null>(null);
   const tableRef = useRef<HTMLDivElement>(null);
   const resizeRef = useRef<{ col: number; startX: number; startWidth: number } | null>(null);
@@ -43,15 +47,29 @@ export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Pro
 
   useEffect(() => {
     try {
+      setParseError('');
+      if (base64.length > MAX_SPREADSHEET_BYTES * 4 / 3 + 4) {
+        setParseError(t('spreadsheet_too_large'));
+        return;
+      }
       const binary = atob(base64);
       const arr = new Uint8Array(binary.length);
       for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
-      const wb = XLSX.read(arr, { type: 'array' });
+      const wb = XLSX.read(arr, {
+        type: 'array',
+        cellHTML: false,
+        cellStyles: false,
+        bookVBA: false,
+        WTF: false,
+      });
       workbookRef.current = wb;
       setSheetNames(wb.SheetNames);
+      setActiveSheet(0);
       loadSheet(wb, 0);
     } catch (e) {
-      console.warn('spreadsheet parse failed', e);
+      const msg = e instanceof Error ? e.message : String(e);
+      addLog('SpreadsheetEditor parse: ' + msg);
+      setParseError(t('spreadsheet_parse_failed'));
     }
   }, [base64]);
 
@@ -167,7 +185,6 @@ export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Pro
 
   const invalidateFormulas = () => {
     formulasRef.current.clear();
-    originalValuesRef.current = rows.map((r) => [...r]);
   };
 
   const handleSave = useCallback(async () => {
@@ -192,19 +209,22 @@ export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Pro
     workbookRef.current.Sheets[wsName] = ws;
     const outBinary = XLSX.write(workbookRef.current, { type: 'binary', bookType: ext as XLSX.BookType });
     const b64 = btoa(outBinary);
-    updateNote(noteId, { content: b64 });
     if (filePath) {
       try {
         const { invoke } = await import('@tauri-apps/api/core');
         await invoke('save_binary', { path: filePath, content: b64 });
       } catch (e) {
-        console.warn(`save_binary failed for ${filePath}`, e);
+        const msg = e instanceof Error ? e.message : String(e);
+        addLog(`save_binary failed for ${filePath}: ${msg}`);
+        showToast(t('toast_save_failed') + msg, 'error');
+        return;
       }
     }
+    updateNote(noteId, { content: b64 });
     formulasRef.current.clear();
     originalValuesRef.current = rows.map((r) => [...r]);
     setDirty(false);
-  }, [headers, rows, activeSheet, filePath, noteId, ext]);
+  }, [headers, rows, activeSheet, filePath, noteId, ext, updateNote, addLog, showToast, t]);
 
   const selectCell = (ri: number, ci: number) => {
     setSelectedCell([ri, ci]);
@@ -316,6 +336,22 @@ export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Pro
 
   const getCellVal = (ri: number, ci: number) => rows[ri]?.[ci] !== undefined ? String(rows[ri][ci]) : '';
 
+  if (parseError) {
+    return (
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: 8,
+        background: 'var(--surface-0)', color: 'var(--text-secondary)',
+        fontSize: 13, padding: 24, textAlign: 'center',
+      }}>
+        <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{parseError}</div>
+        <div style={{ color: 'var(--text-tertiary)', maxWidth: 360 }}>
+          {filePath ?? ''}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column',
@@ -387,7 +423,7 @@ export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Pro
             display: 'flex', alignItems: 'center', gap: 4,
             background: 'var(--accent)', border: 'none',
             borderRadius: 5, padding: '4px 10px',
-            fontSize: 11, fontWeight: 700, color: '#fff',
+            fontSize: 11, fontWeight: 700, color: 'var(--on-accent)',
             cursor: 'pointer', flexShrink: 0,
           }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent-hover)'; }}
@@ -661,3 +697,4 @@ function CtxItem({ label, onClick, danger }: { label: string; onClick: () => voi
     </button>
   );
 }
+

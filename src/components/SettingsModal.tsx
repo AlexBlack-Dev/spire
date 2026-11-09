@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Download, Upload, Github, Moon, Sun, Check, RefreshCw } from 'lucide-react';
 import { useStore } from '../store/useStore';
@@ -13,6 +14,14 @@ export default function SettingsModal() {
   const setLanguage = useStore((s) => s.setLanguage);
   const exportData = useStore((s) => s.exportData);
   const importData = useStore((s) => s.importData);
+  const restorePreImportBackup = useStore((s) => s.restorePreImportBackup);
+  const [hasPreImportBackup] = useState(() => {
+    try {
+      return localStorage.getItem('spire-pre-import-backup') !== null;
+    } catch {
+      return false;
+    }
+  });
   const theme = useStore((s) => s.theme);
   const setTheme = useStore((s) => s.setTheme);
   const accentColor = useStore((s) => s.accentColor);
@@ -27,7 +36,8 @@ export default function SettingsModal() {
       const { openUrl } = await import('@tauri-apps/plugin-opener');
       await openUrl('https://github.com/AlexBlack-Dev');
     } catch (e) {
-      console.error('openUrl failed', e);
+      const msg = e instanceof Error ? e.message : String(e);
+      useStore.getState().addLog('openGitHub: ' + msg);
     }
   };
 
@@ -190,7 +200,7 @@ export default function SettingsModal() {
                         transform: accentColor === c ? 'scale(1.15)' : 'scale(1)',
                         boxShadow: accentColor === c
                           ? `0 0 0 3px var(--surface-2), 0 0 0 5px ${COLOR_HEX[c]}`
-                          : '0 0 0 1px rgba(255,255,255,0.14)',
+                          : '0 0 0 1px var(--border-strong)',
                       }}
                       onMouseEnter={e => { if (accentColor !== c) e.currentTarget.style.transform = 'scale(1.08)'; }}
                       onMouseLeave={e => { e.currentTarget.style.transform = accentColor === c ? 'scale(1.15)' : 'scale(1)'; }}
@@ -223,7 +233,7 @@ export default function SettingsModal() {
                     position: 'relative', transition: 'background 0.2s',
                   }}>
                     <div style={{
-                      width: 18, height: 18, borderRadius: 9, background: '#fff',
+                      width: 18, height: 18, borderRadius: 9, background: 'var(--on-accent)',
                       position: 'absolute', top: 2, left: showFileExtensions ? 20 : 2,
                       transition: 'left 0.2s',
                     }} />
@@ -298,6 +308,22 @@ export default function SettingsModal() {
                   >
                     <Upload size={14} /> {t('settings_import')}
                   </button>
+                  {hasPreImportBackup && (
+                    <button
+                      onClick={() => { restorePreImportBackup(); setSettingsOpen(false); }}
+                      style={{
+                        flex: 1, padding: '10px 12px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        background: 'transparent', border: '1px solid var(--c-amber)',
+                        borderRadius: 10,
+                        color: 'var(--c-amber)', fontSize: 12, fontWeight: 700,
+                        cursor: 'pointer', transition: 'all 0.12s',
+                      }}
+                      title={t('undo_import')}
+                    >
+                      <RefreshCw size={14} /> {t('undo_import')}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -307,3 +333,5 @@ export default function SettingsModal() {
     </AnimatePresence>
   );
 }
+
+

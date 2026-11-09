@@ -33,7 +33,8 @@ export default function FileBrowser({ noteTitle, onSave, onBack }: {
         setCurrentPath(root);
         loadDir(root);
       } catch (e) {
-        console.warn('get_storage_root failed', e);
+        const msg = e instanceof Error ? e.message : String(e);
+        useStore.getState().addLog('get_storage_root: ' + msg);
         setLoading(false);
       }
     })();
@@ -46,7 +47,8 @@ export default function FileBrowser({ noteTitle, onSave, onBack }: {
       const list = await invoke<DirEntry[]>('list_directory', { path });
       setEntries(list.filter((e) => e.is_dir));
     } catch (e) {
-      console.error('list_directory error', e);
+      const msg = e instanceof Error ? e.message : String(e);
+      useStore.getState().addLog(`list_directory(${path}): ` + msg);
       setEntries([]);
     }
     setLoading(false);
@@ -126,7 +128,7 @@ export default function FileBrowser({ noteTitle, onSave, onBack }: {
         <motion.button whileTap={{ scale: 0.95 }} onClick={handleSave} style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: dim.sp2, width: '100%',
           padding: `${dim.sp3}px 0`, background: 'var(--accent)', border: 'none', borderRadius: dim.radiusSm, cursor: 'pointer',
-          color: '#fff', fontSize: dim.textMd, fontWeight: 700,
+          color: 'var(--on-accent)', fontSize: dim.textMd, fontWeight: 700,
         }}>
           <Save size={dim.iconMd} />
           {t('fb_save_here', { name: noteTitle || 'untitled' })}
@@ -135,3 +137,4 @@ export default function FileBrowser({ noteTitle, onSave, onBack }: {
     </div>
   );
 }
+

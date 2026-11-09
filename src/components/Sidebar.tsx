@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, CheckSquare, Lock, Star, Search, Plus, Pin, Trash2, ChevronLeft, ChevronDown, Shuffle, ScrollText, ArrowUp, ArrowDown } from 'lucide-react';
+import { isMobile } from '../isMobile';
 import { useStore } from '../store/useStore';
 import { useT } from '../i18n/useT';
 import type { Note } from '../types';
@@ -9,6 +10,7 @@ import { COLOR_HEX, formatDateFn, notePreview, getContentText } from '../utils/f
 export default function Sidebar() {
   const notes = useStore((s) => s.notes);
   const tasks = useStore((s) => s.tasks);
+  const trash = useStore((s) => s.trash);
   const viewMode = useStore((s) => s.viewMode);
   const searchQuery = useStore((s) => s.searchQuery);
   const activeNoteId = useStore((s) => s.activeNoteId);
@@ -37,9 +39,17 @@ export default function Sidebar() {
     return () => clearTimeout(id);
   }, [searchQuery]);
 
+  const stripCache = useRef(new WeakMap<Note, string>());
   const strippedIndex = useMemo(() => {
     const map = new Map<string, string>();
-    for (const n of notes) map.set(n.id, getContentText(n.content));
+    for (const n of notes) {
+      let text = stripCache.current.get(n);
+      if (text === undefined) {
+        text = n.filePath ? n.content : getContentText(n.content);
+        stripCache.current.set(n, text);
+      }
+      map.set(n.id, text);
+    }
     return map;
   }, [notes]);
 
@@ -82,7 +92,8 @@ export default function Sidebar() {
                 { id: 'notes'     as const, icon: <FileText size={16}/>,    label: t('notes'),     badge: notes.filter(n => !n.password).length },
                 { id: 'tasks'     as const, icon: <CheckSquare size={16}/>, label: t('tasks'),     badge: activeTasks || undefined },
                 { id: 'private'  as const, icon: <Lock size={16}/>,        label: t('private'), badge: notes.filter(n=>n.password).length || undefined },
-                ...(navigator.userAgent.includes('Android') ? [] : [{ id: 'converter' as const, icon: <Shuffle size={16}/>, label: t('converter'), badge: undefined }]),
+                ...(isMobile ? [] : [{ id: 'converter' as const, icon: <Shuffle size={16}/>, label: t('converter'), badge: undefined }]),
+                { id: 'trash'     as const, icon: <Trash2 size={16}/>,      label: t('trash'),     badge: trash.length || undefined },
                 { id: 'changelog' as const, icon: <ScrollText size={16}/>, label: t('changelog'), badge: undefined },
               ].map((item) => (
                 <NavItem key={item.id} icon={item.icon} label={item.label}
@@ -170,7 +181,7 @@ export default function Sidebar() {
                   })
                 )}
               </div>
-            ) : viewMode !== 'tasks' ? (
+            ) : viewMode !== 'tasks' && viewMode !== 'trash' ? (
               <>
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -205,6 +216,7 @@ export default function Sidebar() {
                     display: 'flex', alignItems: 'center', gap: 8,
                     background: 'var(--surface-2)', border: '1px solid var(--border-default)',
                     borderRadius: 8, padding: '8px 12px',
+                    backdropFilter: 'blur(8px)',
                   }}>
                     <Search size={14} color="var(--text-disabled)" />
                     <input
@@ -245,10 +257,36 @@ export default function Sidebar() {
                   ))}
                   {filtered.length === 0 && (
                     <div style={{
-                      padding: '40px 20px', textAlign: 'center',
-                      color: 'var(--text-disabled)', fontSize: 13, fontWeight: 500,
+                      padding: '32px 16px', textAlign: 'center',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center',
                     }}>
-                      {searchQuery ? t('nothing_found') : t('no_notes')}
+                      <div style={{
+                        width: 44, height: 44, borderRadius: 12,
+                        background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: 'var(--text-disabled)', marginBottom: 12,
+                      }}>
+                        {searchQuery ? <Search size={18} /> : viewMode === 'private' ? <Lock size={18} /> : <FileText size={18} />}
+                      </div>
+                      <div style={{
+                        color: 'var(--text-tertiary)', fontSize: 13, fontWeight: 600, marginBottom: 14,
+                      }}>
+                        {searchQuery ? t('nothing_found') : viewMode === 'private' ? t('private_empty_title') : t('no_notes')}
+                      </div>
+                      {!searchQuery && viewMode === 'notes' && (
+                        <button
+                          onClick={createNote}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            padding: '7px 14px', border: 'none', borderRadius: 8,
+                            background: 'var(--accent)', color: 'var(--on-accent)',
+                            fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                          }}
+                        >
+                          <Plus size={14} />
+                          {t('new_note')}
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -338,7 +376,7 @@ export default function Sidebar() {
           >
             <ChevronLeft
               size={12}
-              color={triggerHovered ? 'white' : 'var(--text-tertiary)'}
+              color={triggerHovered ? 'var(--on-accent)' : 'var(--text-tertiary)'}
             />
           </motion.div>
         </motion.div>
@@ -359,7 +397,7 @@ function NavItem({ icon, label, badge, active, onClick }: {
         display: 'flex', alignItems: 'center', gap: 10,
         width: '100%', padding: '9px 11px',
         borderRadius: 8, border: 'none',
-        background: active ? 'var(--surface-3)' : 'transparent',
+        background: active ? 'var(--accent-dim)' : 'transparent',
         color: active ? 'var(--text-primary)' : 'var(--text-tertiary)',
         cursor: 'pointer', fontSize: 15, fontWeight: active ? 600 : 500,
         transition: 'all 0.15s', marginBottom: 2,
@@ -440,8 +478,9 @@ function NoteRow({ note, active, hovered, onClick, onDelete, onHover, onMoveUp, 
       style={{
         padding: '9px 10px', borderRadius: 8, marginBottom: 2,
         cursor: 'pointer',
-        background: active ? 'var(--surface-3)' : hovered ? 'var(--surface-2)' : 'transparent',
-        transition: 'background 0.12s',
+        background: active ? 'var(--accent-dim)' : hovered ? 'var(--surface-2)' : 'transparent',
+        boxShadow: active ? 'inset 2px 0 0 var(--accent)' : 'none',
+        transition: 'background 0.15s',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
@@ -528,3 +567,4 @@ function NoteRow({ note, active, hovered, onClick, onDelete, onHover, onMoveUp, 
     </motion.div>
   );
 }
+

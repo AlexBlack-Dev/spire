@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Pin, Star, Trash2, Lock, Unlock, ChevronUp, ChevronDown } from 'lucide-react';
+import { Search, Pin, Star, Trash2, Lock, Unlock, MoreVertical, ArrowUp, ArrowDown, FileText } from 'lucide-react';
+import { format, isToday, isYesterday } from 'date-fns';
+import { ru, enUS } from 'date-fns/locale';
 import { useStore } from '../store/useStore';
 import { useT } from '../i18n/useT';
 import { dim } from '../isMobile';
 import type { Note } from '../types';
 import { COLOR_HEX, hexToRgba, formatDateFn, notePreview, getContentText } from '../utils/format';
 import WelcomeScreen from './WelcomeScreen';
+import BottomSheet, { SheetItem, SheetSeparator } from './BottomSheet';
 
 export default function MobileNoteList({ privateOnly }: { privateOnly?: boolean }) {
   const notes = useStore((s) => s.notes);
@@ -21,11 +24,14 @@ export default function MobileNoteList({ privateOnly }: { privateOnly?: boolean 
   const moveNoteDown = useStore((s) => s.moveNoteDown);
   const showLockPrompt = useStore((s) => s.showLockPrompt);
   const accentColor = useStore((s) => s.accentColor);
+  const language = useStore((s) => s.language);
   const t = useT();
   const [localQuery, setLocalQuery] = useState(searchQuery);
+  const [actionsFor, setActionsFor] = useState<Note | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const accent = COLOR_HEX[accentColor];
   const accentRgba = (a: number) => hexToRgba(accent, a);
+  const locale = language === 'ru' ? ru : enUS;
 
   useEffect(() => {
     setLocalQuery(searchQuery);
@@ -39,9 +45,17 @@ export default function MobileNoteList({ privateOnly }: { privateOnly?: boolean 
 
   useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
 
+  const stripCache = useRef(new WeakMap<Note, string>());
   const strippedIndex = useMemo(() => {
     const map = new Map<string, string>();
-    for (const n of notes) map.set(n.id, getContentText(n.content));
+    for (const n of notes) {
+      let text = stripCache.current.get(n);
+      if (text === undefined) {
+        text = n.filePath ? n.content : getContentText(n.content);
+        stripCache.current.set(n, text);
+      }
+      map.set(n.id, text);
+    }
     return map;
   }, [notes]);
 
@@ -54,9 +68,32 @@ export default function MobileNoteList({ privateOnly }: { privateOnly?: boolean 
     );
   }, [notes, localQuery, privateOnly, strippedIndex]);
 
+  const sections = useMemo(() => {
+    const pinnedNotes = filtered.filter((n) => n.isPinned);
+    const regular = filtered.filter((n) => !n.isPinned);
+    const result: Array<{ key: string; label: string; notes: Note[] }> = [];
+    if (pinnedNotes.length > 0) {
+      result.push({ key: 'pinned', label: t('pinned'), notes: pinnedNotes });
+    }
+    let currentKey = '';
+    for (const note of regular) {
+      const date = new Date(note.updatedAt);
+      const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+      if (key !== currentKey) {
+        const label = isToday(date) ? t('today') : isYesterday(date) ? t('yesterday') : format(date, 'd MMMM yyyy', { locale });
+        result.push({ key, label, notes: [] });
+        currentKey = key;
+      }
+      result[result.length - 1].notes.push(note);
+    }
+    return result;
+  }, [filtered, t, locale]);
+
   const handleLock = (noteId: string, hasPassword: boolean) => {
     showLockPrompt(noteId, 'note', hasPassword ? 'remove' : 'set');
   };
+
+  const closeActions = () => setActionsFor(null);
 
   const empty = notes.length === 0 && !privateOnly;
 
@@ -85,13 +122,17 @@ export default function MobileNoteList({ privateOnly }: { privateOnly?: boolean 
           padding: `${dim.sp3}px ${dim.sp6}px`,
           paddingRight: Math.round(dim.sp3 + 36 + dim.sp2),
           flexShrink: 0,
-          borderBottom: '1px solid var(--surface-2)',
+          borderBottom: '1px solid var(--border-subtle)',
+          background: 'color-mix(in srgb, var(--surface-0) 92%, transparent)',
+          backdropFilter: 'blur(10px)',
+          zIndex: 3,
         }}
       >
         <div style={{
           display: 'flex', alignItems: 'center', gap: dim.sp3,
           background: 'var(--surface-2)', borderRadius: dim.radius, padding: `${dim.sp3}px ${dim.sp5}px`,
           boxShadow: `0 8px 32px ${accentRgba(0.04)}`,
+          border: '1px solid var(--border-subtle)',
         }}>
           <Search size={dim.iconSm} color="var(--text-disabled)" />
           <input
@@ -101,7 +142,7 @@ export default function MobileNoteList({ privateOnly }: { privateOnly?: boolean 
             style={{
               flex: 1, background: 'none', border: 'none', outline: 'none',
               color: 'var(--text-primary)', fontSize: dim.textMd, fontWeight: 700,
-              userSelect: 'text',
+              userSelect: 'text', minHeight: 28,
             }}
           />
         </div>
@@ -111,42 +152,108 @@ export default function MobileNoteList({ privateOnly }: { privateOnly?: boolean 
         flex: 1, overflowY: 'auto',
         padding: `0 0 ${dim.sp7}px`,
       }}>
-        {filtered.map((note) => (
-          <NoteRow
-            key={note.id} note={note}
-            active={activeNoteId === note.id}
-            onClick={() => setActiveNote(note.id)}
-            onDelete={() => deleteNote(note.id)}
-            onLock={() => handleLock(note.id, !!note.password)}
-            onTogglePin={() => togglePin(note.id)}
-            onToggleFav={() => toggleFavorite(note.id)}
-            onMoveUp={() => moveNoteUp(note.id)}
-            onMoveDown={() => moveNoteDown(note.id)}
-          />
+        {sections.map((section) => (
+          <div key={section.key}>
+            <div style={{
+              position: 'sticky', top: 0, zIndex: 2,
+              padding: `${dim.sp3}px ${dim.sp6}px ${dim.sp1}px`,
+              fontSize: dim.textXs, fontWeight: 800,
+              color: 'var(--text-disabled)',
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+              background: 'color-mix(in srgb, var(--surface-0) 90%, transparent)',
+              backdropFilter: 'blur(8px)',
+            }}>
+              {section.label}
+            </div>
+            {section.notes.map((note) => (
+              <NoteRow
+                key={note.id} note={note}
+                active={activeNoteId === note.id}
+                onClick={() => setActiveNote(note.id)}
+                onOpenActions={() => setActionsFor(note)}
+              />
+            ))}
+          </div>
         ))}
         {filtered.length === 0 && (
           <div style={{
             padding: `${Math.round(window.innerHeight * 0.12)}px ${dim.sp6}px`,
             textAlign: 'center',
-            color: 'var(--text-disabled)', fontSize: dim.textMd, fontWeight: 700,
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
           }}>
-            {searchQuery ? t('nothing_found') : t('no_notes')}
+            <div style={{
+              width: 48, height: 48, borderRadius: dim.radiusLg,
+              background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--text-disabled)', marginBottom: dim.sp3,
+            }}>
+              {localQuery ? <Search size={20} /> : privateOnly ? <Lock size={20} /> : <FileText size={20} />}
+            </div>
+            <div style={{ color: 'var(--text-tertiary)', fontSize: dim.textMd, fontWeight: 700 }}>
+              {localQuery ? t('nothing_found') : privateOnly ? t('private_empty_title') : t('no_notes')}
+            </div>
+            {privateOnly && !localQuery && (
+              <div style={{ color: 'var(--text-disabled)', fontSize: dim.textSm, fontWeight: 600, marginTop: dim.sp2, maxWidth: 260 }}>
+                {t('private_empty_desc')}
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      <BottomSheet
+        open={!!actionsFor}
+        onClose={closeActions}
+        title={actionsFor ? (actionsFor.title || t('untitled')) : undefined}
+      >
+        {actionsFor && (
+          <>
+            <SheetItem
+              icon={<Pin size={dim.iconMd} />}
+              label={actionsFor.isPinned ? t('unpin') : t('pin')}
+              selected={actionsFor.isPinned}
+              onClick={() => { togglePin(actionsFor.id); closeActions(); }}
+            />
+            <SheetItem
+              icon={<Star size={dim.iconMd} />}
+              label={actionsFor.isFavorite ? t('unfavorite') : t('favorite')}
+              selected={actionsFor.isFavorite}
+              onClick={() => { toggleFavorite(actionsFor.id); closeActions(); }}
+            />
+            <SheetItem
+              icon={<ArrowUp size={dim.iconMd} />}
+              label={t('move_up')}
+              onClick={() => { moveNoteUp(actionsFor.id); closeActions(); }}
+            />
+            <SheetItem
+              icon={<ArrowDown size={dim.iconMd} />}
+              label={t('move_down')}
+              onClick={() => { moveNoteDown(actionsFor.id); closeActions(); }}
+            />
+            <SheetItem
+              icon={actionsFor.password ? <Lock size={dim.iconMd} /> : <Unlock size={dim.iconMd} />}
+              label={actionsFor.password ? t('lock_remove_password') : t('lock_set_password')}
+              selected={!!actionsFor.password}
+              onClick={() => { handleLock(actionsFor.id, !!actionsFor.password); closeActions(); }}
+            />
+            <SheetSeparator />
+            <SheetItem
+              icon={<Trash2 size={dim.iconMd} />}
+              label={t('delete_note')}
+              danger
+              onClick={() => { deleteNote(actionsFor.id); closeActions(); }}
+            />
+          </>
+        )}
+      </BottomSheet>
     </div>
   );
 }
 
-function NoteRow({ note, active, onClick, onDelete, onLock, onTogglePin, onToggleFav, onMoveUp, onMoveDown }: {
+function NoteRow({ note, active, onClick, onOpenActions }: {
   note: Note; active: boolean;
   onClick: () => void;
-  onDelete: () => void;
-  onLock: () => void;
-  onTogglePin: () => void;
-  onToggleFav: () => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
+  onOpenActions: () => void;
 }) {
   const t = useT();
   const color = COLOR_HEX[note.color] || COLOR_HEX.violet;
@@ -154,6 +261,35 @@ function NoteRow({ note, active, onClick, onDelete, onLock, onTogglePin, onToggl
   const showFileExtensions = useStore((s) => s.showFileExtensions);
   const language = useStore((s) => s.language);
   const ext = note.filePath ? (note.filePath.split('.').pop()?.toLowerCase() || '') : '';
+  const [dx, setDx] = useState(0);
+  const touchRef = useRef<{ x: number; y: number } | null>(null);
+  const swipingRef = useRef(false);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    touchRef.current = { x: touch.clientX, y: touch.clientY };
+    swipingRef.current = false;
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    const start = touchRef.current;
+    if (!start) return;
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    if (!swipingRef.current) {
+      if (Math.abs(deltaX) < 10 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+      swipingRef.current = true;
+    }
+    if (deltaX < 0) setDx(Math.max(deltaX, -64));
+  };
+
+  const onTouchEnd = () => {
+    if (dx <= -40) onOpenActions();
+    setDx(0);
+    swipingRef.current = false;
+    touchRef.current = null;
+  };
 
   return (
     <motion.div
@@ -165,29 +301,24 @@ function NoteRow({ note, active, onClick, onDelete, onLock, onTogglePin, onToggl
       }}
       whileTap={{ scale: 0.995 }}
       className="note-row"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      onContextMenu={(e) => { e.preventDefault(); onOpenActions(); }}
       style={{
         display: 'flex', alignItems: 'center',
-        padding: `${dim.sp4}px ${dim.sp6}px`,
-        background: active ? 'var(--surface-2)' : 'transparent',
+        padding: `${dim.sp3}px ${dim.sp6}px`,
+        background: active ? 'var(--accent-dim)' : 'transparent',
+        boxShadow: active ? 'inset 2px 0 0 var(--accent)' : 'none',
         borderBottom: '1px solid var(--border-subtle)',
+        transform: `translateX(${dx}px)`,
+        transition: dx === 0 ? 'transform 0.18s ease-out' : 'none',
+        touchAction: 'pan-y',
       }}
     >
-      <div style={{
-        display: 'flex', flexDirection: 'column', gap: dim.sp1, flexShrink: 0,
-        paddingRight: dim.sp2,
-      }}>
-        <motion.button whileTap={{ scale: 0.82 }} onClick={() => { navigator.vibrate?.(5); onMoveUp(); }}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-disabled)', display: 'flex', padding: 2, flexShrink: 0 }}>
-          <ChevronUp size={dim.iconSm} />
-        </motion.button>
-        <motion.button whileTap={{ scale: 0.82 }} onClick={() => { navigator.vibrate?.(5); onMoveDown(); }}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-disabled)', display: 'flex', padding: 2, flexShrink: 0 }}>
-          <ChevronDown size={dim.iconSm} />
-        </motion.button>
-      </div>
-
       <div onClick={onClick} style={{
         display: 'flex', alignItems: 'center', gap: dim.sp4, flex: 1, minWidth: 0,
+        minHeight: 44, cursor: 'pointer',
       }}>
         <div style={{
           width: dim.dot, height: dim.dot, borderRadius: '50%',
@@ -218,9 +349,9 @@ function NoteRow({ note, active, onClick, onDelete, onLock, onTogglePin, onToggl
             )}
           </div>
           {preview && (
-            <div style={{
+            <div className="clamp-2" style={{
               fontSize: dim.textSm, fontWeight: 500, color: 'var(--text-tertiary)',
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              lineHeight: 1.5,
             }}>
               {preview}
             </div>
@@ -232,35 +363,18 @@ function NoteRow({ note, active, onClick, onDelete, onLock, onTogglePin, onToggl
           {formatDateFn(note.updatedAt, language)}
         </span>
       </div>
-      <ActionBtn onClick={(e) => { e.stopPropagation(); onTogglePin(); }} color={note.isPinned ? color : 'var(--text-disabled)'}>
-        <Pin size={dim.iconSm} fill={note.isPinned ? color : 'none'} />
-      </ActionBtn>
-      <ActionBtn onClick={(e) => { e.stopPropagation(); onToggleFav(); }} color={note.isFavorite ? 'var(--c-amber)' : 'var(--text-disabled)'}>
-        <Star size={dim.iconSm} fill={note.isFavorite ? 'var(--c-amber)' : 'none'} />
-      </ActionBtn>
-      <ActionBtn onClick={(e) => { e.stopPropagation(); onLock(); }} color={note.password ? 'var(--accent)' : 'var(--text-disabled)'}>
-        {note.password ? <Lock size={dim.iconSm} /> : <Unlock size={dim.iconSm} />}
-      </ActionBtn>
-      <ActionBtn onClick={(e) => { navigator.vibrate?.(10); e.stopPropagation(); onDelete(); }} color="var(--c-rose)">
-        <Trash2 size={dim.iconSm} />
-      </ActionBtn>
+      <button
+        onClick={(e) => { e.stopPropagation(); onOpenActions(); }}
+        aria-label={t('more_actions')}
+        style={{
+          width: 44, height: 44,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'none', border: 'none', borderRadius: dim.radiusSm,
+          color: 'var(--text-disabled)', cursor: 'pointer', flexShrink: 0,
+        }}
+      >
+        <MoreVertical size={dim.iconMd} />
+      </button>
     </motion.div>
-  );
-}
-
-function ActionBtn({ children, onClick, color }: { children: React.ReactNode; onClick: (e: React.MouseEvent) => void; color: string }) {
-  return (
-    <motion.button
-      whileTap={{ scale: 0.82 }}
-      onClick={onClick}
-      style={{
-        width: Math.round(window.innerWidth * 0.08), height: Math.round(window.innerWidth * 0.08),
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'none', border: 'none', borderRadius: dim.radiusSm,
-        color, cursor: 'pointer', flexShrink: 0,
-      }}
-    >
-      {children}
-    </motion.button>
   );
 }

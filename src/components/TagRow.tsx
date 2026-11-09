@@ -19,13 +19,15 @@ export default function TagRow({ note, updateNote }: { note: Note; updateNote: (
     <div style={{ display: 'flex', alignItems: 'center', gap: 5, flex: 1 }}>
       <AnimatePresence>
         {note.tags.map((tag) => (
-          <motion.span
+          <motion.button
             key={tag}
             layout
+            type="button"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={() => updateNote(note.id, { tags: note.tags.filter((x) => x !== tag) })}
+            aria-label={`${t('remove_tag')} #${tag}`}
             style={{
               background: 'var(--surface-2)', border: '1px solid var(--border-default)',
               borderRadius: 99, padding: '1px 8px',
@@ -36,12 +38,14 @@ export default function TagRow({ note, updateNote }: { note: Note; updateNote: (
             onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}
           >
             #{tag}
-          </motion.span>
+          </motion.button>
         ))}
       </AnimatePresence>
       <input
+        key={note.id}
         onKeyDown={handleKeyDown}
         placeholder={t('add_tag')}
+        aria-label={t('add_tag')}
         style={{
           background: 'none', border: 'none', outline: 'none',
           fontSize: 12, fontWeight: 500, color: 'var(--text-disabled)',

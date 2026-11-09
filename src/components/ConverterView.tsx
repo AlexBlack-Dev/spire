@@ -273,7 +273,7 @@ export default function ConverterView() {
                 padding: '11px 0', marginTop: 12,
                 background: converterLoading ? 'var(--text-disabled)' : 'var(--accent)',
                 border: 'none', borderRadius: 10,
-                color: 'white', fontSize: 14, fontWeight: 700,
+                color: 'var(--on-accent)', fontSize: 14, fontWeight: 700,
                 cursor: converterLoading ? 'default' : 'pointer',
                 transition: 'background 0.15s', flexShrink: 0,
               }}
@@ -287,3 +287,4 @@ export default function ConverterView() {
     </div>
   );
 }
+

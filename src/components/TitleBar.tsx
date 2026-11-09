@@ -5,9 +5,13 @@ import { useStore } from '../store/useStore';
 import { useT } from '../i18n/useT';
 
 // Window controls via Tauri core invoke (dynamic import so browser dev does not crash)
-const winMinimize = async () => { try { const { invoke } = await import('@tauri-apps/api/core'); await invoke('plugin:window|minimize', { label: 'main' }); } catch (e) { console.error('minimize failed', e); } };
-const winToggleMaximize = async () => { try { const { invoke } = await import('@tauri-apps/api/core'); await invoke('plugin:window|toggle_maximize', { label: 'main' }); } catch (e) { console.error('toggle_maximize failed', e); } };
-const winClose = async () => { try { const { invoke } = await import('@tauri-apps/api/core'); await invoke('plugin:window|close', { label: 'main' }); } catch (e) { console.error('close failed', e); } };
+const winError = (action: string, e: unknown) => {
+  const msg = e instanceof Error ? e.message : String(e);
+  useStore.getState().addLog(`window.${action}: ` + msg);
+};
+const winMinimize = async () => { try { const { invoke } = await import('@tauri-apps/api/core'); await invoke('plugin:window|minimize', { label: 'main' }); } catch (e) { winError('minimize', e); } };
+const winToggleMaximize = async () => { try { const { invoke } = await import('@tauri-apps/api/core'); await invoke('plugin:window|toggle_maximize', { label: 'main' }); } catch (e) { winError('toggle_maximize', e); } };
+const winClose = async () => { try { const { invoke } = await import('@tauri-apps/api/core'); await invoke('plugin:window|close', { label: 'main' }); } catch (e) { winError('close', e); } };
 
 export default function TitleBar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -110,7 +114,7 @@ export default function TitleBar() {
 
   return (
     <div style={{
-      height: 52,
+      height: 'var(--bar-h)',
       display: 'flex',
       alignItems: 'center',
       background: 'var(--surface-1)',
@@ -264,27 +268,29 @@ export default function TitleBar() {
       />
 
       {/* RIGHT — window controls */}
-      <div style={{ display: 'flex', gap: 3, padding: '0 10px', flexShrink: 0, zIndex: 2 }}>
-        <WinBtn icon={<Minus size={12}/>}  onClick={winMinimize}       hoverBg="var(--surface-2)" hoverColor="var(--text-secondary)" color="var(--text-tertiary)" />
-        <WinBtn icon={<Square size={11}/>} onClick={winToggleMaximize} hoverBg="var(--surface-2)" hoverColor="var(--text-secondary)" color="var(--text-tertiary)" />
-        <WinBtn icon={<X size={12}/>}      onClick={winClose}          hoverBg="color-mix(in srgb, var(--c-rose) 18%, transparent)" hoverColor="var(--c-rose)" color="color-mix(in srgb, var(--c-rose) 55%, var(--surface-1))" />
+      <div style={{ display: 'flex', gap: 4, padding: '0 10px', flexShrink: 0, zIndex: 2 }}>
+        <WinBtn label={t('minimize')} icon={<Minus size={12}/>}  onClick={winMinimize}       hoverBg="var(--surface-3)" hoverColor="var(--text-primary)" color="var(--text-tertiary)" />
+        <WinBtn label={t('maximize')} icon={<Square size={11}/>} onClick={winToggleMaximize} hoverBg="var(--surface-3)" hoverColor="var(--text-primary)" color="var(--text-tertiary)" />
+        <WinBtn label={t('close')}    icon={<X size={12}/>}      onClick={winClose}          hoverBg="color-mix(in srgb, var(--c-rose) 18%, transparent)" hoverColor="var(--c-rose)" color="color-mix(in srgb, var(--c-rose) 55%, var(--surface-1))" />
       </div>
     </div>
   );
 }
 
-function WinBtn({ icon, onClick, hoverBg, hoverColor, color }: {
+function WinBtn({ icon, onClick, hoverBg, hoverColor, color, label }: {
   icon: React.ReactNode; onClick: () => void;
-  hoverBg: string; hoverColor: string; color: string;
+  hoverBg: string; hoverColor: string; color: string; label: string;
 }) {
   return (
     <button
+      aria-label={label}
+      title={label}
       onMouseDown={e => { e.preventDefault(); onClick(); }}
       style={{
-        width: 34, height: 34,
+        width: 30, height: 30,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'transparent', border: 'none', borderRadius: 7,
-        color, cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0,
+        background: 'transparent', border: 'none', borderRadius: 6,
+        color, cursor: 'pointer', transition: 'background 0.15s, color 0.15s', flexShrink: 0,
       }}
       onMouseEnter={e => { e.currentTarget.style.background = hoverBg; e.currentTarget.style.color = hoverColor; }}
       onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = color; }}

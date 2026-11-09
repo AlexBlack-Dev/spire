@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { ChevronLeft, Pin, Star, Trash2, Menu, Save, Lock, Unlock, ShieldAlert, Pencil, Eye, Play } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { ChevronLeft, Pin, Star, Trash2, Menu, Save, Lock, Unlock, ShieldAlert, Pencil, Eye, Play, MoreVertical, Plus, FolderOpen, BarChart3, Palette, Settings, FileText, CheckSquare } from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -22,6 +22,9 @@ import ToolsView from './ToolsView';
 import FileBrowser from './FileBrowser';
 import LockPrompt from './LockPrompt';
 import FormatToolbar from './FormatToolbar';
+import TagRow from './TagRow';
+import LockedNoteView from './LockedNoteView';
+import BottomSheet, { SheetItem, SheetSeparator } from './BottomSheet';
 import { useStore } from '../store/useStore';
 import { format } from 'date-fns';
 import { ru, enUS } from 'date-fns/locale';
@@ -30,6 +33,7 @@ import type { MobileTab } from './BottomNav';
 import { dim, isMobile, useViewport } from '../isMobile';
 import { COLOR_HEX, COLOR_NAMES, getFileInfo, hexToRgba, sanitizeHtml } from '../utils/format';
 import { sliceToText } from '../utils/tiptapText';
+import { useFileNoteContent } from '../hooks/useFileNoteContent';
 
 const SCRIPT_EXTS = ['bat', 'cmd', 'ps1', 'vbs', 'js', 'sh'];
 
@@ -51,7 +55,6 @@ export default function MobileLayout() {
   const [mobileView, setMobileView] = useState<'tab' | 'editor'>('tab');
   const [activeTab, setActiveTab] = useState<MobileTab>('notes');
   const [spireMenuOpen, setSpireMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
   const prefersReduced = useReducedMotion();
   const lockPromptState = useStore((s) => s.lockPromptState);
   const hideLockPrompt = useStore((s) => s.hideLockPrompt);
@@ -59,6 +62,20 @@ export default function MobileLayout() {
   const [storageGranted, setStorageGranted] = useState(true);
   const needsPermissionRedirect = useStore((s) => s.needsPermissionRedirect);
   const changelogRequest = useStore((s) => s.changelogRequest);
+  const rootNotes = useStore((s) => s.notes);
+  const lockedNoteExpiries = useStore((s) => s.lockedNoteExpiries);
+  const lockedNoteOpens = useStore((s) => s.lockedNoteOpens);
+  const [nowTick, setNowTick] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!Object.values(lockedNoteExpiries).some((v) => v > Date.now())) return;
+    const id = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [lockedNoteExpiries]);
+
+  const activeNote = activeNoteId ? rootNotes.find((n) => n.id === activeNoteId) : undefined;
+  const mobileNoteLocked = !!activeNote?.password
+    && !(activeNoteId && ((lockedNoteExpiries[activeNoteId] ?? 0) > nowTick || (lockedNoteOpens[activeNoteId] ?? 0) > 0));
 
   useEffect(() => {
     const check = async () => {
@@ -133,16 +150,6 @@ export default function MobileLayout() {
     const onResize = () => forceUpdate(n => n + 1);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
-  }, []);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setSpireMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
   }, []);
 
   const handleTabChange = (tab: MobileTab) => {
@@ -237,7 +244,11 @@ export default function MobileLayout() {
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: 'var(--surface-0)' }}>
         {showEditor ? (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' }}>
-            <MobileEditorWrapper onBack={handleBack} noAnim={noAnim} />
+            {mobileNoteLocked && activeNoteId ? (
+              <LockedNoteView noteId={activeNoteId} />
+            ) : (
+              <MobileEditorWrapper onBack={handleBack} noAnim={noAnim} />
+            )}
           </div>
         ) : (
           <div key={activeTab} style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' }}>
@@ -283,50 +294,76 @@ export default function MobileLayout() {
 
       {/* Spire menu */}
       {splashDone && !showEditor && !(activeTab === 'notes' && notesCount === 0) && (
-      <div ref={menuRef} style={{ position: 'fixed', top: `calc(var(--sat, 0px) + ${dim.sp3}px)`, right: dim.sp3, zIndex: 200 }}>
+      <div style={{ position: 'fixed', top: `calc(var(--sat, 0px) + ${dim.sp3}px)`, right: dim.sp3, zIndex: 200 }}>
         <motion.button
           whileTap={{ scale: 0.88 }}
-          onClick={() => setSpireMenuOpen(v => !v)}
+          onClick={() => setSpireMenuOpen(true)}
+          aria-label={t('more_actions')}
           style={{
             background: 'none', border: 'none', cursor: 'pointer',
             padding: btnPad, display: 'flex',
             color: 'var(--text-secondary)',
+            borderRadius: dim.radiusSm,
           }}
         >
           <Menu size={iconSize} />
         </motion.button>
-
-        <AnimatePresence>
-          {spireMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -6, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -6, scale: 0.95 }}
-              transition={{ duration: 0.13, ease: [0.16,1,0.3,1] }}
-              style={{
-                position: 'absolute', top: '100%', right: 0, marginTop: 6,
-                background: 'var(--surface-1)', border: '1px solid var(--border-default)',
-                borderRadius: 12, padding: 5, minWidth: 210, zIndex: 200,
-                boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
-              }}
-            >
-              <MenuItem label={t('new_note')} onClick={() => { createNote(); setSpireMenuOpen(false); }} />
-              <MenuItem label={t('open_file')} onClick={() => { openFile().catch(() => {}); setSpireMenuOpen(false); }} />
-              <MenuSep />
-              <MenuItem label={t('notes')} onClick={() => { handleTabChange('notes'); setSpireMenuOpen(false); }} />
-              <MenuItem label={t('tasks')} onClick={() => { handleTabChange('tasks'); setSpireMenuOpen(false); }} />
-              <MenuItem label={t('private')} onClick={() => { handleTabChange('private'); setSpireMenuOpen(false); }} />
-              <MenuSep />
-              <MenuItem label={t('statistics')} onClick={() => { setToolsSubPage('statistics'); handleTabChange('tools'); setSpireMenuOpen(false); }} />
-              <MenuItem label={t('trash')} onClick={() => { setToolsSubPage('trash'); handleTabChange('tools'); setSpireMenuOpen(false); }} />
-              <MenuItem label={t('themes')} onClick={() => { setToolsSubPage('themes'); handleTabChange('tools'); setSpireMenuOpen(false); }} />
-              <MenuSep />
-              <MenuItem label={t('settings')} onClick={() => { setSettingsOpen(true); setSpireMenuOpen(false); }} />
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
       )}
+
+      <BottomSheet open={spireMenuOpen} onClose={() => setSpireMenuOpen(false)} title="SPIRE">
+        <SheetItem
+          icon={<Plus size={dim.iconMd} />}
+          label={t('new_note')}
+          onClick={() => { createNote(); setSpireMenuOpen(false); }}
+        />
+        <SheetItem
+          icon={<FolderOpen size={dim.iconMd} />}
+          label={t('open_file')}
+          onClick={() => { openFile().catch(() => {}); setSpireMenuOpen(false); }}
+        />
+        <SheetSeparator />
+        <SheetItem
+          icon={<FileText size={dim.iconMd} />}
+          label={t('notes')}
+          selected={activeTab === 'notes'}
+          onClick={() => { handleTabChange('notes'); setSpireMenuOpen(false); }}
+        />
+        <SheetItem
+          icon={<CheckSquare size={dim.iconMd} />}
+          label={t('tasks')}
+          selected={activeTab === 'tasks'}
+          onClick={() => { handleTabChange('tasks'); setSpireMenuOpen(false); }}
+        />
+        <SheetItem
+          icon={<Lock size={dim.iconMd} />}
+          label={t('private')}
+          selected={activeTab === 'private'}
+          onClick={() => { handleTabChange('private'); setSpireMenuOpen(false); }}
+        />
+        <SheetSeparator />
+        <SheetItem
+          icon={<BarChart3 size={dim.iconMd} />}
+          label={t('statistics')}
+          onClick={() => { setToolsSubPage('statistics'); handleTabChange('tools'); setSpireMenuOpen(false); }}
+        />
+        <SheetItem
+          icon={<Trash2 size={dim.iconMd} />}
+          label={t('trash')}
+          onClick={() => { setToolsSubPage('trash'); handleTabChange('tools'); setSpireMenuOpen(false); }}
+        />
+        <SheetItem
+          icon={<Palette size={dim.iconMd} />}
+          label={t('themes')}
+          onClick={() => { setToolsSubPage('themes'); handleTabChange('tools'); setSpireMenuOpen(false); }}
+        />
+        <SheetSeparator />
+        <SheetItem
+          icon={<Settings size={dim.iconMd} />}
+          label={t('settings')}
+          onClick={() => { setSettingsOpen(true); setSpireMenuOpen(false); }}
+        />
+      </BottomSheet>
 
       {/* File browser */}
       {fileBrowserOpen && fileBrowserNoteId && (() => {
@@ -382,7 +419,6 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
   const saveFile = useStore((s) => s.saveFile);
   const language = useStore((s) => s.language);
   const accentColor = useStore((s) => s.accentColor);
-  const antiPaste = useStore((s) => s.antiPaste);
   const showToast = useStore((s) => s.showToast);
   const addLog = useStore((s) => s.addLog);
   const t = useT();
@@ -390,20 +426,17 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
   const note = notes.find((n) => n.id === activeNoteId);
   const { ext, isSpreadsheet, isPlainFile } = getFileInfo(note?.filePath);
 
-  const [rawDraft, setRawDraft] = useState('');
-  const rawLoadedId = useRef<string | null>(null);
-  useEffect(() => {
-    if (isPlainFile && note && (rawLoadedId.current !== note.id || rawDraft !== note.content)) {
-      rawLoadedId.current = note.id;
-      setRawDraft(note.content);
-    }
-  }, [note?.id, isPlainFile, note?.content, rawDraft]);
+  const {
+    rawDraft, setRawDraft, rawPreview, setRawPreview, renderedContent, rawWordCount,
+  } = useFileNoteContent(note, ext, isPlainFile);
+
   const accent = COLOR_HEX[accentColor];
   const accentRgba = (a: number) => hexToRgba(accent, a);
   const noteAccent = COLOR_HEX[(note?.color ?? 'violet') as keyof typeof COLOR_HEX];
   const noteAccentRgba = (a: number) => hexToRgba(noteAccent, a);
 
   const [kbOpen, setKbOpen] = useState(false);
+  const [editorMenuOpen, setEditorMenuOpen] = useState(false);
   const editMode = note ? note.editMode !== false : true;
   useEffect(() => {
     const vv = window.visualViewport;
@@ -415,6 +448,13 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
     vv.addEventListener('resize', onResize);
     return () => vv.removeEventListener('resize', onResize);
   }, []);
+
+  const [wordCount, setWordCount] = useState(0);
+  const noteRef = useRef(note);
+  noteRef.current = note;
+  const loadedNoteId = useRef<string | null>(null);
+
+  const displayWordCount = isPlainFile ? rawWordCount : wordCount;
 
   const pendingSaveRef = useRef<{ id: string; content: string } | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -460,7 +500,6 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
       attributes: { class: 'tiptap-editor' },
       clipboardTextSerializer: (slice) => sliceToText(slice),
       handlePaste: (view, event) => {
-        if (antiPaste) return true;
         const text = event.clipboardData?.getData('text/plain');
         if (text && text.trim().length > 0) {
           const clean = text
@@ -473,18 +512,34 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
         return false;
       },
       handleDOMEvents: {
-        copy: () => antiPaste ? true : undefined,
-        cut: () => antiPaste ? true : undefined,
+        blur: () => { flushSave(); return undefined; },
       },
     },
     onUpdate: ({ editor }) => {
-      if (note) {
-        pendingSaveRef.current = { id: note.id, content: editor.getHTML() };
+      const current = noteRef.current;
+      if (current) {
+        pendingSaveRef.current = { id: current.id, content: editor.getHTML() };
         if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
         saveTimerRef.current = setTimeout(flushSave, 400);
+        const text = editor.getText().trim();
+        setWordCount(text ? text.split(/\s+/).length : 0);
       }
     },
   });
+
+  useEffect(() => {
+    if (!editor || !note) return;
+    if (loadedNoteId.current !== note.id) {
+      flushSave();
+      loadedNoteId.current = note.id;
+      setRawPreview(false);
+      if (!isPlainFile && !isSpreadsheet) {
+        editor.commands.setContent(note.content || '');
+        const text = editor.getText().trim();
+        setWordCount(text ? text.split(/\s+/).length : 0);
+      }
+    }
+  }, [note?.id, editor, isPlainFile, isSpreadsheet, flushSave]);
 
   if (!note) {
     return (
@@ -526,47 +581,79 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
         pointerEvents: 'none',
       }} />
       <div style={{
-        display: 'flex', alignItems: 'center',
-        flexShrink: 0, padding: `0 ${dim.sp2}px`,
+        display: 'flex', alignItems: 'center', gap: dim.sp1,
+        flexShrink: 0, padding: `0 ${dim.sp2}px`, minHeight: dim.barH,
       }}>
         <motion.button
           whileTap={noAnim ? {} : { scale: 0.82 }}
           transition={noAnim ? { duration: 0 } : { type: 'spring', stiffness: 500, damping: 12 }}
           onClick={onBack}
+          aria-label={t('back')}
           style={{
             width: dim.barH, height: dim.barH,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'none', border: 'none',
+            background: 'none', border: 'none', borderRadius: dim.radiusSm,
             color: 'var(--accent)', cursor: 'pointer', flexShrink: 0,
           }}
         >
           <ChevronLeft size={dim.iconLg} strokeWidth={2.5} />
         </motion.button>
         <div style={{ flex: 1 }} />
-        <IconBtn onClick={() => { saveFile(note.id).catch((e) => console.warn('save failed', e)); }} active={false} activeColor="var(--c-green)" noAnim={noAnim}>
-          <Save size={dim.iconMd} />
-        </IconBtn>
-        {!isMobile && isScript && (
-          <IconBtn onClick={() => runScript()} active={false} activeColor={noteAccent} noAnim={noAnim}>
-            <Play size={dim.iconMd} />
-          </IconBtn>
-        )}
-        <IconBtn onClick={() => togglePin(note.id)} active={note.isPinned} activeColor={noteAccent} noAnim={noAnim}>
-          <Pin size={dim.iconMd} />
-        </IconBtn>
-        <IconBtn onClick={() => toggleFavorite(note.id)} active={note.isFavorite} activeColor="var(--c-amber)" noAnim={noAnim}>
-          <Star size={dim.iconMd} fill={note.isFavorite ? 'var(--c-amber)' : 'none'} />
-        </IconBtn>
-        <IconBtn onClick={() => {
-          useStore.getState().showLockPrompt(note.id, 'note', note.password ? 'remove' : 'set');
-        }} active={!!note.password} activeColor={accent} noAnim={noAnim}>
-          {note.password ? <Lock size={dim.iconMd} /> : <Unlock size={dim.iconMd} />}
-        </IconBtn>
-        <IconBtn onClick={() => { deleteNote(note.id); onBack(); }} active={false} activeColor="var(--c-rose)" noAnim={noAnim}>
-          <Trash2 size={dim.iconMd} />
+        <IconBtn onClick={() => setEditorMenuOpen(true)} active={false} activeColor={accent} noAnim={noAnim} label={t('more_actions')}>
+          <MoreVertical size={dim.iconMd} />
         </IconBtn>
       </div>
 
+      <BottomSheet open={editorMenuOpen} onClose={() => setEditorMenuOpen(false)} title={note.title || t('untitled')}>
+        <SheetItem
+          icon={<Save size={dim.iconMd} />}
+          label={t('save')}
+          onClick={() => {
+            setEditorMenuOpen(false);
+            saveFile(note.id).catch((e) => {
+              const msg = e instanceof Error ? e.message : String(e);
+              useStore.getState().addLog('saveFile: ' + msg);
+            });
+          }}
+        />
+        {!isMobile && isScript && (
+          <SheetItem
+            icon={<Play size={dim.iconMd} />}
+            label={t('run_script')}
+            onClick={() => { setEditorMenuOpen(false); runScript(); }}
+          />
+        )}
+        <SheetItem
+          icon={<Pin size={dim.iconMd} />}
+          label={note.isPinned ? t('unpin') : t('pin')}
+          selected={note.isPinned}
+          onClick={() => { togglePin(note.id); setEditorMenuOpen(false); }}
+        />
+        <SheetItem
+          icon={<Star size={dim.iconMd} />}
+          label={note.isFavorite ? t('unfavorite') : t('favorite')}
+          selected={note.isFavorite}
+          onClick={() => { toggleFavorite(note.id); setEditorMenuOpen(false); }}
+        />
+        <SheetItem
+          icon={note.password ? <Lock size={dim.iconMd} /> : <Unlock size={dim.iconMd} />}
+          label={note.password ? t('lock_remove_password') : t('lock_set_password')}
+          selected={!!note.password}
+          onClick={() => {
+            setEditorMenuOpen(false);
+            useStore.getState().showLockPrompt(note.id, 'note', note.password ? 'remove' : 'set');
+          }}
+        />
+        <SheetSeparator />
+        <SheetItem
+          icon={<Trash2 size={dim.iconMd} />}
+          label={t('delete_note')}
+          danger
+          onClick={() => { setEditorMenuOpen(false); deleteNote(note.id); onBack(); }}
+        />
+      </BottomSheet>
+
+      {!kbOpen && (
       <div style={{ padding: `0 ${dim.sp6}px`, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: dim.sp3 }}>
         <div style={{ display: 'flex', gap: dim.sp3 }}>
@@ -576,8 +663,10 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
               whileTap={noAnim ? {} : { scale: 0.75 }}
               transition={noAnim ? { duration: 0 } : { type: 'spring', stiffness: 600, damping: 10 }}
               onClick={() => updateNote(note.id, { color: c })}
+              aria-label={c}
+              aria-pressed={note.color === c}
               style={{
-                width: dim.dot, height: dim.dot, borderRadius: '50%',
+                width: Math.max(20, dim.dot), height: Math.max(20, dim.dot), borderRadius: '50%',
                 background: COLOR_HEX[c],
                 border: 'none',
                 opacity: note.color === c ? 1 : 0.3,
@@ -594,7 +683,10 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
             onClick={() => { if (editMode) updateNote(note.id, { editMode: false }); }} />
         </div>
       </div>
+      </div>
+      )}
 
+      <div style={{ padding: `0 ${dim.sp6}px`, flexShrink: 0 }}>
         {editMode ? (
           <input
             value={note.title}
@@ -619,19 +711,24 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
           </div>
         )}
 
+        {!kbOpen && (
         <div style={{
-          display: 'flex', alignItems: 'center', gap: dim.sp2, marginBottom: dim.sp3,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: dim.sp2, marginBottom: dim.sp3,
           fontSize: dim.textXs, fontWeight: 600, color: 'var(--text-disabled)',
         }}>
-          <span>{format(new Date(note.updatedAt), 'd MMM yyyy, HH:mm', { locale: language === 'ru' ? ru : enUS })}</span>
-          {ext && <span style={{ color: 'var(--accent)', fontWeight: 700 }}>.{ext}</span>}
-
+          <div style={{ display: 'flex', alignItems: 'center', gap: dim.sp2, minWidth: 0 }}>
+            <span>{format(new Date(note.updatedAt), 'd MMM yyyy, HH:mm', { locale: language === 'ru' ? ru : enUS })}</span>
+            {ext && <span style={{ color: 'var(--accent)', fontWeight: 700 }}>.{ext}</span>}
+            <span>{displayWordCount} {t('words')}</span>
+          </div>
+          <TagRow note={note} updateNote={updateNote} />
         </div>
+        )}
 
-        <div style={{ height: 1, background: 'var(--border-subtle)' }} />
+        {!kbOpen && <div style={{ height: 1, background: 'var(--border-subtle)' }} />}
       </div>
 
-      {editMode && editor && !isSpreadsheet && !isPlainFile && (
+      {editMode && editor && !isSpreadsheet && !isPlainFile && !renderedContent && (
         <FormatToolbar editor={editor} noAnim={noAnim} />
       )}
 
@@ -660,31 +757,59 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
               borderRadius: 14,
               padding: `${dim.sp4}px ${dim.sp4}px`, minHeight: '45vh',
             }}>
-              <pre style={{
-                margin: 0, fontSize: 13, lineHeight: 1.6,
-                fontFamily: "'JetBrains Mono', 'Inter', ui-monospace, monospace",
-                color: 'var(--text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-              }}>
-                {note.content}
-              </pre>
+              {renderedContent ? (
+                <div>{renderedContent}</div>
+              ) : (
+                <pre style={{
+                  margin: 0, fontSize: 13, lineHeight: 1.6,
+                  fontFamily: "'JetBrains Mono', 'Inter', ui-monospace, monospace",
+                  color: 'var(--text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                }}>
+                  {note.content}
+                </pre>
+              )}
             </div>
           ) : (
-            <textarea
-              value={rawDraft}
-              onChange={(e) => {
-                setRawDraft(e.target.value);
-                updateNote(note.id, { content: e.target.value });
-              }}
-              spellCheck={false}
-              wrap="off"
-              style={{
-                width: '100%', minHeight: '50vh',
-                background: 'none', border: 'none', outline: 'none', resize: 'none',
-                fontFamily: "'JetBrains Mono', 'Inter', ui-monospace, monospace",
-                fontSize: 13, lineHeight: 1.6, color: 'var(--text-primary)',
-                userSelect: 'text', tabSize: 4, padding: 0,
-              }}
-            />
+            <>
+              {renderedContent && (
+                <div style={{ display: 'flex', gap: dim.sp2, marginBottom: dim.sp3, flexWrap: 'wrap' }}>
+                  <button onClick={() => setRawPreview(false)} style={{
+                    padding: `${dim.sp2}px ${dim.sp4}px`, borderRadius: dim.radiusSm, border: 'none',
+                    background: !rawPreview ? 'var(--accent)' : 'var(--surface-2)',
+                    color: !rawPreview ? 'var(--on-accent)' : 'var(--text-secondary)',
+                    fontSize: dim.textXs, fontWeight: 700, cursor: 'pointer',
+                  }}>{t('source_mode')}</button>
+                  <button onClick={() => setRawPreview(true)} style={{
+                    padding: `${dim.sp2}px ${dim.sp4}px`, borderRadius: dim.radiusSm, border: 'none',
+                    background: rawPreview ? 'var(--accent)' : 'var(--surface-2)',
+                    color: rawPreview ? 'var(--on-accent)' : 'var(--text-secondary)',
+                    fontSize: dim.textXs, fontWeight: 700, cursor: 'pointer',
+                  }}>{t('badge_preview')}</button>
+                </div>
+              )}
+              {rawPreview && renderedContent ? (
+                <div>{renderedContent}</div>
+              ) : (
+                <textarea
+                  value={rawDraft}
+                  onChange={(e) => {
+                    setRawDraft(e.target.value);
+                    pendingSaveRef.current = { id: note.id, content: e.target.value };
+                    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+                    saveTimerRef.current = setTimeout(flushSave, 400);
+                  }}
+                  spellCheck={false}
+                  wrap="off"
+                  style={{
+                    width: '100%', minHeight: '50vh',
+                    background: 'none', border: 'none', outline: 'none', resize: 'none',
+                    fontFamily: "'JetBrains Mono', 'Inter', ui-monospace, monospace",
+                    fontSize: 13, lineHeight: 1.6, color: 'var(--text-primary)',
+                    userSelect: 'text', tabSize: 4, padding: 0,
+                  }}
+                />
+              )}
+            </>
           )}
         </div>
       ) : (
@@ -715,14 +840,16 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
 }
 
 function EditorTopBar({ onBack }: { onBack: () => void }) {
+  const t = useT();
   return (
     <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
       <button
         onClick={onBack}
+        aria-label={t('back')}
         style={{
           width: dim.barH, height: dim.barH,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'none', border: 'none',
+          background: 'none', border: 'none', borderRadius: dim.radiusSm,
           color: 'var(--accent)', cursor: 'pointer',
         }}
       >
@@ -732,28 +859,6 @@ function EditorTopBar({ onBack }: { onBack: () => void }) {
   );
 }
 
-function MenuItem({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        display: 'flex', alignItems: 'center', width: '100%', padding: '8px 12px',
-        background: 'none', border: 'none', borderRadius: 8,
-        color: 'var(--text-secondary)', fontSize: 13, fontWeight: 500,
-        cursor: 'pointer', textAlign: 'left', transition: 'background 0.1s',
-      }}
-      onMouseEnter={e => { e.currentTarget.style.background = 'var(--border-default)'; }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-    >
-      {label}
-    </button>
-  );
-}
-
-function MenuSep() {
-  return <div style={{ height: 1, background: 'var(--border-default)', margin: '3px 4px' }} />;
-}
-
 function SegBtn({ active, activeColor, icon, label, onClick }: {
   active: boolean; activeColor: string; icon: React.ReactNode;
   label: string; onClick: () => void;
@@ -761,12 +866,14 @@ function SegBtn({ active, activeColor, icon, label, onClick }: {
   return (
     <button
       onClick={onClick}
+      aria-pressed={active}
       style={{
         display: 'flex', alignItems: 'center', gap: 3,
-        padding: '5px 9px', border: 'none', borderRadius: 6,
+        minHeight: 34, padding: '6px 10px', border: 'none', borderRadius: 6,
         background: active ? 'var(--accent-dim)' : 'transparent',
         color: active ? activeColor : 'var(--text-tertiary)',
         fontSize: 11, fontWeight: 800, cursor: 'pointer',
+        transition: 'background 0.12s, color 0.12s',
       }}
     >
       {icon}
@@ -775,9 +882,9 @@ function SegBtn({ active, activeColor, icon, label, onClick }: {
   );
 }
 
-function IconBtn({ children, onClick, active, activeColor, noAnim }: {
+function IconBtn({ children, onClick, active, activeColor, noAnim, label }: {
   children: React.ReactNode; onClick: () => void;
-  active: boolean; activeColor: string; noAnim?: boolean | null;
+  active: boolean; activeColor: string; noAnim?: boolean | null; label?: string;
 }) {
   return (
     <motion.button
@@ -785,12 +892,14 @@ function IconBtn({ children, onClick, active, activeColor, noAnim }: {
       whileHover={noAnim ? {} : { scale: 1.08 }}
       transition={noAnim ? { duration: 0 } : { type: 'spring', stiffness: 500, damping: 12 }}
       onClick={onClick}
+      aria-label={label}
+      title={label}
       style={{
         width: dim.barH, height: dim.barH,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: 'none', border: 'none', borderRadius: dim.radiusSm,
-        color: active ? activeColor : 'var(--text-disabled)',
-        cursor: 'pointer',
+        color: active ? activeColor : 'var(--text-tertiary)',
+        cursor: 'pointer', flexShrink: 0,
       }}
     >
       <motion.div

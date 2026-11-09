@@ -48,6 +48,7 @@ function extractNotes(body: string): string[] {
 interface InstallerAsset {
   name: string;
   url: string;
+  digest: string | null;
 }
 
 interface LatestInfo {
@@ -81,12 +82,13 @@ export default function UpdateChecker() {
         const body = String(data.body || '');
         if (cancelled) return;
         if (tag && isNewer(tag, APP_VERSION)) {
-          const assets: Array<{ name?: unknown; browser_download_url?: unknown }> =
+          const assets: Array<{ name?: unknown; browser_download_url?: unknown; digest?: unknown }> =
             Array.isArray(data.assets) ? data.assets : [];
           const winAsset = assets
             .map((a) => ({
               name: String(a.name || ''),
               url: String(a.browser_download_url || ''),
+              digest: typeof a.digest === 'string' && a.digest.startsWith('sha256:') ? a.digest : null,
             }))
             .filter((a) => a.name && a.url && /\.(exe|msi)$/i.test(a.name))
             .sort((a, b) => {
@@ -104,7 +106,8 @@ export default function UpdateChecker() {
         }
       } catch (e) {
         if (cancelled) return;
-        console.warn('update check failed', e);
+        const msg = e instanceof Error ? e.message : String(e);
+        useStore.getState().addLog('update check failed: ' + msg);
         if (updateCheckRequest > 0) {
           useStore.getState().showToast(t('update_check_failed'), 'error');
         }
@@ -114,18 +117,28 @@ export default function UpdateChecker() {
   }, [updateCheckRequest]);
 
   useEffect(() => {
+    let cancelled = false;
     let unlisten: (() => void) | null = null;
     (async () => {
       try {
         const { listen } = await import('@tauri-apps/api/event');
-        unlisten = await listen<{ percent: number }>('update-progress', (e) => {
+        const unlistenFn = await listen<{ percent: number }>('update-progress', (e) => {
           setProgress(Math.max(0, Math.min(100, Number(e.payload?.percent) || 0)));
         });
+        if (cancelled) {
+          unlistenFn();
+          return;
+        }
+        unlisten = unlistenFn;
       } catch (e) {
-        console.warn('update-progress listen failed', e);
+        const msg = e instanceof Error ? e.message : String(e);
+        useStore.getState().addLog('update-progress listen failed: ' + msg);
       }
     })();
-    return () => { unlisten?.(); };
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
   }, []);
 
   const openRelease = async () => {
@@ -147,6 +160,22 @@ export default function UpdateChecker() {
 
   const installUpdate = async () => {
     if (!latest?.installer) return;
+    if (!latest.installer.digest) {
+      useStore.getState().addLog('update install: missing sha256 digest for installer asset, opening release page instead');
+      openRelease();
+      setDismissed(true);
+      return;
+    }
+    if (!latest.installer.url.startsWith('https://github.com/AlexBlack-Dev/spire/releases/download/')) {
+      useStore.getState().addLog(`update install: blocked suspicious asset URL: ${latest.installer.url}`);
+      openRelease();
+      setDismissed(true);
+      return;
+    }
+    const safeName = latest.installer.name
+      .split(/[\\/]/)
+      .pop()
+      ?.replace(/[^A-Za-z0-9._-]/g, '_') ?? 'spire-setup.exe';
     setInstalling(true);
     setProgress(0);
     try {
@@ -154,13 +183,12 @@ export default function UpdateChecker() {
       const { downloadDir } = await import('@tauri-apps/api/path');
       const { openPath } = await import('@tauri-apps/plugin-opener');
       const dir = await downloadDir();
-      const target = `${dir}${pathSep}${latest.installer.name}`;
-      await invoke('download_release', { url: latest.installer.url, dest: target });
+      const target = `${dir}${pathSep}${safeName}`;
+      await invoke('download_release', { url: latest.installer.url, dest: target, expectedSha256: latest.installer.digest });
       await openPath(target);
       useStore.getState().showToast(t('update_launched'), 'success');
       setDismissed(true);
     } catch (e) {
-      console.warn('auto install failed', e);
       const msg = e instanceof Error ? e.message : String(e);
       useStore.getState().addLog(`update install: ${msg}`);
       useStore.getState().showToast(`${t('update_install_failed')} — ${msg}`, 'error');
@@ -286,7 +314,7 @@ export default function UpdateChecker() {
                 width: '100%', padding: `${dim.sp4}px 0`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: dim.sp2,
                 background: accent, border: 'none', borderRadius: 12,
-                color: '#fff', fontSize: dim.textMd, fontWeight: 800,
+                color: 'var(--on-accent)', fontSize: dim.textMd, fontWeight: 800,
                 cursor: 'pointer',
                 boxShadow: `0 8px 28px ${rgba(0.45)}`,
               }}
