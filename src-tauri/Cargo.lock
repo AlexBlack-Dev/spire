@@ -3584,7 +3584,7 @@ dependencies = [
 
 [[package]]
 name = "spire"
-version = "1.0.1"
+version = "1.1.1"
 dependencies = [
  "android_logger",
  "base64 0.22.1",
@@ -3594,6 +3594,7 @@ dependencies = [
  "reqwest 0.12.28",
  "serde",
  "serde_json",
+ "sha2",
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",

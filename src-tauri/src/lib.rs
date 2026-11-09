@@ -4,6 +4,11 @@ use std::path::PathBuf;
 #[cfg(windows)]
 use winreg::{RegKey, enums::HKEY_CURRENT_USER};
 
+mod fs_ops;
+mod paths;
+mod scripts;
+mod update;
+
 #[cfg(windows)]
 fn register_file_icon(app: &tauri::App) {
     let icon_path: PathBuf = app.path().resource_dir()
@@ -29,7 +34,7 @@ fn set_registry_icon(icon_path: &str) {
     let extensions = [
         "txt", "md", "html", "json", "xml", "yaml", "yml", "csv",
         "css", "js", "ts", "py", "rs", "java", "c", "cpp", "h", "hpp",
-        "sh", "bat", "ps1", "ini", "cfg", "conf", "log", "sql", "svg",
+        "ini", "cfg", "conf", "log", "sql", "svg",
         "toml", "xlsx", "xls", "ods",
     ];
 
@@ -58,42 +63,6 @@ fn set_registry_icon(icon_path: &str) {
 
 #[cfg(not(windows))]
 fn register_file_icon(_app: &tauri::App) {}
-
-#[tauri::command]
-fn rename_file(old_path: String, new_path: String) -> Result<(), String> {
-    std::fs::rename(&old_path, &new_path).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn convert_image(input_path: String, output_path: String) -> Result<(), String> {
-    let img = image::open(&input_path).map_err(|e| format!("Failed to open image: {}", e))?;
-    img.save(&output_path).map_err(|e| format!("Failed to save image: {}", e))?;
-    Ok(())
-}
-
-#[tauri::command]
-fn save_binary(path: String, content: String) -> Result<(), String> {
-    let data = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, &content)
-        .map_err(|e| format!("Failed to decode base64: {}", e))?;
-    std::fs::write(&path, data).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn read_image_base64(path: String) -> Result<String, String> {
-    let data = std::fs::read(&path).map_err(|e| format!("Failed to read file: {}", e))?;
-    let ext = path.rsplit('.').next().unwrap_or("png").to_lowercase();
-    let mime = match ext.as_str() {
-        "png" => "image/png",
-        "jpg" | "jpeg" => "image/jpeg",
-        "gif" => "image/gif",
-        "webp" => "image/webp",
-        "bmp" => "image/bmp",
-        "ico" => "image/x-icon",
-        _ => "image/png",
-    };
-    let b64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &data);
-    Ok(format!("data:{};base64,{}", mime, b64))
-}
 
 #[cfg(windows)]
 #[tauri::command]
@@ -455,7 +424,7 @@ async fn save_file_dialog(
             .blocking_save_file();
         if let Some(p) = file {
             let path = p.to_string();
-            std::fs::write(&path, &content).map_err(|e| e.to_string())?;
+            fs_ops::write_text_file(&path, &content)?;
             return Ok(Some(path));
         }
         return Ok(None);
@@ -498,92 +467,6 @@ fn take_persistable_uri(uri: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn download_release(app: tauri::AppHandle, url: String, dest: String) -> Result<(), String> {
-    if !url.starts_with("https://github.com/AlexBlack-Dev/spire/releases/download/") {
-        return Err(format!("Blocked download URL: {}", url));
-    }
-    let downloads_dir = app
-        .path()
-        .download_dir()
-        .map_err(|e| format!("resolve downloads dir: {}", e))?;
-    let dest_path = std::path::Path::new(&dest);
-    if !dest_path.starts_with(&downloads_dir) {
-        return Err(format!("Blocked destination outside downloads: {}", dest));
-    }
-    let ext = dest_path
-        .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("")
-        .to_lowercase();
-    if ext != "exe" && ext != "msi" && ext != "apk" {
-        return Err(format!("Blocked destination extension: {}", ext));
-    }
-
-    let client = reqwest::Client::builder()
-        .user_agent("Spire-Updater")
-        .build()
-        .map_err(|e| e.to_string())?;
-
-    let mut res = client.get(&url).send().await.map_err(|e| e.to_string())?;
-    if !res.status().is_success() {
-        return Err(format!("HTTP {}", res.status()));
-    }
-
-    let total = res.content_length().unwrap_or(0);
-    if total > 512 * 1024 * 1024 {
-        return Err("Download too large".to_string());
-    }
-    let mut out = std::fs::File::create(&dest).map_err(|e| format!("create {}: {}", dest, e))?;
-    let mut downloaded: u64 = 0;
-
-    while let Some(chunk) = res.chunk().await.map_err(|e| e.to_string())? {
-        downloaded += chunk.len() as u64;
-        if downloaded > 512 * 1024 * 1024 {
-            return Err("Download too large".to_string());
-        }
-        std::io::Write::write_all(&mut out, &chunk).map_err(|e| e.to_string())?;
-        if total > 0 {
-            let percent = ((downloaded as f64 / total as f64) * 100.0) as u32;
-            let _ = app.emit("update-progress", serde_json::json!({ "percent": percent }));
-        }
-    }
-    Ok(())
-}
-
-const SCRIPT_EXTS: &[&str] = &["bat", "cmd", "ps1", "vbs", "js", "sh"];
-
-#[tauri::command]
-fn run_script(path: String) -> Result<(), String> {
-    let ext = path.rsplit('.').next().unwrap_or("").to_lowercase();
-    if !SCRIPT_EXTS.contains(&ext.as_str()) {
-        return Err(format!("Unsupported script type: {}", ext));
-    }
-    if !std::path::Path::new(&path).exists() {
-        return Err(format!("Script not found: {}", path));
-    }
-    let child = match ext.as_str() {
-        "bat" | "cmd" => std::process::Command::new("cmd")
-            .arg("/c")
-            .arg(&path)
-            .spawn(),
-        "ps1" => std::process::Command::new("powershell")
-            .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
-            .arg(&path)
-            .spawn(),
-        "vbs" | "js" => std::process::Command::new("cscript")
-            .args(["/nologo"])
-            .arg(&path)
-            .spawn(),
-        "sh" => std::process::Command::new("bash").arg(&path).spawn(),
-        _ => return Err(format!("Unsupported script type: {}", ext)),
-    };
-    match child {
-        Ok(_) => Ok(()),
-        Err(e) => Err(format!("Failed to start {}: {}", path, e)),
-    }
-}
-
-#[tauri::command]
 async fn write_content_to_uri(
     uri: String,
     content: String,
@@ -594,8 +477,7 @@ async fn write_content_to_uri(
         return android_save::write_content_to_uri(&uri, &content);
     }
 
-    std::fs::write(&uri, &content).map_err(|e| e.to_string())?;
-    Ok(())
+    fs_ops::write_text_file(&uri, &content)
 }
 
 // ---------------------------------------------------------------------------
@@ -628,11 +510,6 @@ fn list_directory(path: String) -> Result<Vec<DirEntry>, String> {
 #[tauri::command]
 fn get_storage_root() -> Result<String, String> {
     Ok("/storage/emulated/0".to_string())
-}
-
-#[tauri::command]
-fn save_to_path(file_path: String, content: String) -> Result<(), String> {
-    std::fs::write(&file_path, &content).map_err(|e| e.to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -685,13 +562,13 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            rename_file,
-            save_binary,
-            convert_image, read_image_base64, migrate_from_blum,
+            fs_ops::rename_file,
+            fs_ops::save_binary,
+            fs_ops::convert_image, fs_ops::read_image_base64, migrate_from_blum,
             open_app_settings, check_storage_permission, restart_app,
             save_file_dialog, write_content_to_uri, take_persistable_uri,
-            list_directory, get_storage_root, save_to_path,
-            download_release, run_script
+            list_directory, get_storage_root, fs_ops::save_to_path,
+            update::download_release, scripts::run_script
         ])
         .run(tauri::generate_context!())
     {

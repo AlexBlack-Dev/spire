@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -10,31 +10,49 @@ if (!version || !/^\d+\.\d+\.\d+$/.test(version)) {
   process.exit(1);
 }
 
-const packagePath = join(root, 'package.json');
-const pkg = JSON.parse(readFileSync(packagePath, 'utf8'));
-pkg.version = version;
-writeFileSync(packagePath, JSON.stringify(pkg, null, 2) + '\n');
+const pending = [];
 
-const tauriPath = join(root, 'src-tauri', 'tauri.conf.json');
-const tauri = JSON.parse(readFileSync(tauriPath, 'utf8'));
-tauri.version = version;
-writeFileSync(tauriPath, JSON.stringify(tauri, null, 2) + '\n');
-
-const cargoPath = join(root, 'src-tauri', 'Cargo.toml');
-const cargo = readFileSync(cargoPath, 'utf8').replace(/^\uFEFF/, '');
-if (!/^version\s*=\s*"[^"]+"/m.test(cargo)) {
-  console.error('Cargo.toml: no "version" field found to replace');
-  process.exit(1);
+function queueJson(relPath, mutate) {
+  const full = join(root, relPath);
+  const parsed = JSON.parse(readFileSync(full, 'utf8'));
+  mutate(parsed);
+  pending.push([full, JSON.stringify(parsed, null, 2) + '\n']);
 }
-const cargoNext = cargo.replace(/^version\s*=\s*"[^"]+"/m, `version = "${version}"`);
-writeFileSync(cargoPath, cargoNext);
 
-const lockPath = join(root, 'package-lock.json');
-const lock = JSON.parse(readFileSync(lockPath, 'utf8'));
-lock.version = version;
-if (lock.packages && lock.packages['']) {
-  lock.packages[''].version = version;
+function queueText(relPath, transform) {
+  const full = join(root, relPath);
+  const text = readFileSync(full, 'utf8').replace(/^﻿/, '');
+  pending.push([full, transform(text)]);
 }
-writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n');
 
-console.log(`Version synced to ${version} (package.json, package-lock.json, tauri.conf.json, Cargo.toml)`);
+queueJson('package.json', (pkg) => { pkg.version = version; });
+queueJson('package-lock.json', (lock) => {
+  lock.version = version;
+  if (lock.packages && lock.packages['']) {
+    lock.packages[''].version = version;
+  }
+});
+queueJson(join('src-tauri', 'tauri.conf.json'), (tauri) => { tauri.version = version; });
+
+queueText(join('src-tauri', 'Cargo.toml'), (cargo) => {
+  if (!/^version\s*=\s*"[^"]+"/m.test(cargo)) {
+    throw new Error('Cargo.toml: no "version" field found to replace');
+  }
+  return cargo.replace(/^version\s*=\s*"[^"]+"/m, `version = "${version}"`);
+});
+
+queueText(join('src-tauri', 'Cargo.lock'), (cargoLock) => {
+  const re = /(\[\[package\]\]\r?\nname = "spire"\r?\nversion = ")[^"]+(")/;
+  if (!re.test(cargoLock)) {
+    throw new Error('Cargo.lock: "spire" package entry not found');
+  }
+  return cargoLock.replace(re, `$1${version}$2`);
+});
+
+for (const [target, content] of pending) {
+  const tmp = target + '.sync-version.tmp';
+  writeFileSync(tmp, content);
+  renameSync(tmp, target);
+}
+
+console.log(`Version synced to ${version} (package.json, package-lock.json, tauri.conf.json, Cargo.toml, Cargo.lock)`);
