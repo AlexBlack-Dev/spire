@@ -8,12 +8,14 @@ import WelcomeScreen from './components/WelcomeScreen';
 import PrivateEmpty from './components/PrivateEmpty';
 import ConverterView from './components/ConverterView';
 import ChangelogView from './components/ChangelogView';
+import TrashView from './components/TrashView';
 import SettingsModal from './components/SettingsModal';
 import SplashScreen from './components/SplashScreen';
 import MobileLayout from './components/MobileLayout';
 import LockPrompt from './components/LockPrompt';
 import Toasts from './components/Toasts';
 import UpdateChecker from './components/UpdateChecker';
+import LockedNoteView from './components/LockedNoteView';
 import { useStore } from './store/useStore';
 import { useT } from './i18n/useT';
 import { isMobile } from './isMobile';
@@ -47,6 +49,7 @@ export default function App() {
   const lockedNoteOpens = useStore((s) => s.lockedNoteOpens);
   const lockPromptState = useStore((s) => s.lockPromptState);
   const [migrationDone, setMigrationDone] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
   const showEditor  = viewMode === 'notes' || viewMode === 'private';
   const showWelcome = showEditor && !activeNoteId;
@@ -57,17 +60,19 @@ export default function App() {
   const expiry = activeNoteId ? (lockedNoteExpiries[activeNoteId] ?? 0) : 0;
   const opens = activeNoteId ? (lockedNoteOpens[activeNoteId] ?? 0) : 0;
   const isNoteUnlocked = activeNoteId
-    ? expiry > Date.now() || opens > 0
+    ? expiry > now || opens > 0
     : false;
   const noteLocked = showEditor && !!activeNote?.password && !isNoteUnlocked;
 
-  const prevViewRef = useRef(viewMode);
   const prevNoteRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const prevView = prevViewRef.current;
-    prevViewRef.current = viewMode;
+    if (!Object.values(lockedNoteExpiries).some((v) => v > Date.now() && v !== Infinity)) return;
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [lockedNoteExpiries]);
 
+  useEffect(() => {
     if (prevNoteRef.current && prevNoteRef.current !== activeNoteId) {
       const s = useStore.getState();
       if ((s.lockedNoteOpens[prevNoteRef.current] ?? 0) > 0) {
@@ -81,24 +86,27 @@ export default function App() {
     if (!activeNoteId) return;
     const note = notes.find((n) => n.id === activeNoteId);
     if (!note?.password) return;
-    if (viewMode !== 'private' && !isMobile) {
+    if (viewMode !== 'private') {
       useStore.getState().setActiveNote(null);
       return;
     }
     const s = useStore.getState();
-    if (prevView !== 'private' && !s.isNoteUnlocked(activeNoteId)) {
-      s.setActiveNote(null);
-      return;
-    }
     if (s.isNoteUnlocked(activeNoteId)) return;
     if (lockPromptState?.id === activeNoteId && lockPromptState.mode === 'unlock') return;
     s.showLockPrompt(activeNoteId, 'note', 'unlock');
-  }, [activeNoteId, viewMode, lockPromptState?.id]);
+  }, [activeNoteId, viewMode, lockPromptState?.id, notes]);
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => e.preventDefault();
-    document.removeEventListener('contextmenu', handler);
-    if (!isMobile) document.addEventListener('contextmenu', handler);
+    if (isMobile) return;
+    const isEditable = (target: EventTarget | null): boolean => {
+      const el = target as HTMLElement | null;
+      if (!el) return false;
+      const tag = el.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable) return true;
+      return !!el.closest('input, textarea, [contenteditable="true"]');
+    };
+    const handler = (e: MouseEvent) => { if (!isEditable(e.target)) e.preventDefault(); };
+    document.addEventListener('contextmenu', handler);
     return () => document.removeEventListener('contextmenu', handler);
   }, []);
 
@@ -110,6 +118,7 @@ export default function App() {
   }, [theme, accentColor]);
 
   useEffect(() => {
+    if (isMobile) return;
     const handler = (e: KeyboardEvent) => {
       if (!((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a')) return;
       const el = document.activeElement as HTMLElement | null;
@@ -137,17 +146,26 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     const un: Array<() => void> = [];
     (async () => {
       try {
         const { listen } = await import('@tauri-apps/api/event');
-        un.push(await listen<{ path: string; content: string; binary?: boolean }>('open-file', (e) => {
+        const unlistenFn = await listen<{ path: string; content: string; binary?: boolean }>('open-file', (e) => {
           setSplashDone();
           openFileFromEvent(e.payload.path, e.payload.content);
-        }));
+        });
+        if (cancelled) {
+          unlistenFn();
+          return;
+        }
+        un.push(unlistenFn);
       } catch { /* not in Tauri */ }
     })();
-    return () => { un.forEach(fn => fn()); };
+    return () => {
+      cancelled = true;
+      un.forEach(fn => fn());
+    };
   }, []);
 
   // Auto-migrate from old BLUM/BLUNT data on first launch (runs at most once)
@@ -218,6 +236,15 @@ export default function App() {
                 >
                   <ChangelogView />
                 </motion.div>
+              ) : viewMode === 'trash' ? (
+                <motion.div key="trash"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  style={{ flex: 1, display: 'flex', overflow: 'hidden' }}
+                >
+                  <TrashView />
+                </motion.div>
               ) : showPrivateEmpty ? (
                 <motion.div key="private-empty"
                   initial={{ opacity: 0 }}
@@ -242,7 +269,9 @@ export default function App() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   style={{ flex: 1, display: 'flex', overflow: 'hidden' }}
-                />
+                >
+                  <LockedNoteView noteId={activeNoteId!} />
+                </motion.div>
               ) : (
                 <motion.div key={`note-${activeNoteId}`}
                   initial={{ opacity: 0 }}
