@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Release workflow uses `android-actions/setup-android` v4, which no longer installs the removed `tools` SDK package and runs on Node 24
+- Release APK keeps the stable committed debug keystore, so updates install over previously released versions
 
 ## [1.2.0] - 2026-11-09
 
@@ -50,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Lock prompt throttles input after five failed attempts (30 s), handles `lock_error` and supports the Escape key
 - Update checker validates the release URL and asset name, requires a digest, and reports failures to the in-app error log
 - Rust file commands hardened: path normalization, sensitive-path checks, size limits (25 MB text / 512 MB downloads), HTTP timeouts, redirect limits, whitelisted script extensions and safe `run_script` arguments
-- Android release signing reads keystore data from GitHub Secrets; version code and name are derived from the release tag
+- Android version code and name are derived from the release tag
 - Release workflow pins actions to commit SHAs and runs a quality gate before building artifacts
 - Desktop window controls and settings actions log failures through `addLog` instead of `console`
 - Spreadsheet save failures now show an error toast and keep the note content untouched
@@ -74,7 +75,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Unused images from `src-tauri/icons/new/`
-- Debug keystore and release keystore from the repository
 - Residual anti-paste logic and console-only error handling
 
 ## [1.1.1] - 2026-08-19

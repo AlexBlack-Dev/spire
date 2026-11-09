@@ -27,26 +27,18 @@ android {
     signingConfigs {
         create("release") {
             val keystorePath = System.getenv("SPIRE_KEYSTORE_PATH")
-                ?: file("release.keystore").absolutePath
+                ?: file("debug.keystore").absolutePath
             val keystoreFile = file(keystorePath)
-            val storePassword = System.getenv("SPIRE_KEYSTORE_PASSWORD")
-            val keyAlias = System.getenv("SPIRE_KEY_ALIAS")
-            val keyPassword = System.getenv("SPIRE_KEY_PASSWORD")
             val isReleaseBuild = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
             if (keystoreFile.exists()) {
-                if (storePassword.isNullOrEmpty() || keyAlias.isNullOrEmpty() || keyPassword.isNullOrEmpty()) {
-                    throw GradleException(
-                        "Missing signing secrets: SPIRE_KEYSTORE_PASSWORD, SPIRE_KEY_ALIAS and SPIRE_KEY_PASSWORD must all be set."
-                    )
-                }
                 storeFile = keystoreFile
-                this.storePassword = storePassword
-                this.keyAlias = keyAlias
-                this.keyPassword = keyPassword
+                storePassword = System.getenv("SPIRE_KEYSTORE_PASSWORD")?.takeIf { it.isNotEmpty() } ?: "android"
+                keyAlias = System.getenv("SPIRE_KEY_ALIAS")?.takeIf { it.isNotEmpty() } ?: "androiddebugkey"
+                keyPassword = System.getenv("SPIRE_KEY_PASSWORD")?.takeIf { it.isNotEmpty() } ?: "android"
             } else if (isReleaseBuild) {
                 throw GradleException(
-                    "Release keystore not found at $keystorePath. " +
-                        "Set SPIRE_KEYSTORE_PATH or place release.keystore next to build.gradle.kts (see README > Building Releases)."
+                    "Signing keystore not found at $keystorePath. " +
+                        "Set SPIRE_KEYSTORE_PATH or place debug.keystore next to build.gradle.kts."
                 )
             }
         }

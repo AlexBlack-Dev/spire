@@ -162,14 +162,7 @@ The workflow:
 3. Builds the Windows installer (NSIS/MSI) and the Android APK.
 4. Creates a GitHub Release with download links.
 
-Android APKs are signed with a release keystore that is **not** stored in the repository. Add these repository secrets before releasing:
-
-| Secret | Value |
-|--------|-------|
-| `SPIRE_KEYSTORE_BASE64` | Base64-encoded `release.keystore` |
-| `SPIRE_KEYSTORE_PASSWORD` | Keystore password |
-| `SPIRE_KEY_ALIAS` | Key alias |
-| `SPIRE_KEY_PASSWORD` | Key password |
+Android APKs are signed with the debug keystore committed at `src-tauri/gen/android/app/debug.keystore` (alias `androiddebugkey`, password `android`). The workflow regenerates it only when the file is missing, so release APKs keep the same signature and install over previously released versions. To use a private keystore instead, set `SPIRE_KEYSTORE_PATH`, `SPIRE_KEYSTORE_PASSWORD`, `SPIRE_KEY_ALIAS` and `SPIRE_KEY_PASSWORD` in the build environment.
 
 `versionCode` and `versionName` are derived from the tag (`v1.2.0` → `10200` / `1.2.0`) and written to `tauri.properties` during the build.
 

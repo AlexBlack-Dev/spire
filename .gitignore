@@ -15,8 +15,9 @@ dist-ssr
 # Rust / Tauri build artifacts
 src-tauri/target/
 
-# Android signing (never commit real keystores; use SPIRE_KEYSTORE_* secrets)
+# Android signing (stable debug keystore is committed for update compatibility)
 *.keystore
+!src-tauri/gen/android/app/debug.keystore
 src-tauri/gen/android/app/release.keystore
 src-tauri/gen/android/app/tauri.properties
 release.keystore

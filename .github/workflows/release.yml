@@ -125,15 +125,19 @@ jobs:
       - name: Sync version from tag
         run: node scripts/sync-version.mjs "${GITHUB_REF_NAME#v}"
 
-      - name: Decode release keystore from secrets
-        env:
-          SPIRE_KEYSTORE_BASE64: ${{ secrets.SPIRE_KEYSTORE_BASE64 }}
+      - name: Generate Android signing keystore
         run: |
-          if [ -z "$SPIRE_KEYSTORE_BASE64" ]; then
-            echo "::error::SPIRE_KEYSTORE_BASE64 secret is not set (base64 of release.keystore)"
-            exit 1
+          if [ ! -f "src-tauri/gen/android/app/debug.keystore" ]; then
+            keytool -genkeypair -v \
+              -keystore src-tauri/gen/android/app/debug.keystore \
+              -alias "${SPIRE_KEY_ALIAS:-androiddebugkey}" \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "${SPIRE_KEYSTORE_PASSWORD:-android}" \
+              -keypass "${SPIRE_KEY_PASSWORD:-android}" \
+              -dname "CN=Spire, OU=Spire, O=Spire, L=City, ST=State, C=US"
+          else
+            echo "Stable keystore found, keeping signature"
           fi
-          echo "$SPIRE_KEYSTORE_BASE64" | base64 --decode > src-tauri/gen/android/app/release.keystore
 
       - name: Write tauri.properties (versionCode from tag)
         run: |
@@ -145,17 +149,15 @@ jobs:
             echo "tauri.android.versionName=$TAG"
           } > src-tauri/gen/android/app/tauri.properties
 
-      - name: Verify signing secrets and keystore
-        env:
-          SPIRE_KEYSTORE_PASSWORD: ${{ secrets.SPIRE_KEYSTORE_PASSWORD }}
-          SPIRE_KEY_ALIAS: ${{ secrets.SPIRE_KEY_ALIAS }}
-          SPIRE_KEY_PASSWORD: ${{ secrets.SPIRE_KEY_PASSWORD }}
+      - name: Verify signing keystore
         run: |
-          if [ -z "$SPIRE_KEYSTORE_PASSWORD" ] || [ -z "$SPIRE_KEY_ALIAS" ] || [ -z "$SPIRE_KEY_PASSWORD" ]; then
-            echo "::error::SPIRE_KEYSTORE_PASSWORD, SPIRE_KEY_ALIAS and SPIRE_KEY_PASSWORD secrets must all be set"
+          if [ ! -f "src-tauri/gen/android/app/debug.keystore" ]; then
+            echo "::error::Android signing keystore is missing"
             exit 1
           fi
-          keytool -list -keystore src-tauri/gen/android/app/release.keystore -alias "$SPIRE_KEY_ALIAS" -storepass "$SPIRE_KEYSTORE_PASSWORD" > /dev/null
+          keytool -list -keystore src-tauri/gen/android/app/debug.keystore \
+            -alias "${SPIRE_KEY_ALIAS:-androiddebugkey}" \
+            -storepass "${SPIRE_KEYSTORE_PASSWORD:-android}" > /dev/null
 
       - name: Initialize Tauri Android
         run: |
@@ -240,7 +242,7 @@ jobs:
             - Splash screen
 
             ### Security
-            - Release APK is signed with a repository-independent release keystore (secrets)
+            - Release APK is signed with a stable keystore committed to the repository
             - Installer updates are SHA-256 verified before launch
             - Strict Content Security Policy
           files: |
