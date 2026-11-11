@@ -45,22 +45,12 @@ export default function MobileSettings({ onBack }: { onBack?: () => void }) {
       height: '100%', overflow: 'hidden',
       background: 'var(--surface-0)', position: 'relative',
     }}>
-      <div style={{
-        position: 'absolute', top: 'calc(0px - var(--sat, 0px))', left: 0, right: 0,
-        height: 'calc(240px + var(--sat, 0px))',
-        background: [
-          `linear-gradient(180deg, ${accentRgba(0.05)} 0%, transparent 100%)`,
-          `radial-gradient(ellipse 90% 60% at 50% 0%, ${accentRgba(0.05)} 0%, transparent 70%)`,
-        ].join(', '),
-        pointerEvents: 'none',
-      }} />
       {/* Sticky header */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: dim.sp2,
         padding: `${dim.sp3}px ${dim.sp4}px`,
         borderBottom: '1px solid var(--border-subtle)',
-        background: 'color-mix(in srgb, var(--surface-0) 92%, transparent)',
-        backdropFilter: 'blur(12px)',
+        background: 'var(--surface-0)',
         flexShrink: 0, zIndex: 2,
       }}>
         {onBack && (
@@ -125,7 +115,7 @@ export default function MobileSettings({ onBack }: { onBack?: () => void }) {
                   minHeight: 44, padding: `0 ${dim.sp4}px`,
                   background: 'var(--accent-dim)', border: `1px solid ${accentRgba(0.35)}`,
                   borderRadius: dim.radiusSm,
-                  color: 'var(--accent)', fontSize: dim.textSm, fontWeight: 700,
+                  color: 'var(--text-primary)', fontSize: dim.textSm, fontWeight: 700,
                   cursor: 'pointer', flexShrink: 0,
                 }}
               >
@@ -147,7 +137,7 @@ export default function MobileSettings({ onBack }: { onBack?: () => void }) {
                     background: language === lang ? 'var(--accent-dim)' : 'var(--surface-2)',
                     border: language === lang ? '1px solid var(--accent)' : '1px solid var(--border-subtle)',
                     borderRadius: dim.radiusSm,
-                    color: language === lang ? 'var(--accent)' : 'var(--text-tertiary)',
+                    color: language === lang ? 'var(--text-primary)' : 'var(--text-tertiary)',
                     fontSize: dim.textMd, fontWeight: language === lang ? 800 : 600,
                     cursor: 'pointer', transition: 'background 0.12s, border-color 0.12s, color 0.12s',
                   }}

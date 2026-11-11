@@ -224,27 +224,18 @@ export default function UpdateChecker() {
           style={{
             width: '100%', maxWidth: 400, position: 'relative',
             background: 'var(--surface-1)', border: '1px solid var(--border-default)',
-            borderRadius: 22, overflow: 'hidden',
-            boxShadow: '0 32px 96px rgba(0,0,0,0.65), 0 0 24px rgba(0,0,0,0.25)',
+            borderRadius: 16, overflow: 'hidden',
+            boxShadow: 'var(--shadow-modal)',
           }}
         >
-          <div style={{
-            position: 'absolute', top: 0, left: 0, right: 0, height: 110, pointerEvents: 'none',
-            background: `linear-gradient(180deg, ${rgba(0.18)} 0%, transparent 100%)`,
-          }} />
-
           <div style={{ padding: `${dim.sp6}px ${dim.sp6}px 0`, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{ position: 'relative', marginBottom: dim.sp4 }}>
               <img src="/favicon.png" width={64} height={64} alt="Spire" />
-              <motion.div
-                style={{
-                  position: 'absolute', top: -3, right: -6, width: 15, height: 15,
-                  borderRadius: '50%', background: 'var(--c-green)',
-                  border: '3px solid var(--surface-1)',
-                }}
-                animate={{ scale: [1, 1.25, 1], opacity: [1, 0.75, 1] }}
-                transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-              />
+              <div style={{
+                position: 'absolute', top: -3, right: -6, width: 15, height: 15,
+                borderRadius: '50%', background: 'var(--c-green)',
+                border: '3px solid var(--surface-1)',
+              }} />
             </div>
 
             <div style={{

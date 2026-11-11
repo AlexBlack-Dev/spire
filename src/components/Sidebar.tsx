@@ -33,6 +33,15 @@ export default function Sidebar() {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [triggerHovered, setTriggerHovered] = useState(false);
   const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
+  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+
+  useEffect(() => {
+    const handler = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+
+  const sidebarWidth = viewportWidth >= 1440 ? 272 : viewportWidth >= 1100 ? 248 : viewportWidth >= 900 ? 224 : 208;
 
   useEffect(() => {
     const id = window.setTimeout(() => setDebouncedQuery(searchQuery), 200);
@@ -75,7 +84,7 @@ export default function Sidebar() {
         {sidebarOpen && (
           <motion.aside
             initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 272, opacity: 1 }}
+            animate={{ width: sidebarWidth, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 380, damping: 36 }}
             style={{
@@ -117,7 +126,7 @@ export default function Sidebar() {
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   height: 46, padding: '0 8px',
-                  fontSize: 11, fontWeight: 700, color: 'var(--text-disabled)',
+                  fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)',
                   letterSpacing: '0.09em', textTransform: 'uppercase',
                 }}>
                   <ScrollText size={12} />
@@ -160,14 +169,14 @@ export default function Sidebar() {
                         }}
                       >
                         <span style={{
-                          fontSize: 13, fontWeight: 800, color: active ? 'var(--accent)' : 'var(--text-secondary)',
+                          fontSize: 13, fontWeight: 800, color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
                           letterSpacing: '-0.01em',
                         }}>
                           v{entry.version}
                         </span>
                         <span style={{ flex: 1 }} />
                         {entry.date && (
-                          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-disabled)' }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)' }}>
                             {entry.date}
                           </span>
                         )}
@@ -188,7 +197,7 @@ export default function Sidebar() {
                   height: 46, boxSizing: 'border-box', padding: '12px 14px 8px',
                 }}>
                   <span style={{
-                    fontSize: 11, fontWeight: 700, color: 'var(--text-disabled)',
+                    fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)',
                     letterSpacing: '0.09em', textTransform: 'uppercase',
                   }}>
                     {viewMode === 'private' ? t('private') : t('notes')}
@@ -216,7 +225,6 @@ export default function Sidebar() {
                     display: 'flex', alignItems: 'center', gap: 8,
                     background: 'var(--surface-2)', border: '1px solid var(--border-default)',
                     borderRadius: 8, padding: '8px 12px',
-                    backdropFilter: 'blur(8px)',
                   }}>
                     <Search size={14} color="var(--text-disabled)" />
                     <input
@@ -269,24 +277,10 @@ export default function Sidebar() {
                         {searchQuery ? <Search size={18} /> : viewMode === 'private' ? <Lock size={18} /> : <FileText size={18} />}
                       </div>
                       <div style={{
-                        color: 'var(--text-tertiary)', fontSize: 13, fontWeight: 600, marginBottom: 14,
+                        color: 'var(--text-tertiary)', fontSize: 13, fontWeight: 600,
                       }}>
                         {searchQuery ? t('nothing_found') : viewMode === 'private' ? t('private_empty_title') : t('no_notes')}
                       </div>
-                      {!searchQuery && viewMode === 'notes' && (
-                        <button
-                          onClick={createNote}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 6,
-                            padding: '7px 14px', border: 'none', borderRadius: 8,
-                            background: 'var(--accent)', color: 'var(--on-accent)',
-                            fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                          }}
-                        >
-                          <Plus size={14} />
-                          {t('new_note')}
-                        </button>
-                      )}
                     </div>
                   )}
                 </div>
@@ -299,7 +293,7 @@ export default function Sidebar() {
                   background: 'var(--surface-2)', border: '1px solid var(--border-default)',
                   borderRadius: 12, padding: '18px',
                 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-disabled)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{t('progress')}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{t('progress')}</div>
                   <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 2, letterSpacing: '-0.025em' }}>
                     {tasks.filter(t => t.completed).length}
                     <span style={{ fontSize: 16, fontWeight: 500, color: 'var(--text-tertiary)' }}>/{tasks.length}</span>
@@ -322,7 +316,7 @@ export default function Sidebar() {
 
       {/* Sidebar toggle — strip on the right edge of sidebar + half-oval tab */}
       <motion.div
-        animate={{ left: sidebarOpen ? 272 : 0 }}
+        animate={{ left: sidebarOpen ? sidebarWidth : 0 }}
         transition={{ type: 'spring', stiffness: 380, damping: 36 }}
         style={{
           position: 'absolute',
@@ -343,6 +337,13 @@ export default function Sidebar() {
 
         {/* Half-oval tab — tall, not reaching top/bottom edges, no border */}
         <motion.div
+          role="button"
+          tabIndex={0}
+          aria-label={sidebarOpen ? t('collapse_sidebar') : t('expand_sidebar')}
+          title={sidebarOpen ? t('collapse_sidebar') : t('expand_sidebar')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSidebar(); }
+          }}
           onMouseEnter={() => setTriggerHovered(true)}
           onMouseLeave={() => setTriggerHovered(false)}
           onClick={toggleSidebar}
@@ -405,10 +406,10 @@ function NavItem({ icon, label, badge, active, onClick }: {
       onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}}
       onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-tertiary)'; }}}
     >
-      <span style={{ color: active ? 'var(--accent)' : 'var(--text-disabled)', display: 'flex' }}>{icon}</span>
+      <span style={{ color: active ? 'var(--accent)' : 'var(--text-tertiary)', display: 'flex' }}>{icon}</span>
       <span style={{ flex: 1, textAlign: 'left' }}>{label}</span>
       {badge !== undefined && badge > 0 && (
-        <span style={{ fontSize: 12, fontWeight: 700, color: active ? 'var(--accent)' : 'var(--text-disabled)' }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: active ? 'var(--accent)' : 'var(--text-tertiary)' }}>
           {badge}
         </span>
       )}
@@ -440,7 +441,7 @@ function SectionLabel({ icon, label }: { icon?: React.ReactNode; label: string }
     <div style={{
       display: 'flex', alignItems: 'center', gap: 5,
       padding: '10px 10px 4px',
-      fontSize: 10, fontWeight: 700, color: 'var(--text-disabled)',
+      fontSize: 10, fontWeight: 700, color: 'var(--text-tertiary)',
       letterSpacing: '0.09em', textTransform: 'uppercase',
     }}>
       {icon}{label}
@@ -509,7 +510,7 @@ function NoteRow({ note, active, hovered, onClick, onDelete, onHover, onMoveUp, 
             )}
           </div>
           {preview && (
-            <div style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-disabled)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-tertiary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {preview}
             </div>
           )}
@@ -525,7 +526,7 @@ function NoteRow({ note, active, hovered, onClick, onDelete, onHover, onMoveUp, 
                 </span>
               ))}
               {note.tags.length > 3 && (
-                <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-disabled)' }}>+{note.tags.length - 3}</span>
+                <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-tertiary)' }}>+{note.tags.length - 3}</span>
               )}
             </div>
           )}
@@ -559,7 +560,7 @@ function NoteRow({ note, active, hovered, onClick, onDelete, onHover, onMoveUp, 
               </motion.div>
             )}
           </AnimatePresence>
-          <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-disabled)', marginLeft: 4 }}>
+          <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-tertiary)', marginLeft: 4 }}>
             {formatDateFn(note.updatedAt, language)}
           </span>
         </div>

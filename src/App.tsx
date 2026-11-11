@@ -114,7 +114,10 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme);
     const accentHex = COLOR_HEX[accentColor];
     document.documentElement.style.setProperty('--accent', accentHex);
-    document.documentElement.style.setProperty('--accent-hover', mixHex(accentHex, '#ffffff', 0.18));
+    document.documentElement.style.setProperty(
+      '--accent-hover',
+      theme === 'light' ? mixHex(accentHex, '#000000', 0.12) : mixHex(accentHex, '#ffffff', 0.18),
+    );
   }, [theme, accentColor]);
 
   useEffect(() => {
@@ -308,11 +311,6 @@ export default function App() {
           />
         )}
 
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, height: 280,
-          pointerEvents: 'none', zIndex: 5,
-          background: 'radial-gradient(ellipse 90% 60% at 50% 0%, color-mix(in srgb, var(--accent) 14%, transparent) 0%, transparent 72%)',
-        }} />
       </div>
     </>
   );

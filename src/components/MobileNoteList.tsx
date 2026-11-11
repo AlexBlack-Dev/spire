@@ -7,7 +7,7 @@ import { useStore } from '../store/useStore';
 import { useT } from '../i18n/useT';
 import { dim } from '../isMobile';
 import type { Note } from '../types';
-import { COLOR_HEX, hexToRgba, formatDateFn, notePreview, getContentText } from '../utils/format';
+import { COLOR_HEX, formatDateFn, notePreview, getContentText } from '../utils/format';
 import WelcomeScreen from './WelcomeScreen';
 import BottomSheet, { SheetItem, SheetSeparator } from './BottomSheet';
 
@@ -23,14 +23,11 @@ export default function MobileNoteList({ privateOnly }: { privateOnly?: boolean 
   const moveNoteUp = useStore((s) => s.moveNoteUp);
   const moveNoteDown = useStore((s) => s.moveNoteDown);
   const showLockPrompt = useStore((s) => s.showLockPrompt);
-  const accentColor = useStore((s) => s.accentColor);
   const language = useStore((s) => s.language);
   const t = useT();
   const [localQuery, setLocalQuery] = useState(searchQuery);
   const [actionsFor, setActionsFor] = useState<Note | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const accent = COLOR_HEX[accentColor];
-  const accentRgba = (a: number) => hexToRgba(accent, a);
   const locale = language === 'ru' ? ru : enUS;
 
   useEffect(() => {
@@ -105,15 +102,6 @@ export default function MobileNoteList({ privateOnly }: { privateOnly?: boolean 
       height: '100%', overflow: 'hidden',
       background: 'var(--surface-0)', position: 'relative',
     }}>
-      <div style={{
-        position: 'absolute', top: 'calc(0px - var(--sat, 0px))', left: 0, right: 0,
-        height: 'calc(260px + var(--sat, 0px))',
-        background: [
-          `linear-gradient(180deg, ${accentRgba(0.05)} 0%, transparent 100%)`,
-          `radial-gradient(ellipse 90% 60% at 50% 0%, ${accentRgba(0.05)} 0%, transparent 70%)`,
-        ].join(', '),
-        pointerEvents: 'none',
-      }} />
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -123,16 +111,15 @@ export default function MobileNoteList({ privateOnly }: { privateOnly?: boolean 
           paddingRight: Math.round(dim.sp3 + 36 + dim.sp2),
           flexShrink: 0,
           borderBottom: '1px solid var(--border-subtle)',
-          background: 'color-mix(in srgb, var(--surface-0) 92%, transparent)',
-          backdropFilter: 'blur(10px)',
+          background: 'var(--surface-0)',
           zIndex: 3,
         }}
       >
         <div style={{
           display: 'flex', alignItems: 'center', gap: dim.sp3,
           background: 'var(--surface-2)', borderRadius: dim.radius, padding: `${dim.sp3}px ${dim.sp5}px`,
-          boxShadow: `0 8px 32px ${accentRgba(0.04)}`,
           border: '1px solid var(--border-subtle)',
+          maxWidth: 640, margin: '0 auto', width: '100%', boxSizing: 'border-box',
         }}>
           <Search size={dim.iconSm} color="var(--text-disabled)" />
           <input
@@ -148,9 +135,9 @@ export default function MobileNoteList({ privateOnly }: { privateOnly?: boolean 
         </div>
       </motion.div>
 
-      <div style={{
+      <div className="mobile-list-scroll" style={{
         flex: 1, overflowY: 'auto',
-        padding: `0 0 ${dim.sp7}px`,
+        paddingBottom: dim.sp7,
       }}>
         {sections.map((section) => (
           <div key={section.key}>
@@ -158,10 +145,9 @@ export default function MobileNoteList({ privateOnly }: { privateOnly?: boolean 
               position: 'sticky', top: 0, zIndex: 2,
               padding: `${dim.sp3}px ${dim.sp6}px ${dim.sp1}px`,
               fontSize: dim.textXs, fontWeight: 800,
-              color: 'var(--text-disabled)',
+              color: 'var(--text-tertiary)',
               letterSpacing: '0.08em', textTransform: 'uppercase',
-              background: 'color-mix(in srgb, var(--surface-0) 90%, transparent)',
-              backdropFilter: 'blur(8px)',
+              background: 'var(--surface-0)',
             }}>
               {section.label}
             </div>
@@ -193,7 +179,7 @@ export default function MobileNoteList({ privateOnly }: { privateOnly?: boolean 
               {localQuery ? t('nothing_found') : privateOnly ? t('private_empty_title') : t('no_notes')}
             </div>
             {privateOnly && !localQuery && (
-              <div style={{ color: 'var(--text-disabled)', fontSize: dim.textSm, fontWeight: 600, marginTop: dim.sp2, maxWidth: 260 }}>
+              <div style={{ color: 'var(--text-tertiary)', fontSize: dim.textSm, fontWeight: 600, marginTop: dim.sp2, maxWidth: 260 }}>
                 {t('private_empty_desc')}
               </div>
             )}
@@ -358,7 +344,7 @@ function NoteRow({ note, active, onClick, onOpenActions }: {
           )}
         </div>
         <span style={{
-          fontSize: dim.textXs, fontWeight: 700, color: 'var(--text-disabled)', whiteSpace: 'nowrap', flexShrink: 0,
+          fontSize: dim.textXs, fontWeight: 700, color: 'var(--text-tertiary)', whiteSpace: 'nowrap', flexShrink: 0,
         }}>
           {formatDateFn(note.updatedAt, language)}
         </span>

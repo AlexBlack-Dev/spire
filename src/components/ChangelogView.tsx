@@ -62,12 +62,14 @@ export default function ChangelogView({ onBack }: { onBack?: () => void }) {
       </span>
     </div>
   ) : (
-    <div style={{ padding: '20px 26px 12px', flexShrink: 0, minWidth: 0 }}>
-      <div style={{
-        fontSize: 20, fontWeight: 800, color: 'var(--text-primary)',
-        letterSpacing: '-0.02em',
-      }}>
-        {t('changelog')}
+    <div style={{ padding: '20px var(--page-pad) 12px', flexShrink: 0, minWidth: 0 }}>
+      <div className="editor-page">
+        <div style={{
+          fontSize: 20, fontWeight: 800, color: 'var(--text-primary)',
+          letterSpacing: '-0.02em',
+        }}>
+          {t('changelog')}
+        </div>
       </div>
     </div>
   );
@@ -107,7 +109,7 @@ export default function ChangelogView({ onBack }: { onBack?: () => void }) {
             </span>
             <span style={{ flex: 1 }} />
             {entry.date && (
-              <span style={{ fontSize: dim.textXs, fontWeight: 600, color: 'var(--text-disabled)' }}>
+              <span style={{ fontSize: dim.textXs, fontWeight: 600, color: 'var(--text-tertiary)' }}>
                 {entry.date}
               </span>
             )}
@@ -245,10 +247,16 @@ export default function ChangelogView({ onBack }: { onBack?: () => void }) {
       {header}
       <div style={{
         flex: 1, overflowY: 'auto', minHeight: 0,
-        padding: onBack ? `0 ${dim.sp6}px ${dim.sp7}px` : '4px 26px 24px',
+        padding: onBack ? `0 ${dim.sp6}px ${dim.sp7}px` : '4px var(--page-pad) 24px',
       }}>
-        {onBack && releaseList}
-        {body}
+        {onBack ? (
+          <>
+            {releaseList}
+            {body}
+          </>
+        ) : (
+          <div className="editor-page">{body}</div>
+        )}
       </div>
     </div>
   );

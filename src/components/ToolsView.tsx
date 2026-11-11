@@ -223,7 +223,7 @@ function StatisticsView({ onBack }: { onBack: () => void }) {
             border: '1px solid var(--border-subtle)',
           }}>
             <div style={{
-              fontSize: dim.textSm, fontWeight: 700, color: 'var(--text-disabled)',
+              fontSize: dim.textSm, fontWeight: 700, color: 'var(--text-tertiary)',
               marginBottom: dim.sp3, textTransform: 'uppercase', letterSpacing: '0.04em',
             }}>
               {t('accent_color')}
@@ -505,7 +505,7 @@ function PermissionsView({ onBack }: { onBack: () => void }) {
 
           <div style={{
             marginTop: dim.sp3,
-            fontSize: dim.textSm, fontWeight: 600, color: 'var(--text-disabled)',
+            fontSize: dim.textSm, fontWeight: 600, color: 'var(--text-tertiary)',
           }}>
             {t('storage_note')}
           </div>

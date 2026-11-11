@@ -67,8 +67,10 @@ export default function SettingsModal() {
               border: '1px solid var(--border-default)',
               borderRadius: 16,
               padding: 28,
-              width: 380,
-              boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+              width: 'min(380px, calc(100vw - 32px))',
+              maxHeight: 'calc(100vh - 48px)',
+              overflowY: 'auto',
+              boxShadow: 'var(--shadow-modal)',
             }}
           >
             <div style={{
@@ -218,13 +220,13 @@ export default function SettingsModal() {
                   {t('settings_show_extensions')}
                 </div>
                 <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
                   background: 'var(--surface-2)', borderRadius: 10, padding: '10px 14px',
                   border: '1px solid var(--border-default)', cursor: 'pointer',
                 }}
                   onClick={() => setShowFileExtensions(!showFileExtensions)}
                 >
-                  <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', flex: 1, minWidth: 0, lineHeight: 1.4 }}>
                     {t('show_extensions_desc')}
                   </span>
                   <div style={{

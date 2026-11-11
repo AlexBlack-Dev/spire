@@ -72,6 +72,8 @@ export const en = {
   'minimize': 'Minimize',
   'maximize': 'Maximize',
   'close': 'Close',
+  'collapse_sidebar': 'Collapse sidebar',
+  'expand_sidebar': 'Expand sidebar',
 
   // Welcome
   'welcome_subtitle': 'Full-featured editor for notes,\ntasks and documents.',
@@ -230,6 +232,7 @@ export const en = {
   'lock_5opens': '5 opens',
   'note_locked': 'This note is locked',
   'private': 'Private',
+  'nav_private': 'Private',
 
   // File browser
   'fb_save_to_folder': 'Save to folder',
@@ -351,6 +354,8 @@ const ru: Dict = {
   'minimize': 'Свернуть',
   'maximize': 'Развернуть',
   'close': 'Закрыть',
+  'collapse_sidebar': 'Свернуть панель',
+  'expand_sidebar': 'Развернуть панель',
 
   'welcome_subtitle': 'Полноценный редактор для заметок,\nзадач и документов.',
   'card_notes_title': 'Заметки',
@@ -507,6 +512,7 @@ const ru: Dict = {
   'lock_5opens': '5 заходов',
   'note_locked': 'Заметка заблокирована',
   'private': 'Приватные',
+  'nav_private': 'Личные',
 
   // File browser
   'fb_save_to_folder': 'Сохранить в папку',

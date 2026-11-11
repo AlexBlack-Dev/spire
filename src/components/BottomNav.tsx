@@ -3,7 +3,6 @@ import { BookMarked, CircleCheckBig, Lock, Wrench, Plus } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useT } from '../i18n/useT';
 import { dim } from '../isMobile';
-import { COLOR_HEX, hexToRgba } from '../utils/format';
 
 export type MobileTab = 'notes' | 'tasks' | 'private' | 'tools';
 
@@ -12,25 +11,24 @@ export default function BottomNav({ activeTab, onTabChange }: {
   onTabChange: (tab: MobileTab) => void;
 }) {
   const createNote = useStore((s) => s.createNote);
-  const accentColor = useStore((s) => s.accentColor);
   const t = useT();
   const reduced = useReducedMotion();
-  const accent = COLOR_HEX[accentColor];
-  const accentRgba = (a: number) => hexToRgba(accent, a);
 
   const tabDefs: Array<{
     id: MobileTab; icon: React.ReactNode; iconActive: React.ReactNode; label: string;
   }> = [
     { id: 'notes', icon: <BookMarked size={dim.iconMd} />, iconActive: <BookMarked size={dim.iconMd} />, label: t('notes') },
     { id: 'tasks', icon: <CircleCheckBig size={dim.iconMd} />, iconActive: <CircleCheckBig size={dim.iconMd} />, label: t('tasks') },
-    { id: 'private', icon: <Lock size={dim.iconMd} />, iconActive: <Lock size={dim.iconMd} />, label: t('private') },
+    { id: 'private', icon: <Lock size={dim.iconMd} />, iconActive: <Lock size={dim.iconMd} />, label: t('nav_private') },
     { id: 'tools', icon: <Wrench size={dim.iconMd} />, iconActive: <Wrench size={dim.iconMd} />, label: t('tools') },
   ];
 
   const iw = window.innerWidth;
-  const barH = Math.round(Math.max(68, Math.min(88, iw * 0.16)));
+  const barH = Math.round(Math.max(64, Math.min(76, iw * 0.16)));
   const bottomGap = Math.round(Math.max(12, Math.min(24, iw * 0.05)));
   const plusSz = Math.round(barH * 0.75);
+  const showLabels = iw >= 350;
+  const labelSize = iw < 400 ? 10 : dim.textXs;
 
   return (
     <div style={{
@@ -40,19 +38,11 @@ export default function BottomNav({ activeTab, onTabChange }: {
     }}>
       <div style={{
         display: 'flex', alignItems: 'stretch',
-        width: '100%', height: barH, position: 'relative',
-        background: 'color-mix(in srgb, var(--surface-1) 94%, transparent)',
-        backdropFilter: 'blur(12px)',
+        width: '100%', maxWidth: 440, margin: '0 auto', height: barH, position: 'relative',
+        background: 'var(--surface-1)',
         border: '1px solid var(--border-subtle)',
         borderRadius: barH / 2,
-        boxShadow: `0 4px 24px rgba(0,0,0,0.3), 0 0 40px ${accentRgba(0.05)}`,
       }}>
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-          width: plusSz * 1.9, height: plusSz * 1.9, borderRadius: '50%',
-          background: `radial-gradient(circle, ${accentRgba(0.10)} 0%, transparent 70%)`,
-          filter: 'blur(10px)', pointerEvents: 'none',
-        }} />
         {renderTab(tabDefs[0])}
         {renderTab(tabDefs[1])}
 
@@ -69,7 +59,6 @@ export default function BottomNav({ activeTab, onTabChange }: {
               background: 'var(--accent)',
               border: 'none',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: `0 4px 16px rgba(0,0,0,0.4), 0 0 24px ${accentRgba(0.24)}`,
               cursor: 'pointer',
             }}
           >
@@ -102,8 +91,8 @@ export default function BottomNav({ activeTab, onTabChange }: {
         <div style={{
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center', gap: 1,
-          padding: `${Math.round(barH * 0.06)}px ${Math.round(barH * 0.14)}px`,
-          minWidth: 54,
+          padding: `${Math.round(barH * 0.06)}px 2px`,
+          width: '100%', minWidth: 0, boxSizing: 'border-box',
           borderRadius: 999,
           background: active ? 'var(--accent-dim)' : 'transparent',
           color: active ? 'var(--accent)' : 'var(--text-tertiary)',
@@ -112,14 +101,16 @@ export default function BottomNav({ activeTab, onTabChange }: {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: Math.round(barH * 0.4) }}>
             {active ? tab.iconActive : tab.icon}
           </div>
-          <span style={{
-            fontSize: dim.textXs, fontWeight: active ? 800 : 600,
-            color: 'inherit',
-            lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap', maxWidth: '100%',
-          }}>
-            {tab.label}
-          </span>
+          {showLabels && (
+            <span style={{
+              fontSize: labelSize, fontWeight: active ? 800 : 600,
+              color: active ? 'var(--text-primary)' : 'inherit', letterSpacing: '-0.02em',
+              lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap', maxWidth: '100%',
+            }}>
+              {tab.label}
+            </span>
+          )}
         </div>
       </motion.button>
     );

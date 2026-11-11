@@ -665,7 +665,7 @@ export default function SpreadsheetEditor({ base64, ext, filePath, noteId }: Pro
         display: 'flex', alignItems: 'center', gap: 12,
         padding: '2px 12px',
         borderTop: '1px solid var(--border-subtle)',
-        flexShrink: 0, fontSize: 10, fontWeight: 500, color: 'var(--text-disabled)',
+        flexShrink: 0, fontSize: 10, fontWeight: 500, color: 'var(--text-tertiary)',
       }}>
         <span>{t('ss_of_sheets', { cur: activeSheet + 1, total: sheetNames.length })}</span>
         <span>{t('ss_dimensions', { rows: rows.length, cols: headers.length })}</span>

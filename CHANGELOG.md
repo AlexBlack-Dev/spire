@@ -7,8 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Desktop note editor, tasks, changelog and trash are capped at a centered 680px column instead of stretching across wide windows
+- Desktop layout follows one 8pt spacing scale with responsive sidebar widths (272/248/224/208px) and page padding (32/24/20/16px)
+- Format toolbar uses compact desktop buttons and wraps/scrolls consistently on narrow windows and mobile
+- Mobile editor moves the edit/view switch into the top bar as an icon-only segmented control, and the accent color row sits on its own 44px line
+- The mobile editor date/tags row stacks on screens narrower than 360px instead of squeezing the date and word count
+- Mobile bottom navigation keeps labels readable down to 360px and switches to icon-only below 350px; the private tab is labelled `Private`/`Личные`
+- Dates, previews, metadata and section labels use the tertiary text color, which passes WCAG AA on both themes
+- Active navigation labels use the primary text color so they stay readable on the dimmed accent background
+- Welcome screen is reduced to the app mark and tagline, and the empty note list no longer renders a separate New note button; notes are created from the section header or `Ctrl+N`
+
+### Removed
+
+- Decorative gradients, glow and backdrop blur on the splash, welcome, update banner, mobile header, settings and bottom sheet, plus the pulsing update badge and the welcome tagline
+
 ### Fixed
 
+- Long note titles are no longer clipped; desktop and mobile titles use an auto-growing textarea and wrap instead of overflowing
+- Task rows, filters and the add-task field align to the same column on desktop and no longer shift on mobile
+- Settings modal scrolls inside the viewport on short screens instead of being cut off
+- Note list ghosting/cropping caused by `content-visibility` on rows
+- Trash view keeps the same centered column as the other views instead of shrinking to its content
+- Settings "show file extensions" row keeps a 16px gap between the label and the switch
 - Release workflow uses `android-actions/setup-android` v4, which no longer installs the removed `tools` SDK package and runs on Node 24
 - Release APK keeps the stable committed debug keystore, so updates install over previously released versions
 

@@ -129,8 +129,8 @@ export default function TitleBar() {
       {/* LEFT — logo button with dropdown */}
       <div ref={menuRef} style={{ padding: '0 14px', flexShrink: 0, position: 'relative', zIndex: 2 }}>
         <motion.button
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.96 }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => setMenuOpen(v => !v)}
           style={{
             background: menuOpen ? 'var(--surface-2)' : 'none',
@@ -142,16 +142,8 @@ export default function TitleBar() {
           }}
         >
           <div style={{ position: 'relative', width: 26, height: 26, flexShrink: 0 }}>
-            <div style={{
-              position: 'absolute', top: '50%', left: '50%',
-              transform: 'translate(-50%,-50%)',
-              width: 44, height: 44, borderRadius: '50%',
-              background: 'radial-gradient(circle, color-mix(in srgb, var(--accent) 10%, transparent) 0%, transparent 70%)',
-              filter: 'blur(6px)', pointerEvents: 'none',
-            }} />
             <img src="/favicon.png" width={26} height={26} alt="Spire"
-              style={{ borderRadius: 5, display: 'block', position: 'relative',
-                filter: 'drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 15%, transparent))' }}
+              style={{ borderRadius: 5, display: 'block', position: 'relative' }}
             />
           </div>
           <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
@@ -251,7 +243,7 @@ export default function TitleBar() {
                   >
                     <span>{item.label}</span>
                     {item.shortcut && (
-                      <span style={{ fontSize: 11, color: 'var(--text-disabled)', marginLeft: 20 }}>{item.shortcut}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 20 }}>{item.shortcut}</span>
                     )}
                   </button>
                 )

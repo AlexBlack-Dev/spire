@@ -31,7 +31,6 @@ export default function BottomSheet({ open, onClose, title, children }: {
           style={{
             position: 'fixed', inset: 0, zIndex: 250,
             background: 'color-mix(in srgb, var(--surface-0) 70%, transparent)',
-            backdropFilter: 'blur(2px)',
             display: 'flex', alignItems: 'flex-end',
           }}
         >

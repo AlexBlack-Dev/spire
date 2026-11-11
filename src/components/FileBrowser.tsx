@@ -101,15 +101,15 @@ export default function FileBrowser({ noteTitle, onSave, onBack }: {
         </motion.button>
       </div>
 
-      <div style={{ padding: `0 ${dim.sp4}px`, flexShrink: 0, fontSize: dim.textXs, fontWeight: 500, color: 'var(--text-disabled)', wordBreak: 'break-all' }}>
+      <div style={{ padding: `0 ${dim.sp4}px`, flexShrink: 0, fontSize: dim.textXs, fontWeight: 500, color: 'var(--text-tertiary)', wordBreak: 'break-all' }}>
         {currentPath}
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: `${dim.sp2}px ${dim.sp4}px ${dim.sp7}px` }}>
         {loading ? (
-          <div style={{ textAlign: 'center', padding: dim.sp8, color: 'var(--text-disabled)', fontWeight: 600 }}>{t('fb_loading')}</div>
+          <div style={{ textAlign: 'center', padding: dim.sp8, color: 'var(--text-tertiary)', fontWeight: 600 }}>{t('fb_loading')}</div>
         ) : entries.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: dim.sp8, color: 'var(--text-disabled)', fontWeight: 600 }}>{t('fb_empty')}</div>
+          <div style={{ textAlign: 'center', padding: dim.sp8, color: 'var(--text-tertiary)', fontWeight: 600 }}>{t('fb_empty')}</div>
         ) : (
           entries.map((e) => (
             <motion.button key={e.path} whileTap={{ scale: 0.97 }} onClick={() => enterDir(e.path)} style={{

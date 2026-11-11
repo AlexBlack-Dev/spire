@@ -5,7 +5,7 @@ import { useStore } from '../store/useStore';
 import { useT } from '../i18n/useT';
 import { COLOR_HEX } from '../utils/format';
 import { format } from 'date-fns';
-import { dim, useViewport } from '../isMobile';
+import { dim, isMobile, useViewport } from '../isMobile';
 
 export default function TrashView({ onBack }: { onBack?: () => void }) {
   const trash = useStore((s) => s.trash);
@@ -29,6 +29,7 @@ export default function TrashView({ onBack }: { onBack?: () => void }) {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', height: '100%',
+      flex: 1, minWidth: 0,
       background: 'var(--surface-0)', overflow: 'hidden',
     }}>
       {onBack && (
@@ -58,7 +59,7 @@ export default function TrashView({ onBack }: { onBack?: () => void }) {
       )}
 
       {trash.length > 0 && (
-        <div style={{ padding: `${onBack ? dim.sp4 : dim.sp5}px ${dim.sp6}px ${dim.sp3}px`, flexShrink: 0 }}>
+        <div className={isMobile ? undefined : 'editor-page'} style={{ padding: `${onBack ? dim.sp4 : dim.sp5}px ${isMobile ? `${dim.sp6}px` : 'var(--page-pad)'} ${dim.sp3}px`, flexShrink: 0 }}>
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => confirmDelete('__all__', () => emptyTrash())}
@@ -78,9 +79,9 @@ export default function TrashView({ onBack }: { onBack?: () => void }) {
         </div>
       )}
 
-      <div style={{
+      <div className={isMobile ? undefined : 'editor-page'} style={{
         flex: 1, overflowY: 'auto',
-        padding: `0 ${dim.sp6}px ${dim.sp7}px`,
+        padding: `0 ${isMobile ? `${dim.sp6}px` : 'var(--page-pad)'} ${dim.sp7}px`,
         display: 'flex', flexDirection: 'column', gap: dim.sp2,
       }}>
         {trash.length === 0 && (
@@ -101,7 +102,7 @@ export default function TrashView({ onBack }: { onBack?: () => void }) {
               {t('trash_empty')}
             </div>
             <div style={{
-              color: 'var(--text-disabled)', fontSize: dim.textSm, fontWeight: 600,
+              color: 'var(--text-tertiary)', fontSize: dim.textSm, fontWeight: 600,
               marginTop: dim.sp2, maxWidth: 280, lineHeight: 1.5,
             }}>
               {t('trash_empty_desc')}
@@ -133,7 +134,7 @@ export default function TrashView({ onBack }: { onBack?: () => void }) {
               }}>
                 {note.title || t('untitled')}
               </div>
-              <div style={{ fontSize: dim.textXs, fontWeight: 600, color: 'var(--text-disabled)' }}>
+              <div style={{ fontSize: dim.textXs, fontWeight: 600, color: 'var(--text-tertiary)' }}>
                 {format(new Date(note.updatedAt), 'd MMM yyyy, HH:mm')}
               </div>
             </div>

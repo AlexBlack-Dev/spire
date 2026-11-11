@@ -20,7 +20,7 @@ import { useT } from '../i18n/useT';
 import SpreadsheetEditor from './SpreadsheetEditor';
 import TagRow from './TagRow';
 import FormatToolbar from './FormatToolbar';
-import { COLOR_HEX, COLOR_NAMES, getFileInfo, hexToRgba, sanitizeHtml } from '../utils/format';
+import { COLOR_HEX, COLOR_NAMES, getFileInfo, sanitizeHtml } from '../utils/format';
 import { sliceToText } from '../utils/tiptapText';
 import { useFileNoteContent } from '../hooks/useFileNoteContent';
 
@@ -44,6 +44,7 @@ export default function NoteEditor() {
   const [running, setRunning] = useState(false);
   const pendingSaveRef = useRef<{ id: string; content: string } | null>(null);
   const saveTimerRef = useRef<number | null>(null);
+  const titleRef = useRef<HTMLTextAreaElement>(null);
 
   const flushSave = useCallback(() => {
     if (saveTimerRef.current !== null) {
@@ -140,9 +141,16 @@ export default function NoteEditor() {
     }
   }, [activeNoteId, editor, renderedContent, isPlainFile, flushSave]);
 
-  const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (note) updateNote(note.id, { title: e.target.value });
   }, [note, updateNote]);
+
+  useEffect(() => {
+    const el = titleRef.current;
+    if (!el) return;
+    el.style.height = '0px';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [note?.title, note?.id, note?.editMode]);
 
   if (!note) {
     return (
@@ -162,7 +170,7 @@ export default function NoteEditor() {
           <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-tertiary)', marginBottom: 5 }}>
             {t('select_note')}
           </div>
-          <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-disabled)' }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-tertiary)' }}>
             {t('or_create_new')}
           </div>
         </div>
@@ -174,7 +182,7 @@ export default function NoteEditor() {
   const editMode = note.editMode !== false;
   const isScript = !!note.filePath && !isSpreadsheet && SCRIPT_EXTS.includes(ext);
   const previewCard: React.CSSProperties = {
-    background: `linear-gradient(180deg, ${hexToRgba(accentColor, 0.14)} 0%, transparent 38%), var(--surface-1)`,
+    background: 'var(--surface-1)',
     borderRadius: 12,
     borderTop: `3px solid ${accentColor}`,
   };
@@ -188,7 +196,7 @@ export default function NoteEditor() {
       }}
     >
       {/* Header */}
-      <div style={{ padding: isSpreadsheet ? '8px 14px 0' : '20px 24px 0', flexShrink: 0, minWidth: 0 }}>
+      <div style={{ padding: isSpreadsheet ? '8px 14px 0' : '20px var(--page-pad) 0', flexShrink: 0, minWidth: 0 }}>
         <div className="editor-page">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -196,14 +204,24 @@ export default function NoteEditor() {
               <button
                 key={c}
                 onClick={() => updateNote(note.id, { color: c })}
+                aria-label={c}
+                aria-pressed={note.color === c}
+                title={c}
                 style={{
+                  width: 24, height: 24, padding: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'none', border: 'none', borderRadius: '50%',
+                  cursor: 'pointer', outline: 'none',
+                }}
+              >
+                <span style={{
                   width: 14, height: 14, borderRadius: '50%',
                   background: COLOR_HEX[c],
-                  border: note.color === c ? '2.5px solid var(--text-primary)' : '2.5px solid transparent',
-                  cursor: 'pointer', outline: 'none', transition: 'all 0.15s',
-                  transform: note.color === c ? 'scale(1.2)' : 'scale(1)',
-                }}
-              />
+                  border: `2px solid ${note.color === c ? 'var(--text-primary)' : 'transparent'}`,
+                  opacity: note.color === c ? 1 : 0.55,
+                  transition: 'border-color 0.15s, opacity 0.15s',
+                }} />
+              </button>
             ))}
           </div>
 
@@ -232,13 +250,17 @@ export default function NoteEditor() {
 
         {/* Title */}
         {editMode ? (
-          <input
+          <textarea
+            ref={titleRef}
+            rows={1}
             value={note.title}
             onChange={handleTitleChange}
             placeholder={t('title_placeholder')}
+            spellCheck={false}
             style={{
-              background: 'none', border: 'none', outline: 'none',
-              width: '100%', fontSize: 28, fontWeight: 800,
+              background: 'none', border: 'none', outline: 'none', resize: 'none',
+              display: 'block', width: '100%', overflow: 'hidden',
+              fontFamily: 'inherit', fontSize: 28, fontWeight: 800, lineHeight: 1.15,
               color: 'var(--text-primary)', letterSpacing: '-0.03em',
               userSelect: 'text', marginBottom: 8,
             }}
@@ -256,7 +278,7 @@ export default function NoteEditor() {
         {/* Meta */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
-          marginBottom: 16, fontSize: 12, fontWeight: 500, color: 'var(--text-disabled)',
+          marginBottom: 16, fontSize: 12, fontWeight: 500, color: 'var(--text-tertiary)',
         }}>
           <span>{format(new Date(note.updatedAt), 'd MMMM yyyy, HH:mm', { locale: language === 'ru' ? ru : enUS })}</span>
           <span style={{ color: 'var(--border-subtle)' }}>·</span>
@@ -276,7 +298,11 @@ export default function NoteEditor() {
 
       {/* Toolbar - only show for editable rich-text formats */}
       {editMode && editor && !renderedContent && !isPlainFile && (
-        <FormatToolbar editor={editor} />
+        <div style={{ padding: '0 var(--page-pad)', flexShrink: 0, minWidth: 0 }}>
+          <div className="editor-page">
+            <FormatToolbar editor={editor} />
+          </div>
+        </div>
       )}
 
       {/* Editor / Rendered content */}
@@ -290,7 +316,7 @@ export default function NoteEditor() {
           />
         </div>
       ) : isPlainFile ? (
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px 48px', userSelect: 'text', minWidth: 0 }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px var(--page-pad) 48px', userSelect: 'text', minWidth: 0 }}>
           <div className="editor-page">
           {!editMode ? (
             <div style={{ ...previewCard, padding: '20px 22px', minHeight: '50vh' }}>
@@ -343,7 +369,7 @@ export default function NoteEditor() {
           </div>
         </div>
       ) : (
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 48px', userSelect: 'text', minWidth: 0 }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '24px var(--page-pad) 48px', userSelect: 'text', minWidth: 0 }}>
           <div className="editor-page">
           {!editMode ? (
             <div style={{ ...previewCard, padding: '24px 26px' }}>

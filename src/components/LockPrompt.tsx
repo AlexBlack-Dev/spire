@@ -209,7 +209,7 @@ export default function LockPrompt({ id, kind, mode, onSuccess, onClose }: {
                 {t('lock_keep_unlocked')}
               </div>
               <div style={{ display: 'flex', gap: dim.sp2, flexWrap: 'wrap' }}>
-                <div style={{ fontSize: dim.textXs, fontWeight: 600, color: 'var(--text-disabled)', marginRight: dim.sp1 }}>
+                <div style={{ fontSize: dim.textXs, fontWeight: 600, color: 'var(--text-tertiary)', marginRight: dim.sp1 }}>
                   {t('lock_for_time')}
                 </div>
                 {DURATIONS.map((d) => (
@@ -231,7 +231,7 @@ export default function LockPrompt({ id, kind, mode, onSuccess, onClose }: {
               </div>
               {kind === 'note' && (
                 <div style={{ display: 'flex', gap: dim.sp2, flexWrap: 'wrap' }}>
-                  <div style={{ fontSize: dim.textXs, fontWeight: 600, color: 'var(--text-disabled)', marginRight: dim.sp1 }}>
+                  <div style={{ fontSize: dim.textXs, fontWeight: 600, color: 'var(--text-tertiary)', marginRight: dim.sp1 }}>
                     {t('lock_for_opens')}
                   </div>
                   {OPENS.map((o) => (

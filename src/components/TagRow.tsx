@@ -48,7 +48,7 @@ export default function TagRow({ note, updateNote }: { note: Note; updateNote: (
         aria-label={t('add_tag')}
         style={{
           background: 'none', border: 'none', outline: 'none',
-          fontSize: 12, fontWeight: 500, color: 'var(--text-disabled)',
+          fontSize: 12, fontWeight: 500, color: 'var(--text-tertiary)',
           width: 55, userSelect: 'text',
         }}
       />

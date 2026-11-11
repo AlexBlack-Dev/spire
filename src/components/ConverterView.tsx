@@ -70,7 +70,7 @@ export default function ConverterView() {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, background: 'var(--surface-0)' }}>
       {/* Header */}
-      <div style={{ padding: '12px 24px 0', flexShrink: 0 }}>
+      <div style={{ padding: '12px var(--page-pad) 0', flexShrink: 0 }}>
         <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>
           {t('conv_title')}
         </h2>
@@ -79,7 +79,7 @@ export default function ConverterView() {
 
       {/* Body — fills remaining space */}
       <div
-        style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, padding: '14px 24px' }}
+        style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, padding: '14px var(--page-pad)' }}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
@@ -174,7 +174,7 @@ export default function ConverterView() {
               {/* Format row */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-disabled)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 5 }}>{t('conv_input')}</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 5 }}>{t('conv_input')}</div>
                   <div style={{
                     background: 'var(--surface-1)', border: '1px solid var(--border-default)',
                     borderRadius: 8, padding: '8px 12px',
@@ -185,7 +185,7 @@ export default function ConverterView() {
                 </div>
                 <ArrowRight size={16} color="var(--text-disabled)" style={{ marginTop: 15 }} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-disabled)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 5 }}>{t('conv_output')}</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 5 }}>{t('conv_output')}</div>
                   <div style={{
                     display: 'flex', flexWrap: 'wrap', gap: 4,
                     background: 'var(--surface-1)', border: '1px solid var(--border-default)',
@@ -222,7 +222,7 @@ export default function ConverterView() {
                     borderRadius: 10, padding: 12, flexShrink: 0,
                   }}
                 >
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-disabled)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>{t('conv_preview')}</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>{t('conv_preview')}</div>
                   {isImage(converterOutputFormat) ? (
                     <div style={{ textAlign: 'center' }}>
                       <img src={converterPreview} alt="Preview" style={{ maxWidth: '100%', maxHeight: 300, borderRadius: 8, display: 'inline-block' }} />

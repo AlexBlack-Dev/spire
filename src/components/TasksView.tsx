@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type CSSProperties } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, Flag, Pencil, Check, Circle } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useT } from '../i18n/useT';
 import type { Dict } from '../i18n/translations';
-import { dim } from '../isMobile';
+import { dim, isMobile } from '../isMobile';
 import { formatDateFn } from '../utils/format';
 import type { TaskPriority } from '../types';
 
@@ -73,6 +73,37 @@ export default function TasksView() {
 
   const done = tasks.filter((task) => task.completed).length;
   const progress = tasks.length > 0 ? (done / tasks.length) * 100 : 0;
+  const column: CSSProperties = {
+    width: '100%', maxWidth: `calc(var(--content-max) + var(--page-pad) * 2)`, margin: '0 auto', minWidth: 0,
+    padding: isMobile ? `0 ${dim.sp6}px` : '0 var(--page-pad)',
+  };
+
+  const priorityPicker = (
+    <div style={{ display: 'flex', gap: dim.sp1, flexShrink: 0, marginLeft: 'auto' }}>
+      {(['low', 'medium', 'high'] as TaskPriority[]).map((p) => (
+        <motion.button
+          key={p}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setPriority(p)}
+          aria-label={PRIORITY[p].label}
+          aria-pressed={priority === p}
+          title={PRIORITY[p].label}
+          style={{
+            width: 44, height: 44,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+            background: priority === p ? 'var(--accent-dim)' : 'transparent',
+            border: 'none',
+            borderRadius: dim.radiusSm,
+            color: priority === p ? PRIORITY[p].color : 'var(--text-tertiary)',
+            cursor: 'pointer', transition: 'background 0.12s, color 0.12s',
+          }}
+        >
+          <Flag size={16} fill={priority === p ? PRIORITY[p].color : 'none'} />
+        </motion.button>
+      ))}
+    </div>
+  );
 
   return (
     <motion.div
@@ -86,137 +117,123 @@ export default function TasksView() {
       {/* Header */}
       <div style={{
         flexShrink: 0,
-        borderBottom: '1px solid var(--border-subtle)',
         minWidth: 0,
       }}>
-        <div style={{ padding: `${dim.sp3}px ${dim.sp6}px 0` }}>
+        <div style={{ ...column, borderBottom: '1px solid var(--border-subtle)' }}>
+          <div style={{ paddingTop: dim.sp3 }}>
+            <div style={{ marginBottom: dim.sp5 }}>
+              <h2 style={{
+                fontSize: dim.textXl, fontWeight: 800,
+                color: 'var(--text-primary)', letterSpacing: '-0.03em', marginBottom: dim.sp1,
+              }}>
+                {t('tasks_title')}
+              </h2>
+              <div style={{ fontSize: dim.textSm, fontWeight: 600, color: 'var(--text-tertiary)' }}>
+                {tasks.filter(task => !task.completed).length} {t('tasks_active')} · {done} {t('tasks_done')}
+              </div>
+            </div>
+          </div>
+
+          {/* Progress */}
           <div style={{ marginBottom: dim.sp5 }}>
-            <h2 style={{
-              fontSize: dim.textXl, fontWeight: 800,
-              color: 'var(--text-primary)', letterSpacing: '-0.03em', marginBottom: dim.sp1,
+            <div style={{
+              height: 3, background: 'var(--surface-3)',
+              borderRadius: 99, overflow: 'hidden',
             }}>
-              {t('tasks_title')}
-            </h2>
-            <div style={{ fontSize: dim.textSm, fontWeight: 600, color: 'var(--text-tertiary)' }}>
-              {tasks.filter(task => !task.completed).length} {t('tasks_active')} · {done} {t('tasks_done')}
-            </div>
-          </div>
-        </div>
-
-        {/* Progress */}
-        <div style={{
-          padding: `0 ${dim.sp6}px`,
-          marginBottom: dim.sp5,
-        }}>
-          <div style={{
-            height: 3, background: 'var(--surface-3)',
-            borderRadius: 99, overflow: 'hidden',
-          }}>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ type: 'spring', stiffness: 100, damping: 20 }}
-              style={{ height: '100%', background: 'var(--accent)', borderRadius: 99 }}
-            />
-          </div>
-        </div>
-
-        {/* Input */}
-        <div style={{ display: 'flex', gap: dim.sp2, alignItems: 'center', marginBottom: dim.sp5, padding: `0 ${dim.sp6}px`, overflow: 'hidden', minWidth: 0 }}>
-          <div style={{
-            flex: 1, display: 'flex', alignItems: 'center', gap: dim.sp2, minWidth: 0,
-            background: 'var(--surface-1)', border: '1px solid var(--border-default)',
-            borderRadius: dim.radius, padding: `${dim.sp3}px ${dim.sp4}px`,
-            transition: 'border-color 0.15s',
-          }}
-            onFocusCapture={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
-            onBlurCapture={e => (e.currentTarget.style.borderColor = 'var(--border-default)')}
-          >
-            <Plus size={dim.iconSm} color="var(--text-disabled)" />
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-              placeholder={t('add_task')}
-              style={{
-                flex: 1, background: 'none', border: 'none', outline: 'none',
-                color: 'var(--text-primary)', fontSize: dim.textMd, fontWeight: 600,
-                userSelect: 'text', minWidth: 0,
-              }}
-            />
-            <div style={{ flex: 1, display: 'flex', gap: dim.sp1, flexShrink: 0 }}>
-              {(['low', 'medium', 'high'] as TaskPriority[]).map((p) => (
-                <motion.button
-                  key={p}
-                  whileTap={{ scale: 0.88 }}
-                  onClick={() => setPriority(p)}
-                  aria-label={PRIORITY[p].label}
-                  aria-pressed={priority === p}
-                  title={PRIORITY[p].label}
-                  style={{
-                    width: 40, height: 40,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                    background: priority === p ? 'var(--accent-dim)' : 'transparent',
-                    border: 'none',
-                    borderRadius: dim.radiusSm,
-                    color: priority === p ? PRIORITY[p].color : 'var(--text-disabled)',
-                    cursor: 'pointer', transition: 'background 0.12s, color 0.12s',
-                  }}
-                >
-                  <Flag size={16} fill={priority === p ? PRIORITY[p].color : 'none'} />
-                </motion.button>
-              ))}
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ type: 'spring', stiffness: 100, damping: 20 }}
+                style={{ height: '100%', background: 'var(--accent)', borderRadius: 99 }}
+              />
             </div>
           </div>
 
-          <motion.button
-            whileHover={{ background: 'var(--accent-hover)' }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleCreate}
-            aria-label={t('add')}
-            style={{
-              width: 44, height: 44,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'var(--accent)', border: 'none',
-              borderRadius: dim.radius, color: 'var(--on-accent)',
-              cursor: 'pointer', transition: 'background 0.15s',
-              flexShrink: 0,
+          {/* Input */}
+          <div style={{ display: 'flex', gap: dim.sp2, alignItems: 'center', marginBottom: isMobile ? dim.sp3 : dim.sp5, minWidth: 0 }}>
+            <div style={{
+              flex: 1, display: 'flex', alignItems: 'center', gap: dim.sp2, minWidth: 0,
+              background: 'var(--surface-1)', border: '1px solid var(--border-default)',
+              borderRadius: dim.radius, padding: `${dim.sp3}px ${dim.sp4}px`,
+              transition: 'border-color 0.15s',
             }}
-          >
-            <Plus size={dim.iconMd} strokeWidth={2.5} />
-          </motion.button>
-        </div>
+              onFocusCapture={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
+              onBlurCapture={e => (e.currentTarget.style.borderColor = 'var(--border-default)')}
+            >
+              <Plus size={dim.iconSm} color="var(--text-disabled)" />
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                placeholder={t('add_task')}
+                style={{
+                  flex: 1, background: 'none', border: 'none', outline: 'none',
+                  color: 'var(--text-primary)', fontSize: dim.textMd, fontWeight: 600,
+                  userSelect: 'text', minWidth: 0,
+                }}
+              />
+              {!isMobile && priorityPicker}
+            </div>
 
-        {/* Filter tabs */}
-        <div style={{ display: 'flex', gap: 0, padding: `0 ${dim.sp6}px`, marginBottom: -1 }}>
-          {([
-            { id: 'active', label: t('filter_active') },
-            { id: 'done',   label: t('filter_done') },
-            { id: 'all',    label: t('filter_all') },
-          ] as { id: TaskFilter; label: string }[]).map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setFilter(tab.id)}
-              aria-pressed={filter === tab.id}
+            <motion.button
+              whileHover={{ background: 'var(--accent-hover)' }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleCreate}
+              aria-label={t('add')}
               style={{
-                minHeight: 44,
-                padding: `${dim.sp3}px ${dim.sp5}px`,
-                background: 'none', border: 'none',
-                borderBottom: filter === tab.id ? '2px solid var(--accent)' : '2px solid transparent',
-                color: filter === tab.id ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                fontSize: dim.textSm, fontWeight: filter === tab.id ? 800 : 600,
-                cursor: 'pointer', transition: 'border-color 0.15s, color 0.15s',
+                width: 44, height: 44,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'var(--accent)', border: 'none',
+                borderRadius: dim.radius, color: 'var(--on-accent)',
+                cursor: 'pointer', transition: 'background 0.15s',
+                flexShrink: 0,
               }}
             >
-              {tab.label}
-            </button>
-          ))}
+              <Plus size={dim.iconMd} strokeWidth={2.5} />
+            </motion.button>
+          </div>
+
+          {isMobile && (
+            <div style={{ display: 'flex', marginBottom: dim.sp5, marginTop: -dim.sp1 }}>
+              {priorityPicker}
+            </div>
+          )}
+
+          {/* Filter tabs */}
+          <div style={{ display: 'flex', gap: 0, marginBottom: -1 }}>
+            {([
+              { id: 'active', label: t('filter_active') },
+              { id: 'done',   label: t('filter_done') },
+              { id: 'all',    label: t('filter_all') },
+            ] as { id: TaskFilter; label: string }[]).map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setFilter(tab.id)}
+                aria-pressed={filter === tab.id}
+                style={{
+                  minHeight: 44,
+                  padding: `${dim.sp3}px ${dim.sp5}px`,
+                  background: 'none', border: 'none',
+                  borderBottom: filter === tab.id ? '2px solid var(--accent)' : '2px solid transparent',
+                  color: filter === tab.id ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                  fontSize: dim.textSm, fontWeight: filter === tab.id ? 800 : 600,
+                  cursor: 'pointer', transition: 'border-color 0.15s, color 0.15s',
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* List */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: `${dim.sp3}px ${dim.sp6}px ${dim.sp7}px`, minWidth: 0 }}>
+      <div style={{ flex: 1, overflowY: 'auto', minWidth: 0 }}>
+        <div style={{
+          ...column,
+          paddingTop: dim.sp3, paddingBottom: dim.sp7,
+          display: 'flex', flexDirection: 'column', minHeight: '100%',
+        }}>
         <AnimatePresence>
           {filtered.length === 0 ? (
             <motion.div
@@ -224,8 +241,8 @@ export default function TasksView() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               style={{
-                padding: '56px 0', textAlign: 'center',
-                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                flex: 1, minHeight: 280, padding: '40px 0', textAlign: 'center',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
               }}
             >
               <div style={{
@@ -240,7 +257,7 @@ export default function TasksView() {
                 {filter === 'done' ? t('no_tasks_done') : t('no_tasks')}
               </div>
               <div style={{
-                color: 'var(--text-disabled)', fontSize: dim.textSm, fontWeight: 600,
+                color: 'var(--text-tertiary)', fontSize: dim.textSm, fontWeight: 600,
                 marginTop: dim.sp2, maxWidth: 280, lineHeight: 1.5, padding: `0 ${dim.sp4}px`,
               }}>
                 {filter === 'done' ? t('no_tasks_done_desc') : t('no_tasks_desc')}
@@ -258,6 +275,7 @@ export default function TasksView() {
                 style={{
                   display: 'flex', alignItems: 'center', gap: dim.sp2,
                   padding: `${dim.sp4}px ${dim.sp3}px`, borderRadius: dim.radiusSm, marginBottom: 3,
+                  marginLeft: isMobile ? 0 : -dim.sp3, marginRight: isMobile ? 0 : -dim.sp3,
                   opacity: task.completed ? 0.45 : 1,
                   background: 'transparent',
                   transition: 'background 0.12s',
@@ -271,7 +289,7 @@ export default function TasksView() {
                   aria-label={task.completed ? t('filter_active') : t('completed')}
                   aria-pressed={task.completed}
                   style={{
-                    width: 40, height: 40,
+                    width: isMobile ? 44 : 40, height: isMobile ? 44 : 40,
                     flexShrink: 0, cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     background: 'none', border: 'none', padding: 0,
@@ -306,14 +324,18 @@ export default function TasksView() {
                   />
                 ) : (
                   <span
+                    className={isMobile ? 'clamp-2' : undefined}
                     onClick={() => !task.completed && startEdit(task)}
                     style={{
                       flex: 1, fontSize: dim.textMd, fontWeight: 600,
-                      color: task.completed ? 'var(--text-disabled)' : 'var(--text-primary)',
+                      color: task.completed ? 'var(--text-tertiary)' : 'var(--text-primary)',
                       textDecoration: task.completed ? 'line-through' : 'none',
                       cursor: task.completed ? 'default' : 'text',
                       userSelect: 'text',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: isMobile ? 'clip' : 'ellipsis',
+                      whiteSpace: isMobile ? 'normal' : 'nowrap',
+                      lineHeight: isMobile ? 1.35 : undefined,
                     }}
                   >
                     {task.text}
@@ -322,26 +344,30 @@ export default function TasksView() {
 
                 <PRIORITY_BADGE task={task} t={t} />
 
-                <span style={{
-                  fontSize: dim.textXs, fontWeight: 600, color: 'var(--text-disabled)', flexShrink: 0,
-                }}>
-                  {formatDate(task.createdAt)}
-                </span>
+                {!isMobile && (
+                  <span style={{
+                    fontSize: dim.textXs, fontWeight: 600, color: 'var(--text-tertiary)', flexShrink: 0,
+                  }}>
+                    {formatDate(task.createdAt)}
+                  </span>
+                )}
 
-                <motion.button
-                  whileTap={{ scale: 0.85 }}
-                  onClick={() => startEdit(task)}
-                  aria-label={t('edit_mode')}
-                  title={t('edit_mode')}
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: editingId === task.id ? 'var(--accent)' : 'var(--text-tertiary)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    width: 40, height: 40, flexShrink: 0, borderRadius: dim.radiusSm,
-                  }}
-                >
-                  <Pencil size={dim.iconSm} />
-                </motion.button>
+                {!isMobile && (
+                  <motion.button
+                    whileTap={{ scale: 0.85 }}
+                    onClick={() => startEdit(task)}
+                    aria-label={t('edit_mode')}
+                    title={t('edit_mode')}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: editingId === task.id ? 'var(--accent)' : 'var(--text-tertiary)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 40, height: 40, flexShrink: 0, borderRadius: dim.radiusSm,
+                    }}
+                  >
+                    <Pencil size={dim.iconSm} />
+                  </motion.button>
+                )}
 
                 <motion.button
                   whileTap={{ scale: 0.85 }}
@@ -351,7 +377,7 @@ export default function TasksView() {
                   style={{
                     background: 'none', border: 'none', cursor: 'pointer',
                     color: 'var(--c-rose)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    width: 40, height: 40, flexShrink: 0, borderRadius: dim.radiusSm,
+                    width: isMobile ? 44 : 40, height: isMobile ? 44 : 40, flexShrink: 0, borderRadius: dim.radiusSm,
                   }}
                 >
                   <Trash2 size={dim.iconMd} />
@@ -360,6 +386,7 @@ export default function TasksView() {
             ))
           )}
         </AnimatePresence>
+        </div>
       </div>
     </motion.div>
   );

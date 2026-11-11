@@ -22,7 +22,7 @@ export default function PrivateEmpty() {
         <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 5 }}>
           {t('private_empty_title')}
         </div>
-        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-disabled)', maxWidth: 320, lineHeight: 1.5 }}>
+        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-tertiary)', maxWidth: 320, lineHeight: 1.5 }}>
           {t('private_empty_desc')}
         </div>
       </div>
