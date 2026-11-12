@@ -56,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Locked notes are never written to disk as plaintext, even while the editor is open
 - Sensitive paths cannot be listed through the in-app file browser
 - `cargo audit` findings in `quick-xml`, `quinn-proto`, `rustls`, `rustls-webpki` and `webpki-roots` fixed by lockfile updates
+- Rust path tests use platform-independent separators so the CI Rust job passes on Linux
 
 ### Security
 

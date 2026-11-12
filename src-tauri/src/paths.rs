@@ -60,7 +60,7 @@ mod tests {
     fn blocks_sensitive_directories_and_files() {
         assert!(is_sensitive_path(Path::new("/home/user/.ssh/id_ed25519")));
         assert!(is_sensitive_path(Path::new(
-            "C:\\Users\\user\\.aws\\credentials"
+            "C:/Users/user/.aws/credentials"
         )));
         assert!(is_sensitive_path(Path::new("/tmp/.npmrc")));
     }
@@ -69,7 +69,7 @@ mod tests {
     fn allows_regular_files() {
         assert!(!is_sensitive_path(Path::new("/home/user/notes/todo.txt")));
         assert!(!is_sensitive_path(Path::new(
-            "C:\\Users\\user\\Documents\\note.md"
+            "C:/Users/user/Documents/note.md"
         )));
     }
 }
