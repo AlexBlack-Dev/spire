@@ -25,21 +25,25 @@ android {
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
     }
     signingConfigs {
-        create("release") {
-            val keystorePath = System.getenv("SPIRE_KEYSTORE_PATH")
-                ?: file("debug.keystore").absolutePath
+        val keystorePath = System.getenv("SPIRE_KEYSTORE_PATH")
+        if (!keystorePath.isNullOrEmpty()) {
             val keystoreFile = file(keystorePath)
-            val isReleaseBuild = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
-            if (keystoreFile.exists()) {
-                storeFile = keystoreFile
-                storePassword = System.getenv("SPIRE_KEYSTORE_PASSWORD")?.takeIf { it.isNotEmpty() } ?: "android"
-                keyAlias = System.getenv("SPIRE_KEY_ALIAS")?.takeIf { it.isNotEmpty() } ?: "androiddebugkey"
-                keyPassword = System.getenv("SPIRE_KEY_PASSWORD")?.takeIf { it.isNotEmpty() } ?: "android"
-            } else if (isReleaseBuild) {
+            if (!keystoreFile.exists()) {
+                throw GradleException("SPIRE_KEYSTORE_PATH points to a missing file: $keystorePath")
+            }
+            val keystorePassword = System.getenv("SPIRE_KEYSTORE_PASSWORD")
+            val keyAliasValue = System.getenv("SPIRE_KEY_ALIAS")
+            val keyPasswordValue = System.getenv("SPIRE_KEY_PASSWORD")
+            if (keystorePassword.isNullOrEmpty() || keyAliasValue.isNullOrEmpty() || keyPasswordValue.isNullOrEmpty()) {
                 throw GradleException(
-                    "Signing keystore not found at $keystorePath. " +
-                        "Set SPIRE_KEYSTORE_PATH or place debug.keystore next to build.gradle.kts."
+                    "SPIRE_KEYSTORE_PASSWORD, SPIRE_KEY_ALIAS and SPIRE_KEY_PASSWORD are required for release signing"
                 )
+            }
+            create("release") {
+                storeFile = keystoreFile
+                storePassword = keystorePassword
+                keyAlias = keyAliasValue
+                keyPassword = keyPasswordValue
             }
         }
     }
@@ -57,7 +61,7 @@ android {
             }
         }
         getByName("release") {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = false
         }
     }

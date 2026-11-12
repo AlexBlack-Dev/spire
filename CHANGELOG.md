@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - IndexedDB-backed persistence with automatic migration from the legacy `localStorage` store, a serialized write queue and a restore point that survives reloads
 - Storage failures surface as a toast and an in-app error log entry instead of silently losing data
 - `ErrorBoundary` around the app with a localized fallback screen and a reload action
+- CI Rust job (`cargo fmt --check`, `cargo clippy -D warnings`, `cargo test`, `cargo audit`) and a production `npm audit` gate
+- Dependabot configuration for npm, Cargo and GitHub Actions
 
 ### Changed
 
@@ -31,10 +33,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Script execution supports `.bat`, `.cmd`, `.ps1` and `.sh` only; `.vbs`, `.js` and `cscript` were dropped
 - `get_storage_root` returns the user home directory on desktop instead of an Android path
 - Desktop window minimum width is 900 px and the GPU-disabling Chromium flag was removed
+- Release signing requires `SPIRE_KEYSTORE_BASE64`, `SPIRE_KEYSTORE_PASSWORD`, `SPIRE_KEY_ALIAS` and `SPIRE_KEY_PASSWORD` repository secrets
 
 ### Removed
 
 - Decorative gradients, glow and backdrop blur on the splash, welcome, update banner, mobile header, settings and bottom sheet, plus the pulsing update badge and the welcome tagline
+- Committed `debug.keystore`; release builds refuse to sign without a private keystore
 
 ### Fixed
 
@@ -45,7 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Trash view keeps the same centered column as the other views instead of shrinking to its content
 - Settings "show file extensions" row keeps a 16px gap between the label and the switch
 - Release workflow uses `android-actions/setup-android` v4, which no longer installs the removed `tools` SDK package and runs on Node 24
-- Release APK keeps the stable committed debug keystore, so updates install over previously released versions
+- Release APKs are no longer signed with a public debug key
 - Locked notes are never written to disk as plaintext, even while the editor is open
 - Sensitive paths cannot be listed through the in-app file browser
 

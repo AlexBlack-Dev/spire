@@ -15,16 +15,11 @@ dist-ssr
 # Rust / Tauri build artifacts
 src-tauri/target/
 
-# Android signing (stable debug keystore is committed for update compatibility)
+# Android signing (release keystores are never committed)
 *.keystore
-!src-tauri/gen/android/app/debug.keystore
-src-tauri/gen/android/app/release.keystore
-src-tauri/gen/android/app/tauri.properties
-release.keystore
-release.keystore.pass
-release.keystore.b64
 *.jks
 *.p12
+src-tauri/gen/android/app/tauri.properties
 
 # Editor directories and files
 .vscode/*

@@ -80,6 +80,9 @@ jobs:
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       NDK_HOME: /usr/local/lib/android/sdk/ndk/27.0.12077973
+      SPIRE_KEYSTORE_PASSWORD: ${{ secrets.SPIRE_KEYSTORE_PASSWORD }}
+      SPIRE_KEY_ALIAS: ${{ secrets.SPIRE_KEY_ALIAS }}
+      SPIRE_KEY_PASSWORD: ${{ secrets.SPIRE_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
@@ -125,19 +128,16 @@ jobs:
       - name: Sync version from tag
         run: node scripts/sync-version.mjs "${GITHUB_REF_NAME#v}"
 
-      - name: Generate Android signing keystore
+      - name: Prepare Android signing keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.SPIRE_KEYSTORE_BASE64 }}
         run: |
-          if [ ! -f "src-tauri/gen/android/app/debug.keystore" ]; then
-            keytool -genkeypair -v \
-              -keystore src-tauri/gen/android/app/debug.keystore \
-              -alias "${SPIRE_KEY_ALIAS:-androiddebugkey}" \
-              -keyalg RSA -keysize 2048 -validity 10000 \
-              -storepass "${SPIRE_KEYSTORE_PASSWORD:-android}" \
-              -keypass "${SPIRE_KEY_PASSWORD:-android}" \
-              -dname "CN=Spire, OU=Spire, O=Spire, L=City, ST=State, C=US"
-          else
-            echo "Stable keystore found, keeping signature"
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::SPIRE_KEYSTORE_BASE64 is not configured; refusing to sign a release with a public debug key"
+            exit 1
           fi
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/spire-release.keystore"
+          echo "SPIRE_KEYSTORE_PATH=$RUNNER_TEMP/spire-release.keystore" >> "$GITHUB_ENV"
 
       - name: Write tauri.properties (versionCode from tag)
         run: |
@@ -151,13 +151,13 @@ jobs:
 
       - name: Verify signing keystore
         run: |
-          if [ ! -f "src-tauri/gen/android/app/debug.keystore" ]; then
+          if [ ! -f "$SPIRE_KEYSTORE_PATH" ]; then
             echo "::error::Android signing keystore is missing"
             exit 1
           fi
-          keytool -list -keystore src-tauri/gen/android/app/debug.keystore \
-            -alias "${SPIRE_KEY_ALIAS:-androiddebugkey}" \
-            -storepass "${SPIRE_KEYSTORE_PASSWORD:-android}" > /dev/null
+          keytool -list -keystore "$SPIRE_KEYSTORE_PATH" \
+            -alias "${SPIRE_KEY_ALIAS}" \
+            -storepass "${SPIRE_KEYSTORE_PASSWORD}" > /dev/null
 
       - name: Initialize Tauri Android
         run: |
