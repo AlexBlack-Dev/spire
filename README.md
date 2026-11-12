@@ -22,9 +22,9 @@ Multifunctional note-taking app built with **Tauri v2 + React + TypeScript**.
 - **Tasks** — task list with priorities
 - **File Browser** — directory navigation, file saving
 - **File Notes** — open any file as a note: raw text editing, spreadsheets (XLSX/XLS/ODS), CSV/JSON/MD preview
-- **Run Scripts** — execute .bat/.cmd/.ps1/.vbs/.js/.sh files directly from the note editor (Windows)
+- **Run Scripts** — execute .bat/.cmd/.ps1/.sh files directly from the note editor (Windows, Linux)
 - **Converter** — convert between text and image formats
-- **Note Lock** — password protection with PBKDF2 hashing, lock timer and open-count limits
+- **Note Lock** — AES-256-GCM encryption at rest with PBKDF2 key derivation, lock timer and open-count limits
 - **Trash** — restore or permanently delete notes (desktop + mobile)
 - **Backup** — export/import all data as JSON with validation and a pre-import restore point
 - **Themes** — dark and light themes with custom accent color
@@ -91,9 +91,9 @@ npm run tauri android build
 
 ## Testing
 
-- `npm run test` — 54 Vitest specs covering store slices, backup validation, file-note saving, password rehashing, formatting and en/ru parity.
+- `npm run test` — 58 Vitest specs covering store slices, backup validation, file-note saving, note encryption, password rehashing, formatting and en/ru parity.
 - `cargo test` — 10 Rust tests for path rules, atomic writes and script validation.
-- `npm run lint` and `npm run build` are part of the CI quality gate.
+- `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `npm audit --omit=dev --audit-level=high` and `cargo audit` are part of the CI quality gate.
 
 ## Project Structure
 
@@ -112,11 +112,14 @@ src/
 │   ├── FileBrowser.tsx       # File browser
 │   ├── LockPrompt.tsx        # Password prompt
 │   ├── LockedNoteView.tsx    # Locked note placeholder
+│   ├── ErrorBoundary.tsx     # Localized crash fallback
 │   ├── SplashScreen.tsx      # Splash screen
 │   ├── SettingsModal.tsx     # Settings (desktop)
 │   └── MobileSettings.tsx    # Settings (mobile)
 ├── store/
 │   ├── useStore.ts           # Zustand store (composed from slices)
+│   ├── persistStorage.ts     # IndexedDB persistence, legacy migration, restore point
+│   ├── noteCrypto.ts         # AES-GCM note encryption and session keys
 │   ├── types.ts              # Store types and slice helpers
 │   ├── helpers.ts            # Shared store helpers (hashing, converters)
 │   └── slices/               # Store slices (notes, tasks, folders, locks, ui, settings, converter)
@@ -162,7 +165,7 @@ The workflow:
 3. Builds the Windows installer (NSIS/MSI) and the Android APK.
 4. Creates a GitHub Release with download links.
 
-Android APKs are signed with the debug keystore committed at `src-tauri/gen/android/app/debug.keystore` (alias `androiddebugkey`, password `android`). The workflow regenerates it only when the file is missing, so release APKs keep the same signature and install over previously released versions. To use a private keystore instead, set `SPIRE_KEYSTORE_PATH`, `SPIRE_KEYSTORE_PASSWORD`, `SPIRE_KEY_ALIAS` and `SPIRE_KEY_PASSWORD` in the build environment.
+Release APKs are signed with a private keystore supplied by the build environment: `SPIRE_KEYSTORE_BASE64` (base64 of the keystore file), `SPIRE_KEYSTORE_PASSWORD`, `SPIRE_KEY_ALIAS` and `SPIRE_KEY_PASSWORD` must be set as repository secrets. The release workflow fails when the keystore is missing instead of falling back to a debug key. Debug builds use the debug key that Gradle generates on the build machine.
 
 `versionCode` and `versionName` are derived from the tag (`v1.2.0` → `10200` / `1.2.0`) and written to `tauri.properties` during the build.
 
@@ -173,10 +176,16 @@ Android APKs are signed with the debug keystore committed at `src-tauri/gen/andr
 - File writes are atomic and capped (25 MB text/binary, 50 MB images, 512 MB downloads).
 - Spreadsheet files are capped at 25 MB and parsed without macros, styles or HTML cells.
 - File operations are restricted to user directories; sensitive OS paths are rejected by the Rust layer.
-- Scripts run from a canonical path; symlinks and Windows `%`/`!` paths are rejected.
+- Scripts run from a canonical path; symlinks, Windows `%`/`!` paths and `.vbs`/`.js` files are rejected.
+- Sensitive paths are blocked for reads, writes, renames and directory listings.
 - The opener plugin is limited to opening URLs and paths.
 - Production builds use a strict Content Security Policy; note content is sanitized with DOMPurify.
 - Note passwords are hashed with PBKDF2 (SHA-256, 210 000 iterations, per-note salt).
+- Locked notes are encrypted at rest with AES-256-GCM. The content key is derived from the password with PBKDF2-SHA256 (600 000 iterations) and kept only in memory for the unlocked session.
+- Notes, tasks and folders are stored in IndexedDB, not `localStorage`, so note size is no longer bounded by the 5 MB web storage quota.
+- Opening a file is capped in the UI as well (10 MB text, 20 MB spreadsheets) before it is read into memory.
+
+Report vulnerabilities through the private channel described in [SECURITY.md](SECURITY.md).
 
 ## License
 

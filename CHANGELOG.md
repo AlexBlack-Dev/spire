@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ErrorBoundary` around the app with a localized fallback screen and a reload action
 - CI Rust job (`cargo fmt --check`, `cargo clippy -D warnings`, `cargo test`, `cargo audit`) and a production `npm audit` gate
 - Dependabot configuration for npm, Cargo and GitHub Actions
+- `SECURITY.md` with supported versions and a private reporting channel
 
 ### Changed
 
