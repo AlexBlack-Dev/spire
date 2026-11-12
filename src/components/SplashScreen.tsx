@@ -4,12 +4,14 @@ import { useStore } from '../store/useStore';
 
 export default function SplashScreen() {
   const splashDone = useStore((s) => s.splashDone);
+  const hydrated = useStore((s) => s.hydrated);
   const setSplashDone = useStore((s) => s.setSplashDone);
 
   useEffect(() => {
-    const timer = setTimeout(setSplashDone, 1400);
+    if (!hydrated) return;
+    const timer = setTimeout(setSplashDone, 300);
     return () => clearTimeout(timer);
-  }, [setSplashDone]);
+  }, [hydrated, setSplashDone]);
 
   return (
     <AnimatePresence>

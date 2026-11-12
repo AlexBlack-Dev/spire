@@ -19,7 +19,7 @@ import LockedNoteView from './components/LockedNoteView';
 import { useStore } from './store/useStore';
 import { useT } from './i18n/useT';
 import { isMobile } from './isMobile';
-import { COLOR_HEX } from './utils/format';
+import { COLOR_HEX, readableOn } from './utils/format';
 import './index.css';
 
 const MIGRATION_FLAG = 'spire-migrated';
@@ -44,10 +44,12 @@ export default function App() {
   const setSplashDone = useStore((s) => s.setSplashDone);
   const theme = useStore((s) => s.theme);
   const accentColor = useStore((s) => s.accentColor);
+  const language = useStore((s) => s.language);
   const t = useT();
   const lockedNoteExpiries = useStore((s) => s.lockedNoteExpiries);
   const lockedNoteOpens = useStore((s) => s.lockedNoteOpens);
   const lockPromptState = useStore((s) => s.lockPromptState);
+  const hydrated = useStore((s) => s.hydrated);
   const [migrationDone, setMigrationDone] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
@@ -112,13 +114,15 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.lang = language;
     const accentHex = COLOR_HEX[accentColor];
     document.documentElement.style.setProperty('--accent', accentHex);
+    document.documentElement.style.setProperty('--on-accent', readableOn(accentHex));
     document.documentElement.style.setProperty(
       '--accent-hover',
       theme === 'light' ? mixHex(accentHex, '#000000', 0.12) : mixHex(accentHex, '#ffffff', 0.18),
     );
-  }, [theme, accentColor]);
+  }, [theme, accentColor, language]);
 
   useEffect(() => {
     if (isMobile) return;
@@ -173,7 +177,7 @@ export default function App() {
 
   // Auto-migrate from old BLUM/BLUNT data on first launch (runs at most once)
   useEffect(() => {
-    if (migrationDone || notes.length > 0) return;
+    if (!hydrated || migrationDone || notes.length > 0) return;
     setMigrationDone(true);
     if (localStorage.getItem(MIGRATION_FLAG)) return;
     migrateFromBlum().then((ok: boolean) => {
@@ -182,7 +186,7 @@ export default function App() {
         showToast(t('toast_migrated'));
       }
     });
-  }, [notes, migrationDone]);
+  }, [hydrated, notes, migrationDone]);
 
   if (isMobile) {
     return (

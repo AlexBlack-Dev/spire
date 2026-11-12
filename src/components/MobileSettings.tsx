@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, Download, Upload, Github, RefreshCw, Undo2, X } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { hasRestorePoint } from '../store/persistStorage';
 import { useT } from '../i18n/useT';
 import type { Language } from '../i18n/translations';
 import { dim } from '../isMobile';
@@ -14,13 +15,17 @@ export default function MobileSettings({ onBack }: { onBack?: () => void }) {
   const exportData = useStore((s) => s.exportData);
   const importData = useStore((s) => s.importData);
   const restorePreImportBackup = useStore((s) => s.restorePreImportBackup);
-  const [hasPreImportBackup] = useState(() => {
-    try {
-      return localStorage.getItem('spire-pre-import-backup') !== null;
-    } catch {
-      return false;
-    }
-  });
+  const [hasPreImportBackup, setHasPreImportBackup] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    hasRestorePoint()
+      .then((value) => { if (!cancelled) setHasPreImportBackup(value); })
+      .catch((e: unknown) => {
+        const msg = e instanceof Error ? e.message : String(e);
+        useStore.getState().addLog('hasRestorePoint: ' + msg);
+      });
+    return () => { cancelled = true; };
+  }, []);
   const accentColor = useStore((s) => s.accentColor);
   const showFileExtensions = useStore((s) => s.showFileExtensions);
   const setShowFileExtensions = useStore((s) => s.setShowFileExtensions);

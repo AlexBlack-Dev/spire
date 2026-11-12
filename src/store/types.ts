@@ -48,6 +48,7 @@ export interface SpireStore {
   changelogVersion: string | null;
   showFileExtensions: boolean;
   toasts: ToastItem[];
+  hydrated: boolean;
 
   // Converter
   converterInputFile: string | null;
@@ -118,6 +119,7 @@ export interface SpireStore {
   setAccentColor: (color: NoteColor) => void;
   setSettingsOpen: (open: boolean) => void;
   setShowFileExtensions: (show: boolean) => void;
+  setHydrated: () => void;
   setSplashDone: () => void;
   setToolsSubPage: (page: string | null) => void;
   dismissPermBanner: () => void;

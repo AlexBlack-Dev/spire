@@ -8,6 +8,7 @@ import { useT } from '../i18n/useT';
 import { dim } from '../isMobile';
 import type { Note } from '../types';
 import { COLOR_HEX, formatDateFn, notePreview, getContentText } from '../utils/format';
+import { isSealedContent } from '../store/noteCrypto';
 import WelcomeScreen from './WelcomeScreen';
 import BottomSheet, { SheetItem, SheetSeparator } from './BottomSheet';
 
@@ -48,7 +49,7 @@ export default function MobileNoteList({ privateOnly }: { privateOnly?: boolean 
     for (const n of notes) {
       let text = stripCache.current.get(n);
       if (text === undefined) {
-        text = n.filePath ? n.content : getContentText(n.content);
+        text = isSealedContent(n.content) ? '' : (n.filePath ? n.content : getContentText(n.content));
         stripCache.current.set(n, text);
       }
       map.set(n.id, text);

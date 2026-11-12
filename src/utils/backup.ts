@@ -71,6 +71,8 @@ function sanitizeNote(v: unknown): Note | null {
   if (filePath && isAbsolutePath(filePath)) note.filePath = filePath;
   const password = asOptString(v.password, 256);
   if (password) note.password = password;
+  const salt = asOptString(v.salt, 128);
+  if (salt) note.salt = salt;
   if (typeof v.editMode === 'boolean') note.editMode = v.editMode;
   return note;
 }

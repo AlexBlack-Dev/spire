@@ -6,8 +6,11 @@ import {
   readFileAsBase64, fileExt,
 } from '../helpers';
 import type { SpireSlice, SaveFormat } from '../types';
+import { isSealedContent } from '../noteCrypto';
 
 const binaryExts = ['xlsx', 'xls', 'ods'];
+const MAX_OPEN_BINARY_BYTES = 20 * 1024 * 1024;
+const MAX_OPEN_TEXT_BYTES = 10 * 1024 * 1024;
 
 function filenameSafe(title: string, fallback = 'untitled'): string {
   const clean = title
@@ -150,6 +153,13 @@ export const notesSlice: SpireSlice = (set, get) => ({
     const isBinary = binaryExts.includes(ext);
     let content: string;
     try {
+      const { stat } = await import('@tauri-apps/plugin-fs');
+      const info = await stat(path);
+      const limit = isBinary ? MAX_OPEN_BINARY_BYTES : MAX_OPEN_TEXT_BYTES;
+      if (info.size > limit) {
+        get().showToast(tKey(get().language, 'toast_file_too_large'), 'error');
+        return false;
+      }
       content = isBinary
         ? await readFileAsBase64(path)
         : await readTextFile(path);
@@ -185,6 +195,10 @@ export const notesSlice: SpireSlice = (set, get) => ({
     const { invoke } = await import('@tauri-apps/api/core');
     const note = get().notes.find((n) => n.id === id);
     if (!note) { get().showToast(tKey(get().language, 'toast_note_not_found')); return false; }
+    if (isSealedContent(note.content)) {
+      get().showToast(tKey(get().language, 'toast_note_locked'), 'error');
+      return false;
+    }
     if (isMobile) {
       try {
         const { invoke: invokeMobile } = await import('@tauri-apps/api/core');
@@ -277,6 +291,11 @@ export const notesSlice: SpireSlice = (set, get) => ({
     const { invoke } = await import('@tauri-apps/api/core');
     const note = get().notes.find((n) => n.id === id);
     if (!note) { set({ fileBrowserOpen: false, fileBrowserNoteId: null }); return false; }
+    if (isSealedContent(note.content)) {
+      get().showToast(tKey(get().language, 'toast_note_locked'), 'error');
+      set({ fileBrowserOpen: false, fileBrowserNoteId: null });
+      return false;
+    }
     const ext = fileExt(path);
     let text = note.content;
     if (note.filePath) {
@@ -307,6 +326,10 @@ export const notesSlice: SpireSlice = (set, get) => ({
     const { invoke } = await import('@tauri-apps/api/core');
     const note = get().notes.find((n) => n.id === id);
     if (!note) return false;
+    if (isSealedContent(note.content)) {
+      get().showToast(tKey(get().language, 'toast_note_locked'), 'error');
+      return false;
+    }
     let content = note.content;
     if (note.filePath) {
       content = note.content;
@@ -339,6 +362,10 @@ export const notesSlice: SpireSlice = (set, get) => ({
     const { invoke } = await import('@tauri-apps/api/core');
     const note = get().notes.find((n) => n.id === id);
     if (!note) return false;
+    if (isSealedContent(note.content)) {
+      get().showToast(tKey(get().language, 'toast_note_locked'), 'error');
+      return false;
+    }
     const text = note.filePath ? note.content : getContentText(note.content);
     try {
       const uri = await invoke<string | null>('save_file_dialog', {

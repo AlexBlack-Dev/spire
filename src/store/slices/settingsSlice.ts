@@ -1,22 +1,20 @@
 import { tKey } from '../helpers';
+import { sealNotes } from '../noteCrypto';
+import { clearRestorePoint, readRestorePoint, writeRestorePoint } from '../persistStorage';
 import { validateBackup } from '../../utils/backup';
 import type { SpireSlice, SpireStore } from '../types';
 
-const PRE_IMPORT_KEY = 'spire-pre-import-backup';
-const MAX_SNAPSHOT_BYTES = 8 * 1024 * 1024;
-
-function takePreImportSnapshot(s: {
+async function takePreImportSnapshot(s: {
   notes: unknown; tasks: unknown; trash: unknown; noteFolders: unknown;
   theme: unknown; accentColor: unknown; language: unknown; activeNoteId: unknown; viewMode: unknown;
-}): string | null {
+}): Promise<string | null> {
   try {
     const snapshot = JSON.stringify({
       notes: s.notes, tasks: s.tasks, trash: s.trash, noteFolders: s.noteFolders,
       theme: s.theme, accentColor: s.accentColor, language: s.language,
       activeNoteId: s.activeNoteId, viewMode: s.viewMode,
     });
-    if (snapshot.length > MAX_SNAPSHOT_BYTES) return 'snapshot exceeds size limit';
-    localStorage.setItem(PRE_IMPORT_KEY, snapshot);
+    await writeRestorePoint(snapshot);
     return null;
   } catch (e) {
     return e instanceof Error ? e.message : String(e);
@@ -29,10 +27,10 @@ export const settingsSlice: SpireSlice = (set, get) => ({
       const { invoke } = await import('@tauri-apps/api/core');
       const s = get();
       const payload = {
-        version: 2,
-        notes: s.notes,
+        version: 3,
+        notes: await sealNotes(s.notes),
         tasks: s.tasks,
-        trash: s.trash,
+        trash: await sealNotes(s.trash),
         noteFolders: s.noteFolders,
         theme: s.theme,
         accentColor: s.accentColor,
@@ -77,7 +75,7 @@ export const settingsSlice: SpireSlice = (set, get) => ({
         return;
       }
       const s = get();
-      const snapErr = takePreImportSnapshot(s);
+      const snapErr = await takePreImportSnapshot(s);
       if (snapErr) get().addLog('pre-import snapshot: ' + snapErr);
       set({
         ...backup,
@@ -92,21 +90,21 @@ export const settingsSlice: SpireSlice = (set, get) => ({
     }
   },
 
-  restorePreImportBackup: () => {
+  restorePreImportBackup: async () => {
     try {
-      const raw = localStorage.getItem(PRE_IMPORT_KEY);
+      const raw = await readRestorePoint();
       if (!raw) {
         get().showToast(tKey(get().language, 'toast_no_pre_import_backup'), 'error');
         return;
       }
       const backup = validateBackup(JSON.parse(raw));
       if (!backup) {
-        localStorage.removeItem(PRE_IMPORT_KEY);
+        await clearRestorePoint();
         get().showToast(tKey(get().language, 'toast_invalid_backup'), 'error');
         return;
       }
       set({ ...backup, activeNoteId: null, viewMode: 'notes' });
-      localStorage.removeItem(PRE_IMPORT_KEY);
+      await clearRestorePoint();
       get().showToast(tKey(get().language, 'toast_pre_import_restored'));
     } catch (e) {
       const msg = typeof e === 'string' ? e : String(e);

@@ -3,6 +3,7 @@ import { format, isToday, isYesterday } from 'date-fns';
 import { ru, enUS } from 'date-fns/locale';
 import type { NoteColor } from '../types';
 import { translations, type Dict } from '../i18n/translations';
+import { isSealedContent } from '../store/noteCrypto';
 
 export const COLOR_HEX: Record<NoteColor, string> = {
   violet: '#7c6af7', blue: '#4f8ef7', teal: '#2dd4bf',
@@ -40,7 +41,19 @@ export function sanitizeHtml(html: string): string {
 }
 
 export function notePreview(content: string, isFile: boolean): string {
+  if (isSealedContent(content)) return '';
   return (isFile ? content : getContentText(content)).trim().slice(0, 60);
+}
+
+export function relativeLuminance(hex: string): number {
+  const clean = hex.replace('#', '');
+  const channels = [0, 2, 4].map((offset) => parseInt(clean.slice(offset, offset + 2), 16) / 255);
+  const linear = channels.map((value) => (value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4)));
+  return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+}
+
+export function readableOn(background: string): string {
+  return relativeLuminance(background) > 0.179 ? '#0e0e14' : '#ffffff';
 }
 
 export interface FileInfo {

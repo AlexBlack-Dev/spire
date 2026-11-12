@@ -165,6 +165,9 @@ export const en = {
   'toast_import_failed': 'Failed to import data',
   'toast_migrated': 'Data migrated from BLUM',
   'toast_open_failed': 'Could not open file: ',
+  'toast_file_too_large': 'File is too large to open here (10 MB text / 20 MB spreadsheet limit)',
+  'toast_note_locked': 'Unlock the note before saving it',
+  'toast_storage_failed': 'Could not write changes to disk. Free up space or restart the app.',
   'toast_file_exists': 'File already exists: ',
   'toast_no_pre_import_backup': 'No pre-import backup found',
   'toast_pre_import_restored': 'Previous data restored',
@@ -282,6 +285,9 @@ export const en = {
   'run_script': 'Run script',
   'toast_run_ok': 'Script launched',
   'toast_run_failed': 'Failed to run: ',
+  'error_title': 'Something went wrong',
+  'error_desc': 'Spire hit an unexpected error while rendering. Your notes stay saved on this device — reload to continue.',
+  'error_reload': 'Reload app',
 };
 
 export type Dict = typeof en;
@@ -441,6 +447,9 @@ const ru: Dict = {
   'toast_exported': 'Данные успешно экспортированы',
   'toast_export_failed': 'Ошибка экспорта: ',
   'toast_open_failed': 'Не удалось открыть файл: ',
+  'toast_file_too_large': 'Файл слишком большой для открытия (лимит 10 МБ для текста и 20 МБ для таблиц)',
+  'toast_note_locked': 'Разблокируйте заметку перед сохранением',
+  'toast_storage_failed': 'Не удалось записать изменения на диск. Освободите место или перезапустите приложение.',
   'toast_file_exists': 'Файл уже существует: ',
   'toast_no_pre_import_backup': 'Резервная копия до импорта не найдена',
   'toast_pre_import_restored': 'Прошлые данные восстановлены',
@@ -562,6 +571,9 @@ const ru: Dict = {
   'run_script': 'Запустить скрипт',
   'toast_run_ok': 'Скрипт запущен',
   'toast_run_failed': 'Ошибка запуска: ',
+  'error_title': 'Что-то пошло не так',
+  'error_desc': 'Spire столкнулся с непредвиденной ошибкой при отрисовке. Заметки сохранены на устройстве — перезагрузите приложение.',
+  'error_reload': 'Перезагрузить',
 };
 
 export const translations: Record<Language, Dict> = { en, ru };

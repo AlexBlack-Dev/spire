@@ -6,6 +6,7 @@ import { useStore } from '../store/useStore';
 import { useT } from '../i18n/useT';
 import type { Note } from '../types';
 import { COLOR_HEX, formatDateFn, notePreview, getContentText } from '../utils/format';
+import { isSealedContent } from '../store/noteCrypto';
 
 export default function Sidebar() {
   const notes = useStore((s) => s.notes);
@@ -54,7 +55,7 @@ export default function Sidebar() {
     for (const n of notes) {
       let text = stripCache.current.get(n);
       if (text === undefined) {
-        text = n.filePath ? n.content : getContentText(n.content);
+        text = isSealedContent(n.content) ? '' : (n.filePath ? n.content : getContentText(n.content));
         stripCache.current.set(n, text);
       }
       map.set(n.id, text);

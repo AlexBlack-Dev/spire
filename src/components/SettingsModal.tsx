@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Download, Upload, Github, Moon, Sun, Check, RefreshCw } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { hasRestorePoint } from '../store/persistStorage';
 import { useT } from '../i18n/useT';
 import type { Language } from '../i18n/translations';
 import { COLOR_HEX, COLOR_NAMES } from '../utils/format';
@@ -15,13 +16,17 @@ export default function SettingsModal() {
   const exportData = useStore((s) => s.exportData);
   const importData = useStore((s) => s.importData);
   const restorePreImportBackup = useStore((s) => s.restorePreImportBackup);
-  const [hasPreImportBackup] = useState(() => {
-    try {
-      return localStorage.getItem('spire-pre-import-backup') !== null;
-    } catch {
-      return false;
-    }
-  });
+  const [hasPreImportBackup, setHasPreImportBackup] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    hasRestorePoint()
+      .then((value) => { if (!cancelled) setHasPreImportBackup(value); })
+      .catch((e: unknown) => {
+        const msg = e instanceof Error ? e.message : String(e);
+        useStore.getState().addLog('hasRestorePoint: ' + msg);
+      });
+    return () => { cancelled = true; };
+  }, []);
   const theme = useStore((s) => s.theme);
   const setTheme = useStore((s) => s.setTheme);
   const accentColor = useStore((s) => s.accentColor);

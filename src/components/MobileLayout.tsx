@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, Pin, Star, Trash2, Menu, Save, Lock, Unlock, ShieldAlert, Pencil, Eye, Play, MoreVertical, Plus, FolderOpen, BarChart3, Palette, Settings, FileText, CheckSquare, X } from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
@@ -17,7 +17,7 @@ import MobileNoteList from './MobileNoteList';
 import MobileSettings from './MobileSettings';
 import TasksView from './TasksView';
 import WelcomeScreen from './WelcomeScreen';
-import SpreadsheetEditor from './SpreadsheetEditor';
+const SpreadsheetEditor = lazy(() => import('./SpreadsheetEditor'));
 import ToolsView from './ToolsView';
 import FileBrowser from './FileBrowser';
 import LockPrompt from './LockPrompt';
@@ -35,7 +35,7 @@ import { COLOR_HEX, COLOR_NAMES, getFileInfo, sanitizeHtml } from '../utils/form
 import { sliceToText } from '../utils/tiptapText';
 import { useFileNoteContent } from '../hooks/useFileNoteContent';
 
-const SCRIPT_EXTS = ['bat', 'cmd', 'ps1', 'vbs', 'js', 'sh'];
+const SCRIPT_EXTS = ['bat', 'cmd', 'ps1', 'sh'];
 
 export default function MobileLayout() {
   const viewMode = useStore((s) => s.viewMode);
@@ -756,12 +756,14 @@ function MobileEditorWrapper({ onBack, noAnim }: { onBack: () => void; noAnim: b
 
       {isSpreadsheet ? (
         <div style={{ flex: 1, overflow: 'hidden' }}>
-          <SpreadsheetEditor
-            base64={note.content}
-            ext={ext}
-            filePath={note.filePath}
-            noteId={note.id}
-          />
+          <Suspense fallback={<div style={{ padding: 24, color: 'var(--text-tertiary)' }}>{t('loading')}</div>}>
+            <SpreadsheetEditor
+              base64={note.content}
+              ext={ext}
+              filePath={note.filePath}
+              noteId={note.id}
+            />
+          </Suspense>
         </div>
       ) : isPlainFile ? (
         <div style={{

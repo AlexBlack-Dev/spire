@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- AES-256-GCM encryption at rest for locked notes: content is sealed on every disk write and decrypted only after a successful unlock, with the key derived by PBKDF2-SHA256 (600 000 iterations) and kept in memory for the session
+- IndexedDB-backed persistence with automatic migration from the legacy `localStorage` store, a serialized write queue and a restore point that survives reloads
+- Storage failures surface as a toast and an in-app error log entry instead of silently losing data
+- `ErrorBoundary` around the app with a localized fallback screen and a reload action
+
 ### Changed
 
 - Desktop note editor, tasks, changelog and trash are capped at a centered 680px column instead of stretching across wide windows
@@ -18,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dates, previews, metadata and section labels use the tertiary text color, which passes WCAG AA on both themes
 - Active navigation labels use the primary text color so they stay readable on the dimmed accent background
 - Welcome screen is reduced to the app mark and tagline, and the empty note list no longer renders a separate New note button; notes are created from the section header or `Ctrl+N`
+- Accent text color is computed from the accent luminance instead of assuming white
+- Spreadsheet editor is loaded lazily, so the xlsx stack ships as a separate chunk instead of the main bundle
+- File open is capped at 10 MB for text and 20 MB for spreadsheets
 
 ### Removed
 
@@ -33,6 +43,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Settings "show file extensions" row keeps a 16px gap between the label and the switch
 - Release workflow uses `android-actions/setup-android` v4, which no longer installs the removed `tools` SDK package and runs on Node 24
 - Release APK keeps the stable committed debug keystore, so updates install over previously released versions
+- Locked notes are never written to disk as plaintext, even while the editor is open
+
+### Security
+
+- Locked notes created before this release are re-encrypted on the next successful unlock; until then their plaintext stays in the local database because the key cannot be derived without the password
 
 ## [1.2.0] - 2026-11-09
 

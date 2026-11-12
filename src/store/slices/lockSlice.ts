@@ -1,4 +1,8 @@
 import { pwHash, pwVerify, needsRehash } from '../helpers';
+import {
+  createSalt, deriveContentKey, forgetContentKey, isSealedContent,
+  openContent, rememberContentKey,
+} from '../noteCrypto';
 import type { SpireSlice } from '../types';
 
 export const lockSlice: SpireSlice = (set, get) => ({
@@ -8,18 +12,46 @@ export const lockSlice: SpireSlice = (set, get) => ({
   lockPromptState: null,
 
   setNotePassword: async (id, password) => {
+    const note = get().notes.find((n) => n.id === id);
+    if (!note) return;
     const hash = await pwHash(password);
-    set((s) => ({ notes: s.notes.map((n) => n.id === id ? { ...n, password: hash } : n) }));
+    const salt = note.salt ?? createSalt();
+    const key = await deriveContentKey(password, salt);
+    rememberContentKey(id, key);
+    set((s) => ({ notes: s.notes.map((n) => n.id === id ? { ...n, password: hash, salt } : n) }));
   },
 
   clearNotePassword: (id) => {
-    set((s) => ({ notes: s.notes.map((n) => n.id === id ? { ...n, password: undefined } : n) }));
+    const note = get().notes.find((n) => n.id === id);
+    if (note && isSealedContent(note.content)) {
+      get().addLog('clearNotePassword: note content is still sealed, unlock it first');
+      return;
+    }
+    forgetContentKey(id);
+    set((s) => ({ notes: s.notes.map((n) => n.id === id ? { ...n, password: undefined, salt: undefined } : n) }));
   },
 
   verifyNotePassword: async (id, password) => {
     const note = get().notes.find((n) => n.id === id);
     const ok = await pwVerify(note?.password, password);
-    if (ok && note && needsRehash(note.password)) {
+    if (!ok || !note) return false;
+    const salt = note.salt ?? createSalt();
+    try {
+      const key = await deriveContentKey(password, salt);
+      rememberContentKey(id, key);
+      if (isSealedContent(note.content)) {
+        const plain = await openContent(id, note.content);
+        set((s) => ({ notes: s.notes.map((n) => n.id === id ? { ...n, content: plain, salt } : n) }));
+      } else if (note.salt !== salt) {
+        set((s) => ({ notes: s.notes.map((n) => n.id === id ? { ...n, salt } : n) }));
+      }
+    } catch (e) {
+      forgetContentKey(id);
+      const msg = e instanceof Error ? e.message : String(e);
+      get().addLog('note decrypt: ' + msg);
+      return false;
+    }
+    if (needsRehash(note.password)) {
       try {
         const hash = await pwHash(password);
         set((s) => ({ notes: s.notes.map((n) => n.id === id ? { ...n, password: hash } : n) }));
@@ -28,7 +60,7 @@ export const lockSlice: SpireSlice = (set, get) => ({
         get().addLog('note password rehash: ' + msg);
       }
     }
-    return ok;
+    return true;
   },
 
   setFolderPassword: async (id, password) => {

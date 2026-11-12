@@ -28,6 +28,7 @@ export const uiSlice: SpireSlice = (set, get) => ({
   changelogVersion: null,
   showFileExtensions: false,
   toasts: [],
+  hydrated: false,
 
   setViewMode: (mode) => set({ viewMode: mode }),
   setSortMode: (mode) => set({ sortMode: mode }),
@@ -58,6 +59,7 @@ export const uiSlice: SpireSlice = (set, get) => ({
   setAccentColor: (accentColor) => set({ accentColor }),
   setSettingsOpen: (open) => set({ settingsOpen: open }),
   setShowFileExtensions: (show) => set({ showFileExtensions: show }),
+  setHydrated: () => set({ hydrated: true }),
   setSplashDone: () => set({ splashDone: true }),
   setToolsSubPage: (page) => set({ toolsSubPage: page }),
   dismissPermBanner: () => set({ permBannerDismissed: true }),

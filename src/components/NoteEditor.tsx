@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState, useRef } from 'react';
+import { lazy, Suspense, useEffect, useCallback, useState, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -17,14 +17,14 @@ import { useStore } from '../store/useStore';
 import { format } from 'date-fns';
 import { ru, enUS } from 'date-fns/locale';
 import { useT } from '../i18n/useT';
-import SpreadsheetEditor from './SpreadsheetEditor';
+const SpreadsheetEditor = lazy(() => import('./SpreadsheetEditor'));
 import TagRow from './TagRow';
 import FormatToolbar from './FormatToolbar';
 import { COLOR_HEX, COLOR_NAMES, getFileInfo, sanitizeHtml } from '../utils/format';
 import { sliceToText } from '../utils/tiptapText';
 import { useFileNoteContent } from '../hooks/useFileNoteContent';
 
-const SCRIPT_EXTS = ['bat', 'cmd', 'ps1', 'vbs', 'js', 'sh'];
+const SCRIPT_EXTS = ['bat', 'cmd', 'ps1', 'sh'];
 
 export default function NoteEditor() {
   const notes = useStore((s) => s.notes);
@@ -308,12 +308,14 @@ export default function NoteEditor() {
       {/* Editor / Rendered content */}
       {isSpreadsheet ? (
         <div style={{ flex: 1, overflow: 'hidden' }}>
-          <SpreadsheetEditor
-            base64={note.content}
-            ext={ext}
-            filePath={note.filePath}
-            noteId={note.id}
-          />
+          <Suspense fallback={<div style={{ padding: 24, color: 'var(--text-tertiary)' }}>{t('loading')}</div>}>
+            <SpreadsheetEditor
+              base64={note.content}
+              ext={ext}
+              filePath={note.filePath}
+              noteId={note.id}
+            />
+          </Suspense>
         </div>
       ) : isPlainFile ? (
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px var(--page-pad) 48px', userSelect: 'text', minWidth: 0 }}>
