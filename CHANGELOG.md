@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `get_storage_root` returns the user home directory on desktop instead of an Android path
 - Desktop window minimum width is 900 px and the GPU-disabling Chromium flag was removed
 - Release signing requires `SPIRE_KEYSTORE_BASE64`, `SPIRE_KEYSTORE_PASSWORD`, `SPIRE_KEY_ALIAS` and `SPIRE_KEY_PASSWORD` repository secrets
+- `xlsx` replaced with the official SheetJS 0.20.3 build (fixes CVE-2023-30533)
+- Vite 8, `@vitejs/plugin-react` 6 and `uuid` 11; `prosemirror-view`, `markdown-it` and `linkify-it` pinned to patched versions
 
 ### Removed
 
@@ -52,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release APKs are no longer signed with a public debug key
 - Locked notes are never written to disk as plaintext, even while the editor is open
 - Sensitive paths cannot be listed through the in-app file browser
+- `cargo audit` findings in `quick-xml`, `quinn-proto`, `rustls`, `rustls-webpki` and `webpki-roots` fixed by lockfile updates
 
 ### Security
 
