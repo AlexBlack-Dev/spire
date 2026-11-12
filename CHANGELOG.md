@@ -62,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Locked notes created before this release are re-encrypted on the next successful unlock; until then their plaintext stays in the local database because the key cannot be derived without the password
 
-## [1.2.0] - 2026-11-09
+## [1.1.2] - 2026-11-13
 
 ### Added
 

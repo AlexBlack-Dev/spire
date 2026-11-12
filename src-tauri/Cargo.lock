@@ -3590,7 +3590,7 @@ dependencies = [
 
 [[package]]
 name = "spire"
-version = "1.2.0"
+version = "1.1.2"
 dependencies = [
  "android_logger",
  "base64 0.22.1",

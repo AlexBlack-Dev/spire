@@ -80,7 +80,7 @@ npm run test
 cd src-tauri && cargo test
 
 # Sync the version across package.json, package-lock.json, tauri.conf.json, Cargo.toml and Cargo.lock
-node scripts/sync-version.mjs 1.2.0
+node scripts/sync-version.mjs 1.1.2
 
 # Development (Android)
 npm run tauri android dev
@@ -154,8 +154,8 @@ scripts/
 Releases are built by GitHub Actions when a tag is pushed:
 
 ```bash
-git tag v1.2.0
-git push origin v1.2.0
+git tag v1.1.2
+git push origin v1.1.2
 ```
 
 The workflow:
@@ -167,7 +167,7 @@ The workflow:
 
 Release APKs are signed with a private keystore supplied by the build environment: `SPIRE_KEYSTORE_BASE64` (base64 of the keystore file), `SPIRE_KEYSTORE_PASSWORD`, `SPIRE_KEY_ALIAS` and `SPIRE_KEY_PASSWORD` must be set as repository secrets. The release workflow fails when the keystore is missing instead of falling back to a debug key. Debug builds use the debug key that Gradle generates on the build machine.
 
-`versionCode` and `versionName` are derived from the tag (`v1.2.0` → `10200` / `1.2.0`) and written to `tauri.properties` during the build.
+`versionCode` and `versionName` are derived from the tag (`v1.1.2` → `10102` / `1.1.2`) and written to `tauri.properties` during the build.
 
 ## Security
 
