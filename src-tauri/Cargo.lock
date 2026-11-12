@@ -3593,7 +3593,7 @@ name = "spire"
 version = "1.1.2"
 dependencies = [
  "android_logger",
- "base64 0.22.1",
+ "base64 0.23.1",
  "image",
  "jni",
  "log",
