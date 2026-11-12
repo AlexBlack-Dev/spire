@@ -15,13 +15,12 @@
         "title": "SPIRE",
         "width": 1400,
         "height": 900,
-        "minWidth": 1000,
+        "minWidth": 900,
         "minHeight": 680,
         "decorations": false,
         "transparent": false,
         "shadow": true,
-        "center": true,
-        "additionalBrowserArgs": "--disable-gpu"
+        "center": true
       }
     ],
     "security": {

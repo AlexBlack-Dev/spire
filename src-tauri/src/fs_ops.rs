@@ -29,8 +29,8 @@ fn temp_path(path: &Path) -> Result<PathBuf, String> {
 fn atomic_write(path: &Path, data: &[u8]) -> Result<(), String> {
     let tmp = temp_path(path)?;
     let write_result = (|| -> Result<(), String> {
-        let mut file = std::fs::File::create(&tmp)
-            .map_err(|e| format!("create {}: {}", tmp.display(), e))?;
+        let mut file =
+            std::fs::File::create(&tmp).map_err(|e| format!("create {}: {}", tmp.display(), e))?;
         file.write_all(data)
             .map_err(|e| format!("write {}: {}", tmp.display(), e))?;
         file.sync_all()
@@ -77,8 +77,7 @@ pub fn convert_image(input_path: String, output_path: String) -> Result<(), Stri
     if is_sensitive_path(input) || is_sensitive_path(output) {
         return Err("Blocked sensitive path".to_string());
     }
-    let meta = std::fs::metadata(input)
-        .map_err(|e| format!("Failed to stat image: {}", e))?;
+    let meta = std::fs::metadata(input).map_err(|e| format!("Failed to stat image: {}", e))?;
     if meta.len() > MAX_IMAGE_BYTES {
         return Err("Image exceeds the 50 MB limit".to_string());
     }

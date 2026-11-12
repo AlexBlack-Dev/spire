@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use crate::paths::is_sensitive_path;
 
-const SCRIPT_EXTS: &[&str] = &["bat", "cmd", "ps1", "vbs", "js", "sh"];
+const SCRIPT_EXTS: &[&str] = &["bat", "cmd", "ps1", "sh"];
 
 fn validate_script(path: &str) -> Result<PathBuf, String> {
     let ext = path.rsplit('.').next().unwrap_or("").to_lowercase();
@@ -13,8 +13,8 @@ fn validate_script(path: &str) -> Result<PathBuf, String> {
     if is_sensitive_path(p) {
         return Err("Blocked sensitive path".to_string());
     }
-    let meta = std::fs::symlink_metadata(p)
-        .map_err(|e| format!("Script not found: {} ({})", path, e))?;
+    let meta =
+        std::fs::symlink_metadata(p).map_err(|e| format!("Script not found: {} ({})", path, e))?;
     if meta.file_type().is_symlink() {
         return Err("Refusing to run a symlinked script".to_string());
     }
@@ -36,41 +36,38 @@ pub fn run_script(path: String) -> Result<(), String> {
     let canonical = validate_script(&path)?;
     let safe_path = canonical.to_string_lossy().to_string();
     let ext = safe_path.rsplit('.').next().unwrap_or("").to_lowercase();
+    spawn_script(&safe_path, &ext)
+}
 
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        let child = match ext.as_str() {
-            "bat" | "cmd" => std::process::Command::new("cmd")
-                .arg("/d")
-                .raw_arg(format!("/c \"{}\"", &safe_path))
-                .spawn(),
-            "ps1" => std::process::Command::new("powershell")
-                .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
-                .arg(&safe_path)
-                .spawn(),
-            "vbs" | "js" => std::process::Command::new("cscript")
-                .args(["/nologo"])
-                .arg(&safe_path)
-                .spawn(),
-            _ => return Err(format!("Unsupported script type: {}", ext)),
-        };
-        return match child {
-            Ok(_) => Ok(()),
-            Err(e) => Err(format!("Failed to start {}: {}", safe_path, e)),
-        };
+#[cfg(windows)]
+fn spawn_script(safe_path: &str, ext: &str) -> Result<(), String> {
+    use std::os::windows::process::CommandExt;
+    let child = match ext {
+        "bat" | "cmd" => std::process::Command::new("cmd")
+            .arg("/d")
+            .raw_arg(format!("/c \"{}\"", safe_path))
+            .spawn(),
+        "ps1" => std::process::Command::new("powershell")
+            .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
+            .arg(safe_path)
+            .spawn(),
+        _ => return Err(format!("Unsupported script type: {}", ext)),
+    };
+    match child {
+        Ok(_) => Ok(()),
+        Err(e) => Err(format!("Failed to start {}: {}", safe_path, e)),
     }
+}
 
-    #[cfg(not(windows))]
-    {
-        let child = match ext.as_str() {
-            "sh" => std::process::Command::new("bash").arg(&safe_path).spawn(),
-            _ => return Err(format!("Unsupported script type on this platform: {}", ext)),
-        };
-        match child {
-            Ok(_) => Ok(()),
-            Err(e) => Err(format!("Failed to start {}: {}", safe_path, e)),
-        }
+#[cfg(not(windows))]
+fn spawn_script(safe_path: &str, ext: &str) -> Result<(), String> {
+    let child = match ext {
+        "sh" => std::process::Command::new("bash").arg(safe_path).spawn(),
+        _ => return Err(format!("Unsupported script type on this platform: {}", ext)),
+    };
+    match child {
+        Ok(_) => Ok(()),
+        Err(e) => Err(format!("Failed to start {}: {}", safe_path, e)),
     }
 }
 

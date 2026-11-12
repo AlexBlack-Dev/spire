@@ -28,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Accent text color is computed from the accent luminance instead of assuming white
 - Spreadsheet editor is loaded lazily, so the xlsx stack ships as a separate chunk instead of the main bundle
 - File open is capped at 10 MB for text and 20 MB for spreadsheets
+- Script execution supports `.bat`, `.cmd`, `.ps1` and `.sh` only; `.vbs`, `.js` and `cscript` were dropped
+- `get_storage_root` returns the user home directory on desktop instead of an Android path
+- Desktop window minimum width is 900 px and the GPU-disabling Chromium flag was removed
 
 ### Removed
 
@@ -44,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release workflow uses `android-actions/setup-android` v4, which no longer installs the removed `tools` SDK package and runs on Node 24
 - Release APK keeps the stable committed debug keystore, so updates install over previously released versions
 - Locked notes are never written to disk as plaintext, even while the editor is open
+- Sensitive paths cannot be listed through the in-app file browser
 
 ### Security
 

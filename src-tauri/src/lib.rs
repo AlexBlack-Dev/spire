@@ -1,8 +1,8 @@
-use tauri::{Emitter, Manager};
 #[cfg(windows)]
 use std::path::PathBuf;
+use tauri::{Emitter, Manager};
 #[cfg(windows)]
-use winreg::{RegKey, enums::HKEY_CURRENT_USER};
+use winreg::{enums::HKEY_CURRENT_USER, RegKey};
 
 mod fs_ops;
 mod paths;
@@ -11,7 +11,9 @@ mod update;
 
 #[cfg(windows)]
 fn register_file_icon(app: &tauri::App) {
-    let icon_path: PathBuf = app.path().resource_dir()
+    let icon_path: PathBuf = app
+        .path()
+        .resource_dir()
         .unwrap_or_default()
         .join("icons")
         .join("spire-file.ico");
@@ -22,7 +24,9 @@ fn register_file_icon(app: &tauri::App) {
             .and_then(|p| p.parent().map(|d| d.to_path_buf()))
             .unwrap_or_default();
         let alt = exe_dir.join("spire-file.ico");
-        if !alt.exists() { return; }
+        if !alt.exists() {
+            return;
+        }
         set_registry_icon(&alt.to_string_lossy());
     } else {
         set_registry_icon(&icon_path.to_string_lossy());
@@ -32,10 +36,9 @@ fn register_file_icon(app: &tauri::App) {
 #[cfg(windows)]
 fn set_registry_icon(icon_path: &str) {
     let extensions = [
-        "txt", "md", "html", "json", "xml", "yaml", "yml", "csv",
-        "css", "js", "ts", "py", "rs", "java", "c", "cpp", "h", "hpp",
-        "ini", "cfg", "conf", "log", "sql", "svg",
-        "toml", "xlsx", "xls", "ods",
+        "txt", "md", "html", "json", "xml", "yaml", "yml", "csv", "css", "js", "ts", "py", "rs",
+        "java", "c", "cpp", "h", "hpp", "ini", "cfg", "conf", "log", "sql", "svg", "toml", "xlsx",
+        "xls", "ods",
     ];
 
     let exe_path = std::env::current_exe()
@@ -47,16 +50,23 @@ fn set_registry_icon(icon_path: &str) {
     for ext in &extensions {
         let prog_id = format!("SPIRE.{}", ext);
         // Programmatic ID with Default value (friendly name)
-        let _ = hkcu.create_subkey(format!("Software\\Classes\\{}", prog_id))
+        let _ = hkcu
+            .create_subkey(format!("Software\\Classes\\{}", prog_id))
             .and_then(|k| k.0.set_value("", &format!("SPIRE {}", ext.to_uppercase())));
         // DefaultIcon
-        let _ = hkcu.create_subkey(format!("Software\\Classes\\{}\\DefaultIcon", prog_id))
+        let _ = hkcu
+            .create_subkey(format!("Software\\Classes\\{}\\DefaultIcon", prog_id))
             .and_then(|k| k.0.set_value("", &icon_path));
         // Shell\Open\Command
-        let _ = hkcu.create_subkey(format!("Software\\Classes\\{}\\shell\\open\\command", prog_id))
+        let _ = hkcu
+            .create_subkey(format!(
+                "Software\\Classes\\{}\\shell\\open\\command",
+                prog_id
+            ))
             .and_then(|k| k.0.set_value("", &format!("\"{}\" \"%1\"", exe_path)));
         // Extension -> ProgID
-        let _ = hkcu.create_subkey(format!("Software\\Classes\\.{}\\OpenWithProgids", ext))
+        let _ = hkcu
+            .create_subkey(format!("Software\\Classes\\.{}\\OpenWithProgids", ext))
             .and_then(|k| k.0.set_value(prog_id.as_str(), &""));
     }
 }
@@ -68,16 +78,22 @@ fn register_file_icon(_app: &tauri::App) {}
 #[tauri::command]
 fn migrate_from_blum() -> Result<Option<String>, String> {
     let dirs = [
-        format!("{}\\com.blum.notes\\EBWebView\\Default\\Local Storage\\leveldb",
-            std::env::var("LOCALAPPDATA").unwrap_or_default()),
-        format!("{}\\com.blunt.notes\\EBWebView\\Default\\Local Storage\\leveldb",
-            std::env::var("LOCALAPPDATA").unwrap_or_default()),
+        format!(
+            "{}\\com.blum.notes\\EBWebView\\Default\\Local Storage\\leveldb",
+            std::env::var("LOCALAPPDATA").unwrap_or_default()
+        ),
+        format!(
+            "{}\\com.blunt.notes\\EBWebView\\Default\\Local Storage\\leveldb",
+            std::env::var("LOCALAPPDATA").unwrap_or_default()
+        ),
     ];
 
     let needle = b"blum-storage";
     for dir in &dirs {
         let path = std::path::Path::new(dir);
-        if !path.exists() { continue; }
+        if !path.exists() {
+            continue;
+        }
         let entries = match std::fs::read_dir(path) {
             Ok(e) => e,
             Err(_) => continue,
@@ -85,7 +101,9 @@ fn migrate_from_blum() -> Result<Option<String>, String> {
         for entry in entries.flatten() {
             let fpath = entry.path();
             let ext = fpath.extension().and_then(|e| e.to_str()).unwrap_or("");
-            if ext != "ldb" && ext != "log" { continue; }
+            if ext != "ldb" && ext != "log" {
+                continue;
+            }
             let data = match std::fs::read(&fpath) {
                 Ok(d) => d,
                 Err(_) => continue,
@@ -97,15 +115,21 @@ fn migrate_from_blum() -> Result<Option<String>, String> {
                     let mut depth = 0i32;
                     let mut end = 0;
                     for (i, &b) in json_slice.iter().enumerate() {
-                        if b == b'{' { depth += 1; }
-                        else if b == b'}' { depth -= 1; }
-                        if depth == 0 { end = i + 1; break; }
+                        if b == b'{' {
+                            depth += 1;
+                        } else if b == b'}' {
+                            depth -= 1;
+                        }
+                        if depth == 0 {
+                            end = i + 1;
+                            break;
+                        }
                     }
                     if end > 0 {
-                        let json_str = std::str::from_utf8(&json_slice[..end])
-                            .map_err(|e| e.to_string())?;
-                        let _: serde_json::Value = serde_json::from_str(json_str)
-                            .map_err(|e| e.to_string())?;
+                        let json_str =
+                            std::str::from_utf8(&json_slice[..end]).map_err(|e| e.to_string())?;
+                        let _: serde_json::Value =
+                            serde_json::from_str(json_str).map_err(|e| e.to_string())?;
                         return Ok(Some(json_str.to_string()));
                     }
                 }
@@ -136,10 +160,7 @@ fn setup_panic_hook() {
         } else {
             format!("{:?}", info)
         };
-        let location = info
-            .location()
-            .map(|l| l.to_string())
-            .unwrap_or_default();
+        let location = info.location().map(|l| l.to_string()).unwrap_or_default();
         log::error!("PANIC: {} at {}", msg, location);
     }));
 }
@@ -157,24 +178,30 @@ fn open_app_settings_impl(_app: &tauri::AppHandle) -> Result<(), String> {
         use jni::objects::JValue;
 
         let result = (|| -> Result<(), String> {
-            let action = env.new_string("android.settings.MANAGE_APP_ALL_FILES_ACCESS_PERMISSION")
+            let action = env
+                .new_string("android.settings.MANAGE_APP_ALL_FILES_ACCESS_PERMISSION")
                 .map_err(|e| e.to_string())?;
 
-            let intent = env.new_object(
-                "android/content/Intent",
-                "(Ljava/lang/String;)V",
-                &[(&action).into()],
-            ).map_err(|e| e.to_string())?;
-
-            let pkg = env.new_string("package:com.spire.notes")
+            let intent = env
+                .new_object(
+                    "android/content/Intent",
+                    "(Ljava/lang/String;)V",
+                    &[(&action).into()],
+                )
                 .map_err(|e| e.to_string())?;
 
-            let uri = env.call_static_method(
-                "android/net/Uri",
-                "parse",
-                "(Ljava/lang/String;)Landroid/net/Uri;",
-                &[(&pkg).into()],
-            ).map_err(|e| e.to_string())?;
+            let pkg = env
+                .new_string("package:com.spire.notes")
+                .map_err(|e| e.to_string())?;
+
+            let uri = env
+                .call_static_method(
+                    "android/net/Uri",
+                    "parse",
+                    "(Ljava/lang/String;)Landroid/net/Uri;",
+                    &[(&pkg).into()],
+                )
+                .map_err(|e| e.to_string())?;
 
             let uri_obj = uri.l().map_err(|e| e.to_string())?;
 
@@ -183,14 +210,16 @@ fn open_app_settings_impl(_app: &tauri::AppHandle) -> Result<(), String> {
                 "setData",
                 "(Landroid/net/Uri;)Landroid/content/Intent;",
                 &[JValue::Object(&uri_obj)],
-            ).map_err(|e| e.to_string())?;
+            )
+            .map_err(|e| e.to_string())?;
 
             env.call_method(
                 activity,
                 "startActivity",
                 "(Landroid/content/Intent;)V",
                 &[JValue::Object(&intent)],
-            ).map_err(|e| e.to_string())?;
+            )
+            .map_err(|e| e.to_string())?;
 
             Ok(())
         })();
@@ -257,7 +286,11 @@ fn restart_app_impl() -> Result<(), String> {
             &[],
         ) {
             Ok(v) => {
-                if v.z().unwrap_or(false) { Ok(()) } else { Err("restartApp returned false".into()) }
+                if v.z().unwrap_or(false) {
+                    Ok(())
+                } else {
+                    Err("restartApp returned false".into())
+                }
             }
             Err(_) => {
                 let _ = env.exception_clear();
@@ -273,7 +306,9 @@ fn restart_app_impl() -> Result<(), String> {
 #[cfg(not(target_os = "android"))]
 fn restart_app_impl() -> Result<(), String> {
     let exe = std::env::current_exe().map_err(|e| e.to_string())?;
-    std::process::Command::new(&exe).spawn().map_err(|e| e.to_string())?;
+    std::process::Command::new(&exe)
+        .spawn()
+        .map_err(|e| e.to_string())?;
     std::thread::sleep(std::time::Duration::from_millis(150));
     std::process::exit(0);
 }
@@ -300,15 +335,21 @@ mod android_save {
         let mut env = jvm.attach_current_thread().map_err(|e| e.to_string())?;
         let j_uri = env.new_string(uri).map_err(|e| e.to_string())?;
         let j_content = env.new_string(content).map_err(|e| e.to_string())?;
-        let ok = env.call_static_method(
-            "com/spire/notes/MainActivity",
-            "writeToUri",
-            "(Ljava/lang/String;Ljava/lang/String;)Z",
-            &[(&j_uri).into(), (&j_content).into()],
-        ).map_err(|e| e.to_string())?
-        .z()
-        .map_err(|e| e.to_string())?;
-        if ok { Ok(()) } else { Err("writeToUri returned false".into()) }
+        let ok = env
+            .call_static_method(
+                "com/spire/notes/MainActivity",
+                "writeToUri",
+                "(Ljava/lang/String;Ljava/lang/String;)Z",
+                &[(&j_uri).into(), (&j_content).into()],
+            )
+            .map_err(|e| e.to_string())?
+            .z()
+            .map_err(|e| e.to_string())?;
+        if ok {
+            Ok(())
+        } else {
+            Err("writeToUri returned false".into())
+        }
     }
 
     pub fn save_file_dialog(name: &str, content: &str) -> Result<Option<String>, String> {
@@ -322,7 +363,10 @@ mod android_save {
             }
             let j_name = match env.new_string(&name_owned) {
                 Ok(s) => s,
-                Err(e) => { let _ = tx.send(Err(e.to_string())); return; }
+                Err(e) => {
+                    let _ = tx.send(Err(e.to_string()));
+                    return;
+                }
             };
             match env.call_method(
                 activity,
@@ -330,8 +374,12 @@ mod android_save {
                 "(ILjava/lang/String;)V",
                 &[JValue::Int(0), (&j_name).into()],
             ) {
-                Ok(_) => { let _ = tx.send(Ok(())); }
-                Err(e) => { let _ = tx.send(Err(e.to_string())); }
+                Ok(_) => {
+                    let _ = tx.send(Ok(()));
+                }
+                Err(e) => {
+                    let _ = tx.send(Err(e.to_string()));
+                }
             }
         });
         rx.recv().map_err(|e| format!("Channel error: {}", e))??;
@@ -346,24 +394,23 @@ mod android_save {
             }
             let mut env = jvm.attach_current_thread().map_err(|e| e.to_string())?;
 
-            let ready = env.call_static_method(
-                "com/spire/notes/MainActivity",
-                "isResultReady",
-                "()Z",
-                &[],
-            ).map_err(|e| e.to_string())?
-            .z()
-            .unwrap_or(false);
+            let ready = env
+                .call_static_method("com/spire/notes/MainActivity", "isResultReady", "()Z", &[])
+                .map_err(|e| e.to_string())?
+                .z()
+                .unwrap_or(false);
 
             if ready {
-                let uri_obj = env.call_static_method(
-                    "com/spire/notes/MainActivity",
-                    "getResultUri",
-                    "()Ljava/lang/String;",
-                    &[],
-                ).map_err(|e| e.to_string())?
-                .l()
-                .map_err(|e| e.to_string())?;
+                let uri_obj = env
+                    .call_static_method(
+                        "com/spire/notes/MainActivity",
+                        "getResultUri",
+                        "()Ljava/lang/String;",
+                        &[],
+                    )
+                    .map_err(|e| e.to_string())?
+                    .l()
+                    .map_err(|e| e.to_string())?;
 
                 let uri_str = if !uri_obj.is_null() {
                     let jstr = jni::objects::JString::from(uri_obj);
@@ -374,12 +421,8 @@ mod android_save {
                     None
                 };
 
-                env.call_static_method(
-                    "com/spire/notes/MainActivity",
-                    "resetResult",
-                    "()V",
-                    &[],
-                ).ok();
+                env.call_static_method("com/spire/notes/MainActivity", "resetResult", "()V", &[])
+                    .ok();
 
                 if let Some(ref u) = uri_str {
                     if !u.is_empty() && write_uri(u, &content_owned).is_ok() {
@@ -427,7 +470,7 @@ async fn save_file_dialog(
             fs_ops::write_text_file(&path, &content)?;
             return Ok(Some(path));
         }
-        return Ok(None);
+        Ok(None)
     }
 }
 
@@ -440,16 +483,21 @@ fn take_persistable_uri_impl(uri: &str) -> Result<(), String> {
         use jni::objects::JValue;
         let result = (|| -> Result<(), String> {
             let j_uri = env.new_string(&uri_owned).map_err(|e| e.to_string())?;
-            let ok = env.call_static_method(
-                "com/spire/notes/MainActivity",
-                "takePersistableUri",
-                "(Ljava/lang/String;)Z",
-                &[(&j_uri).into()],
-            )
-            .map_err(|e| e.to_string())?
-            .z()
-            .map_err(|e| e.to_string())?;
-            if ok { Ok(()) } else { Err("takePersistableUri returned false".into()) }
+            let ok = env
+                .call_static_method(
+                    "com/spire/notes/MainActivity",
+                    "takePersistableUri",
+                    "(Ljava/lang/String;)Z",
+                    &[(&j_uri).into()],
+                )
+                .map_err(|e| e.to_string())?
+                .z()
+                .map_err(|e| e.to_string())?;
+            if ok {
+                Ok(())
+            } else {
+                Err("takePersistableUri returned false".into())
+            }
         })();
         let _ = tx.send(result);
     });
@@ -467,10 +515,7 @@ fn take_persistable_uri(uri: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn write_content_to_uri(
-    uri: String,
-    content: String,
-) -> Result<(), String> {
+async fn write_content_to_uri(uri: String, content: String) -> Result<(), String> {
     #[cfg(target_os = "android")]
     if uri.starts_with("content://") {
         let _ = take_persistable_uri_impl(&uri);
@@ -493,9 +538,15 @@ struct DirEntry {
 #[tauri::command]
 fn list_directory(path: String) -> Result<Vec<DirEntry>, String> {
     let dir = std::path::Path::new(&path);
+    if crate::paths::is_sensitive_path(dir) {
+        return Err("Blocked sensitive path".to_string());
+    }
     let mut entries = Vec::new();
     for entry in std::fs::read_dir(dir).map_err(|e| format!("read_dir {:?}: {}", dir, e))? {
         let entry = entry.map_err(|e| e.to_string())?;
+        if crate::paths::is_sensitive_path(&entry.path()) {
+            continue;
+        }
         let ft = entry.file_type().map_err(|e| e.to_string())?;
         entries.push(DirEntry {
             name: entry.file_name().to_string_lossy().to_string(),
@@ -508,8 +559,19 @@ fn list_directory(path: String) -> Result<Vec<DirEntry>, String> {
 }
 
 #[tauri::command]
-fn get_storage_root() -> Result<String, String> {
-    Ok("/storage/emulated/0".to_string())
+fn get_storage_root(app: tauri::AppHandle) -> Result<String, String> {
+    #[cfg(target_os = "android")]
+    {
+        let _ = &app;
+        Ok("/storage/emulated/0".to_string())
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        app.path()
+            .home_dir()
+            .map(|p| p.to_string_lossy().to_string())
+            .map_err(|e| format!("home_dir: {}", e))
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -520,7 +582,6 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-
         .setup(|app| {
             register_file_icon(app);
 
@@ -534,23 +595,32 @@ pub fn run() {
                         if binary_exts.contains(&ext.as_str()) {
                             match std::fs::read(&path) {
                                 Ok(data) => {
-                                    let b64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &data);
-                                    let _ = window.emit("open-file", serde_json::json!({
-                                        "path": path,
-                                        "content": b64,
-                                        "binary": true
-                                    }));
+                                    let b64 = base64::Engine::encode(
+                                        &base64::engine::general_purpose::STANDARD,
+                                        &data,
+                                    );
+                                    let _ = window.emit(
+                                        "open-file",
+                                        serde_json::json!({
+                                            "path": path,
+                                            "content": b64,
+                                            "binary": true
+                                        }),
+                                    );
                                 }
                                 Err(e) => eprintln!("Failed to read file {}: {}", path, e),
                             }
                         } else {
                             match std::fs::read_to_string(&path) {
                                 Ok(content) => {
-                                    let _ = window.emit("open-file", serde_json::json!({
-                                        "path": path,
-                                        "content": content,
-                                        "binary": false
-                                    }));
+                                    let _ = window.emit(
+                                        "open-file",
+                                        serde_json::json!({
+                                            "path": path,
+                                            "content": content,
+                                            "binary": false
+                                        }),
+                                    );
                                 }
                                 Err(e) => eprintln!("Failed to read file {}: {}", path, e),
                             }
@@ -564,11 +634,20 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             fs_ops::rename_file,
             fs_ops::save_binary,
-            fs_ops::convert_image, fs_ops::read_image_base64, migrate_from_blum,
-            open_app_settings, check_storage_permission, restart_app,
-            save_file_dialog, write_content_to_uri, take_persistable_uri,
-            list_directory, get_storage_root, fs_ops::save_to_path,
-            update::download_release, scripts::run_script
+            fs_ops::convert_image,
+            fs_ops::read_image_base64,
+            migrate_from_blum,
+            open_app_settings,
+            check_storage_permission,
+            restart_app,
+            save_file_dialog,
+            write_content_to_uri,
+            take_persistable_uri,
+            list_directory,
+            get_storage_root,
+            fs_ops::save_to_path,
+            update::download_release,
+            scripts::run_script
         ])
         .run(tauri::generate_context!())
     {

@@ -16,8 +16,15 @@ pub fn normalize_path(p: &str) -> PathBuf {
 
 const SENSITIVE_DIRS: &[&str] = &[".ssh", ".gnupg", ".aws", ".azure", ".kube", "gcloud"];
 const SENSITIVE_FILES: &[&str] = &[
-    ".npmrc", ".netrc", ".git-credentials", "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519",
-    "credentials", "credentials.json",
+    ".npmrc",
+    ".netrc",
+    ".git-credentials",
+    "id_rsa",
+    "id_dsa",
+    "id_ecdsa",
+    "id_ed25519",
+    "credentials",
+    "credentials.json",
 ];
 
 pub fn is_sensitive_path(p: &Path) -> bool {
@@ -52,13 +59,17 @@ mod tests {
     #[test]
     fn blocks_sensitive_directories_and_files() {
         assert!(is_sensitive_path(Path::new("/home/user/.ssh/id_ed25519")));
-        assert!(is_sensitive_path(Path::new("C:\\Users\\user\\.aws\\credentials")));
+        assert!(is_sensitive_path(Path::new(
+            "C:\\Users\\user\\.aws\\credentials"
+        )));
         assert!(is_sensitive_path(Path::new("/tmp/.npmrc")));
     }
 
     #[test]
     fn allows_regular_files() {
         assert!(!is_sensitive_path(Path::new("/home/user/notes/todo.txt")));
-        assert!(!is_sensitive_path(Path::new("C:\\Users\\user\\Documents\\note.md")));
+        assert!(!is_sensitive_path(Path::new(
+            "C:\\Users\\user\\Documents\\note.md"
+        )));
     }
 }
