@@ -30,7 +30,7 @@
     "@tiptap/extension-text-style": "^2.27.2",
     "@tiptap/react": "^2.27.2",
     "@tiptap/starter-kit": "^2.27.2",
-    "date-fns": "^4.1.0",
+    "date-fns": "^4.4.0",
     "dompurify": "^3.4.17",
     "framer-motion": "^11.18.0",
     "lucide-react": "^0.475.0",
@@ -38,7 +38,7 @@
     "react-dom": "^18.3.1",
     "uuid": "^11.1.1",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
-    "zustand": "^5.0.2"
+    "zustand": "^5.1.0"
   },
   "overrides": {
     "prosemirror-view": "^1.42.3",
@@ -51,12 +51,12 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^6.3.0",
-    "eslint": "^10.8.0",
+    "eslint": "^10.14.0",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.3",
+    "eslint-plugin-react-refresh": "^0.5.7",
     "jsdom": "^29.1.1",
     "typescript": "^5.6.2",
-    "typescript-eslint": "^8.66.0",
+    "typescript-eslint": "^8.72.2",
     "vite": "^8.3.8",
     "vitest": "^4.1.10"
   }
