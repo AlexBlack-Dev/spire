@@ -28,5 +28,5 @@ You will get an acknowledgement within 7 days. Please give us time to ship a fix
 - Locked notes are encrypted at rest with AES-256-GCM. The key is derived from the password with PBKDF2-SHA256 (600 000 iterations) and kept in memory only for the unlocked session.
 - Note passwords are stored as PBKDF2 hashes (210 000 iterations, per-note salt).
 - Update installers are downloaded from the official GitHub release and must match the published SHA-256 digest before installation.
-- Release builds require a private Android keystore supplied through repository secrets; the workflow fails without it.
+- Release builds require a private Android keystore supplied through repository secrets. Without `SPIRE_KEYSTORE_BASE64` the CI generates an ephemeral debug key and warns that such APKs cannot update over privately signed builds.
 - File writes are atomic and size-limited; sensitive OS paths (`~/.ssh`, `~/.aws`, key files, credential stores) are rejected by the Rust layer, including directory listings.

@@ -165,7 +165,7 @@ The workflow:
 3. Builds the Windows installer (NSIS/MSI) and the Android APK.
 4. Creates a GitHub Release with download links.
 
-Release APKs are signed with a private keystore supplied by the build environment: `SPIRE_KEYSTORE_BASE64` (base64 of the keystore file), `SPIRE_KEYSTORE_PASSWORD`, `SPIRE_KEY_ALIAS` and `SPIRE_KEY_PASSWORD` must be set as repository secrets. The release workflow fails when the keystore is missing instead of falling back to a debug key. Debug builds use the debug key that Gradle generates on the build machine.
+Release APKs are signed with a private keystore supplied by the build environment: `SPIRE_KEYSTORE_BASE64` (base64 of the keystore file), `SPIRE_KEYSTORE_PASSWORD`, `SPIRE_KEY_ALIAS` and `SPIRE_KEY_PASSWORD` must be set as repository secrets. When `SPIRE_KEYSTORE_BASE64` is missing, the workflow generates an ephemeral debug keystore and emits a warning; APKs signed that way cannot update over builds signed with a private key. Use a private keystore for production releases.
 
 `versionCode` and `versionName` are derived from the tag (`v1.1.2` → `10102` / `1.1.2`) and written to `tauri.properties` during the build.
 

@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `get_storage_root` returns the user home directory on desktop instead of an Android path
 - Desktop window minimum width is 900 px and the GPU-disabling Chromium flag was removed
 - Release signing requires `SPIRE_KEYSTORE_BASE64`, `SPIRE_KEYSTORE_PASSWORD`, `SPIRE_KEY_ALIAS` and `SPIRE_KEY_PASSWORD` repository secrets
+- Android release builds fall back to an ephemeral debug keystore when `SPIRE_KEYSTORE_BASE64` is missing, with a workflow warning that such APKs cannot update over privately signed builds
 - `xlsx` replaced with the official SheetJS 0.20.3 build (fixes CVE-2023-30533)
 - Vite 8, `@vitejs/plugin-react` 6 and `uuid` 11; `prosemirror-view`, `markdown-it` and `linkify-it` pinned to patched versions
 

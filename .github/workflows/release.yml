@@ -132,12 +132,24 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.SPIRE_KEYSTORE_BASE64 }}
         run: |
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "::error::SPIRE_KEYSTORE_BASE64 is not configured; refusing to sign a release with a public debug key"
-            exit 1
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/spire-release.keystore"
+            echo "SPIRE_KEYSTORE_PATH=$RUNNER_TEMP/spire-release.keystore" >> "$GITHUB_ENV"
+          else
+            keytool -genkeypair -v \
+              -keystore "$RUNNER_TEMP/spire-debug.keystore" \
+              -alias androiddebugkey \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass android -keypass android \
+              -dname "CN=Spire Debug, OU=Spire, O=Spire, L=City, ST=State, C=US"
+            {
+              echo "SPIRE_KEYSTORE_PATH=$RUNNER_TEMP/spire-debug.keystore"
+              echo "SPIRE_KEYSTORE_PASSWORD=android"
+              echo "SPIRE_KEY_ALIAS=androiddebugkey"
+              echo "SPIRE_KEY_PASSWORD=android"
+            } >> "$GITHUB_ENV"
+            echo "::warning::SPIRE_KEYSTORE_BASE64 is not configured; the APK is signed with an ephemeral debug key and will not update over builds signed with a private key"
           fi
-          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/spire-release.keystore"
-          echo "SPIRE_KEYSTORE_PATH=$RUNNER_TEMP/spire-release.keystore" >> "$GITHUB_ENV"
 
       - name: Write tauri.properties (versionCode from tag)
         run: |
